@@ -662,11 +662,6 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
-#ifdef CHECK
-               ull t1 = densepack(pd, p1) ;
-               if (t1 != (bigi << 5) + (smi >> 1))
-                  cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
-#endif
                for (int i=0; i<pd.moves.size(); i++) {
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
@@ -690,11 +685,6 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
-#ifdef CHECK
-               ull t1 = densepack(pd, p1) ;
-               if (t1 != (bigi << 5) + (smi >> 1))
-                  cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
-#endif
                for (int i=0; i<pd.moves.size(); i++) {
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
