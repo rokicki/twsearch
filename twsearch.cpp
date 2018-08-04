@@ -31,12 +31,19 @@ struct moove {
    int cost ;
 } ;
 struct puzdef {
-   puzdef() : name(0), setdefs(), solved(0), totsize(0) {}
+   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0) {}
    const char *name ;
    setdefs setdefs ;
    setvals solved ;
    vector<moove> moves ;
    int totsize ;
+   setval id ;
+   int comparepos(setvals &a, setvals &b) {
+      return memcmp(a.dat, b.dat, totsize) ;
+   }
+   void assignpos(setvals &a, setvals &b) {
+      memcpy(a.dat, b.dat, totsize) ;
+   }
    void mul(setvals &a, setvals &b, setvals &c) {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
@@ -62,6 +69,20 @@ struct puzdef {
          bp += n ;
          cp += n ;
       }
+   }
+} ;
+struct stacksetval : setval {
+   stacksetval(const puzdef &pd) : setval(new uchar[pd.totsize]) {
+      memcpy(dat, pd.id.dat, pd.totsize) ;
+   }
+   stacksetval(const puzdef &pd, const setvals &iv) : setval(new uchar[pd.totsize]) {
+      memcpy(dat, iv.dat, pd.totsize) ;
+   }
+   ~stacksetval() { delete dat ; }
+} ;
+struct allocsetval : setval {
+   allocsetval(const puzdef &pd, const setvals &iv) : setval(new uchar[pd.totsize]) {
+      memcpy(dat, iv.dat, pd.totsize) ;
    }
 } ;
 int verbose ;
@@ -303,7 +324,63 @@ puzdef readdef(FILE *f) {
       error("! puzzle must have a solved position") ;
    if (pz.moves.size() == 0)
       error("! puzzle must have moves") ;
+   pz.id = setvals((uchar *)calloc(pz.totsize, 1)) ;
+   uchar *p = pz.id.dat ;
+   for (int i=0; i<pz.setdefs.size(); i++) {
+      int n = pz.setdefs[i].size ;
+      for (int j=0; j<n; j++)
+         p[j] = j ;
+      p += n ;
+      for (int j=0; j<n; j++)
+         p[j] = 0 ;
+      p += n ;
+   }
    return pz ;
+}
+void addmovepowers(puzdef &pd) {
+   vector<moove> newmoves ;
+   stacksetval p1(pd), p2(pd) ;
+   vector<string> newnames ;
+   for (int i=0; i<pd.moves.size(); i++) {
+      moove &m = pd.moves[i] ;
+      vector<setvals> movepowers ;
+      movepowers.push_back(m.pos) ;
+      pd.assignpos(p1, m.pos) ;
+      pd.assignpos(p2, m.pos) ;
+      for (int p=2; p<256; p++) {
+         pd.mul(p1, m.pos, p2) ;
+         if (pd.comparepos(p2, pd.id) == 0)
+            break ;
+         movepowers.push_back(allocsetval(pd, p2)) ;
+         swap(p1.dat, p2.dat) ;
+      }
+      int order = movepowers.size() + 1 ;
+      for (int j=0; j<movepowers.size(); j++) {
+         int tw = j + 1 ;
+         if (order - tw < tw)
+            tw -= order ;
+         moove m2 = m ;
+         m2.pos = movepowers[j] ;
+         m2.cost = abs(tw) ;
+         if (tw != 1) {
+            string s2 = m.name ;
+            if (tw != -1)
+               s2 += to_string(abs(tw)) ;
+            if (tw < 0)
+               s2 += "'" ;
+            newnames.push_back(s2) ;
+            m2.name = strdup(s2.c_str()) ;
+         }
+         newmoves.push_back(m2) ;
+      }
+   }
+   if (newnames.size() > 0) {
+      pd.moves = newmoves ;
+      cout << "Created new moves" ;
+      for (int i=0; i<newnames.size(); i++)
+         cout << " " << newnames[i] ;
+      cout << endl << flush ;
+   }
 }
 int main(int argc, const char **argv) {
    while (argc > 1 && argv[1][0] == '-') {
@@ -317,5 +394,6 @@ default:
          error("! did not argument ", argv[0]) ;
       }
    }
-   readdef(stdin) ;
+   puzdef pd = readdef(stdin) ;
+   addmovepowers(pd) ;
 }
