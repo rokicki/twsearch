@@ -7,6 +7,7 @@
 #include <cstring>
 #include <algorithm>
 #include <string>
+#include <math.h>
 using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
@@ -17,6 +18,9 @@ struct setdef {
    uchar omod ;
    int pbits, obits ;
    bool uniq, pparity, oparity ;
+   double logstates ;
+   unsigned long long llstates ;
+   vector<int> cnts ; // only not empty when not unique.
 } ;
 struct setval {
    setval(uchar *dat_) : dat(dat_) {}
@@ -32,7 +36,8 @@ struct moove {
    int cost ;
 } ;
 struct puzdef {
-   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0) {}
+   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
+              logstates(0), llstates(0) {}
    const char *name ;
    setdefs setdefs ;
    setvals solved ;
@@ -40,6 +45,8 @@ struct puzdef {
    vector<int> basemoveorders ;
    int totsize ;
    setval id ;
+   double logstates ;
+   unsigned long long llstates ;
    int comparepos(setvals &a, setvals &b) {
       return memcmp(a.dat, b.dat, totsize) ;
    }
@@ -240,6 +247,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
                error("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
+               pz.setdefs[i].cnts = cnts ;
             }
          } else {
             if (oddperm(p, n))
@@ -265,7 +273,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
    }
    return r ;
 }
-int log2(int v) {
+int ceillog2(int v) {
    int r = 0 ;
    while (v > (1 << r))
       r++ ;
@@ -298,8 +306,8 @@ puzdef readdef(FILE *f) {
          sd.omod = getnumber(1, toks[3]) ;
          sd.pparity = 1 ;
          sd.oparity = 1 ;
-         sd.pbits = log2(sd.size) ;
-         sd.obits = log2(sd.omod) ;
+         sd.pbits = ceillog2(sd.size) ;
+         sd.obits = ceillog2(sd.omod) ;
          sd.uniq = 1 ;
          sd.off = pz.totsize ;
          pz.setdefs.push_back(sd) ;
@@ -398,6 +406,62 @@ void addmovepowers(puzdef &pd) {
       pd.moves = pd.basemoves ;
    }
 }
+void calculatesizes(puzdef &pd) {
+   ull gllstates = 1 ;
+   double glogstates = 0 ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      double llstates = 1 ;
+      double logstates = 0 ;
+      setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      if (sd.uniq) {
+         int st = 2 ;
+         if (sd.pparity)
+            st = 3 ;
+         for (int i=st; i<=n; i++) {
+            llstates *= i ;
+            logstates += log2(i) ;
+         }
+      } else {
+         int left = n ;
+         for (int j=0; j<sd.cnts.size(); j++) {
+            for (int k=0; k<sd.cnts[j]; k++) {
+               llstates *= left ;
+               logstates += log2(left) ;
+               left-- ;
+               llstates /= (k+1) ;
+               logstates -= log2(k+1) ;
+            }
+         }
+         if (left != 0)
+            error("! internal error when calculating sizes") ;
+      }
+      if (sd.omod != 1) {
+         int st = 0 ;
+         if (sd.oparity)
+            st++ ;
+         for (int j=st; j<n; j++) {
+            llstates *= sd.omod ;
+            logstates += log2(sd.omod) ;
+         }
+      }
+      sd.llstates = llstates ;
+      sd.logstates = logstates ;
+      gllstates *= llstates ;
+      glogstates += logstates ;
+   }
+   pd.llstates = gllstates ;
+   pd.logstates = glogstates ;
+   if (glogstates < 64) {
+      cout << "State size is " << gllstates << " log2 " << glogstates << endl ;
+   } else {
+      double log10v = glogstates / log2(10) ;
+      double expo = floor(log10v) ;
+      double mant = pow(10., log10v-expo) ;
+      cout << "State size is about " << mant << " x 10^" << expo <<
+              " log2 " << glogstates << endl ;
+   }
+}
 int main(int argc, const char **argv) {
    fact.push_back(0) ;
    for (int i=1; i<=20; i++)
@@ -420,4 +484,5 @@ default:
    }
    puzdef pd = readdef(stdin) ;
    addmovepowers(pd) ;
+   calculatesizes(pd) ;
 }
