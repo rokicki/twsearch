@@ -318,7 +318,7 @@ puzdef readdef(FILE *f) {
          sd.name = strdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
-         sd.pparity = 1 ;
+         sd.pparity = (sd.size == 1 ? 0 : 1) ;
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
          sd.obits = ceillog2(sd.omod) ;
