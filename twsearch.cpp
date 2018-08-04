@@ -36,7 +36,8 @@ struct puzdef {
    const char *name ;
    setdefs setdefs ;
    setvals solved ;
-   vector<moove> moves ;
+   vector<moove> basemoves, moves ;
+   vector<int> basemoveorders ;
    int totsize ;
    setval id ;
    int comparepos(setvals &a, setvals &b) {
@@ -86,6 +87,7 @@ struct allocsetval : setval {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
 } ;
+vector<ll> fact ;
 ll maxmem = 7LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 string curline ;
@@ -349,6 +351,7 @@ puzdef readdef(FILE *f) {
 }
 void addmovepowers(puzdef &pd) {
    vector<moove> newmoves ;
+   pd.basemoves = pd.moves ;
    stacksetval p1(pd), p2(pd) ;
    vector<string> newnames ;
    for (int i=0; i<pd.moves.size(); i++) {
@@ -365,6 +368,7 @@ void addmovepowers(puzdef &pd) {
          swap(p1.dat, p2.dat) ;
       }
       int order = movepowers.size() + 1 ;
+      pd.basemoveorders.push_back(order) ;
       for (int j=0; j<movepowers.size(); j++) {
          int tw = j + 1 ;
          if (order - tw < tw)
@@ -390,9 +394,14 @@ void addmovepowers(puzdef &pd) {
       for (int i=0; i<newnames.size(); i++)
          cout << " " << newnames[i] ;
       cout << endl << flush ;
+   } else {
+      pd.moves = pd.basemoves ;
    }
 }
 int main(int argc, const char **argv) {
+   fact.push_back(0) ;
+   for (int i=1; i<=20; i++)
+      fact.push_back(fact[i-1]*i) ;
    while (argc > 1 && argv[1][0] == '-') {
       argc-- ;
       argv++ ;
