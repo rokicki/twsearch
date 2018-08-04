@@ -23,13 +23,46 @@ struct setval {
 } ;
 typedef setval setvals ;
 typedef vector<setdef> setdefs ;
+uchar *gmoda[256] ;
+struct moove {
+   moove() : name(0), pos(0), cost(1) {}
+   const char *name ;
+   setvals pos ;
+   int cost ;
+} ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0) {}
    const char *name ;
    setdefs setdefs ;
    setvals solved ;
-   vector<setvals> moves ;
+   vector<moove> moves ;
    int totsize ;
+   void mul(setvals &a, setvals &b, setvals &c) {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      uchar *cp = c.dat ;
+      memset(cp, 0, totsize) ;
+      for (int i=0; i<setdefs.size(); i++) {
+         setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++)
+            cp[j] = ap[bp[j]] ;
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         if (sd.omod > 1) {
+            uchar *moda = gmoda[sd.omod] ;
+            for (int j=0; j<n; j++)
+               cp[j] = moda[ap[bp[j-n]]+bp[j]] ;
+         } else {
+            for (int j=0; j<n; j++)
+               cp[j] = 0 ;
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+      }
+   }
 } ;
 int verbose ;
 string curline ;
@@ -103,7 +136,22 @@ int isnumber(const string &s) {
    return s.size() > 0 && '0' <= s[0] && s[0] <= '9' ;
 }
 int oddperm(uchar *p, int n) {
-   return 0 ;
+   static uchar done[256] ;
+   for (int i=0; i<n ;i++)
+      done[i] = 0 ;
+   int r = 0 ;
+   for (int i=0; i<n; i++)
+      if (!done[i]) {
+         int cnt = 1 ;
+         done[i] = 1 ;
+         for (int j=p[i]; !done[j]; j=p[j]) {
+            done[j] = 1 ;
+            cnt++ ;
+         }
+         if (0 == (cnt & 1))
+            r++ ;
+      }
+   return r & 1 ;
 }
 setvals readposition(puzdef &pz, char typ, FILE *f) {
    setvals r((uchar *)calloc(pz.totsize, 1)) ;
@@ -164,12 +212,13 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
                error("! values are not contiguous") ;
          if (cnts.size() != n) {
             if (typ != 's')
-               error("! expected, but did not see, a perm") ;
+               error("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
-               if (oddperm(p, n))
-                  pz.setdefs[i].pparity = 0 ;
             }
+         } else {
+            if (oddperm(p, n))
+               pz.setdefs[i].pparity = 0 ;
          }
       }
       p += n ;
@@ -181,6 +230,13 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
       }
       if (s % pz.setdefs[i].omod != 0)
          pz.setdefs[i].oparity = 0 ;
+      if (typ == 'm') { // fix moves
+         static uchar f[256] ;
+         for (int j=0; j<n; j++)
+            f[j] = p[j] ;
+         for (int j=0; j<n; j++)
+            p[j] = f[p[j-n]] ;
+      }
    }
    return r ;
 }
@@ -215,6 +271,11 @@ puzdef readdef(FILE *f) {
          sd.off = pz.totsize ;
          pz.setdefs.push_back(sd) ;
          pz.totsize += 2 * sd.size ;
+         if (gmoda[sd.omod] == 0) {
+            gmoda[sd.omod] = (uchar *)calloc(4*sd.omod+1, 1) ;
+            for (int i=0; i<=4*sd.omod; i++)
+               gmoda[sd.omod][i] = i % sd.omod ;
+         }
       } else if (toks[0] == "Solved") {
          if (state != 1)
             error("! Solved in wrong place") ;
@@ -225,7 +286,11 @@ puzdef readdef(FILE *f) {
          if (state != 2)
             error("! Move in wrong place") ;
          expect(toks, 2) ;
-         pz.moves.push_back(readposition(pz, 'm', f)) ;
+         moove m ;
+         m.name = strdup(toks[1].c_str()) ;
+         m.pos = readposition(pz, 'm', f) ;
+         m.cost = 1 ;
+         pz.moves.push_back(m) ;
       } else {
          error("! unexpected first token on line ", toks[0]) ;
       }
