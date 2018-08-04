@@ -15,6 +15,7 @@ struct setdef {
    int size, off ;
    const char *name ;
    uchar omod ;
+   int pbits, obits ;
    bool uniq, pparity, oparity ;
 } ;
 struct setval {
@@ -85,6 +86,7 @@ struct allocsetval : setval {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
 } ;
+ll maxmem = 7LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 string curline ;
 void error(string msg, string extra="") {
@@ -261,6 +263,12 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
    }
    return r ;
 }
+int log2(int v) {
+   int r = 0 ;
+   while (v > (1 << r))
+      r++ ;
+   return r ;
+}
 puzdef readdef(FILE *f) {
    puzdef pz ;
    int state = 0 ;
@@ -288,6 +296,8 @@ puzdef readdef(FILE *f) {
          sd.omod = getnumber(1, toks[3]) ;
          sd.pparity = 1 ;
          sd.oparity = 1 ;
+         sd.pbits = log2(sd.size) ;
+         sd.obits = log2(sd.omod) ;
          sd.uniq = 1 ;
          sd.off = pz.totsize ;
          pz.setdefs.push_back(sd) ;
@@ -389,6 +399,11 @@ int main(int argc, const char **argv) {
       switch (argv[0][1]) {
 case 'v':
          verbose++ ;
+         break ;
+case 'M':
+         maxmem = 1048576 * atoll(argv[1]) ;
+         argc-- ;
+         argv++ ;
          break ;
 default:
          error("! did not argument ", argv[0]) ;
