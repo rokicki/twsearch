@@ -659,8 +659,8 @@ void dotwobitgod(puzdef &pd) {
             ull checkv = mem[bigi] ;
             checkv = (checkv & 0x5555555555555555LL) &
                      ((checkv >> 1) & 0x5555555555555555LL) ;
-            for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
-               checkv -= 1LL << smi ;
+            for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
+               checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
 #ifdef CHECK
                ull t1 = densepack(pd, p1) ;
@@ -673,7 +673,7 @@ void dotwobitgod(puzdef &pd) {
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
                   if (v == seek) {
                      newseen++ ;
-                     mem[bigi] -= (3LL - newv) << smi ;
+                     mem[bigi] -= (3LL - newv) << (smi-1) ;
                      break ;
                   }
                }
@@ -687,8 +687,8 @@ void dotwobitgod(puzdef &pd) {
             ull checkv = mem[bigi] ^ xorv ;
             checkv = (checkv & 0x5555555555555555LL) &
                      ((checkv >> 1) & 0x5555555555555555LL) ;
-            for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
-               checkv -= 1LL << smi ;
+            for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
+               checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
 #ifdef CHECK
                ull t1 = densepack(pd, p1) ;
