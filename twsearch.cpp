@@ -8,10 +8,24 @@
 #include <algorithm>
 #include <string>
 #include <math.h>
+#include <sys/time.h>
+#undef CHECK
 using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
 typedef unsigned char uchar ;
+static double start ;
+double walltime() {
+   struct timeval tv ;
+   gettimeofday(&tv, 0) ;
+   return tv.tv_sec + 0.000001 * tv.tv_usec ;
+}
+double duration() {
+   double now = walltime() ;
+   double r = now - start ;
+   start = now ;
+   return r ;
+}
 struct setdef {
    int size, off ;
    const char *name ;
@@ -19,7 +33,7 @@ struct setdef {
    int pbits, obits ;
    bool uniq, pparity, oparity ;
    double logstates ;
-   unsigned long long llstates ;
+   unsigned long long llperms, llords, llstates ;
    vector<int> cnts ; // only not empty when not unique.
 } ;
 struct setval {
@@ -410,7 +424,8 @@ void calculatesizes(puzdef &pd) {
    ull gllstates = 1 ;
    double glogstates = 0 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
-      double llstates = 1 ;
+      ull llperms = 1 ;
+      ull llords = 1 ;
       double logstates = 0 ;
       setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
@@ -419,17 +434,17 @@ void calculatesizes(puzdef &pd) {
          if (sd.pparity)
             st = 3 ;
          for (int i=st; i<=n; i++) {
-            llstates *= i ;
+            llperms *= i ;
             logstates += log2(i) ;
          }
       } else {
          int left = n ;
          for (int j=0; j<sd.cnts.size(); j++) {
             for (int k=0; k<sd.cnts[j]; k++) {
-               llstates *= left ;
+               llperms *= left ;
                logstates += log2(left) ;
                left-- ;
-               llstates /= (k+1) ;
+               llperms /= (k+1) ;
                logstates -= log2(k+1) ;
             }
          }
@@ -441,13 +456,15 @@ void calculatesizes(puzdef &pd) {
          if (sd.oparity)
             st++ ;
          for (int j=st; j<n; j++) {
-            llstates *= sd.omod ;
+            llords *= sd.omod ;
             logstates += log2(sd.omod) ;
          }
       }
-      sd.llstates = llstates ;
+      sd.llperms = llperms ;
+      sd.llords = llords ;
+      sd.llstates = llperms * llords ;
       sd.logstates = logstates ;
-      gllstates *= llstates ;
+      gllstates *= sd.llstates ;
       glogstates += logstates ;
    }
    pd.llstates = gllstates ;
@@ -460,6 +477,208 @@ void calculatesizes(puzdef &pd) {
       double mant = pow(10., log10v-expo) ;
       cout << "State size is about " << mant << " x 10^" << expo <<
               " log2 " << glogstates << endl ;
+   }
+}
+long long permtoindex(const uchar *perm, int n) {
+   int i, j;
+   ull r = 0 ;
+   ull m = 1 ;
+   uchar state[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   } ;
+   uchar inverse[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   } ;
+   for (i = 0; i+1 < n; i++) {
+      j = inverse[perm[i]];
+      inverse[state[i]] = j;
+      state[j] = state[i];
+      r += m * (j - i) ;
+      m *= (n - i) ;
+   }
+   return r ;
+}
+void indextoperm(uchar *perm, ull ind, int n) {
+   int i, j;
+   uchar state[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   };
+   for (i = 0; i+1 < n; i++) {
+      ull t = ind / (n - i) ;
+      j = i + ind - t * (n - i) ;
+      ind = t ;
+      perm[i] = state[j];
+      state[j] = state[i];
+   }
+   perm[n-1] = state[n-1] ;
+}
+ull permtoindex2(const uchar *perm, int n) {
+   int i, j;
+   ull r = 0 ;
+   ull m = 1 ;
+   uchar state[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   } ;
+   uchar inverse[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   } ;
+   for (i = 0; i+2 < n; i++) {
+      j = inverse[perm[i]];
+      inverse[state[i]] = j;
+      state[j] = state[i];
+      r += m * (j - i) ;
+      m *= (n - i) ;
+   }
+   return r ;
+}
+void indextoperm2(uchar *perm, ull ind, int n) {
+   int i, j;
+   uchar state[] = {
+      0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23
+   };
+   int pars = n ;
+   for (i = 0; i+2 < n; i++) {
+      ull t = ind / (n - i) ;
+      j = i + ind - t * (n - i) ;
+      if (j == i)
+              pars-- ;
+      ind = t ;
+      perm[i] = state[j];
+      state[j] = state[i];
+   }
+   if (pars & 1) {
+      perm[n-1] = state[n-2] ;
+      perm[n-2] = state[n-1] ;
+   } else {
+      perm[n-2] = state[n-2] ;
+      perm[n-1] = state[n-1] ;
+   }
+}
+ll ordstoindex(const uchar *p, int omod, int n) {
+   ull r = 0 ;
+   ull m = 1 ;
+   for (int i=0; i<n; i++) {
+      r += m * p[i] ;
+      m *= omod ;
+   }
+   return r ;
+}
+void indextoords(uchar *p, ull v, int omod, int n) {
+   for (int i=0; i<n; i++) {
+      ull nv = v / omod ;
+      p[i] = v - nv * omod ;
+      v = nv ;
+   }
+}
+void indextoords2(uchar *p, ull v, int omod, int n) {
+   int s = 0 ;
+   for (int i=0; i+1<n; i++) {
+      ull nv = v / omod ;
+      p[i] = v - nv * omod ;
+      s += p[i] ;
+      v = nv ;
+   }
+   p[n-1] = (n * omod - s) % omod ;
+}
+ull densepack(const puzdef &pd, setvals pos) {
+   ull r = 0 ;
+   ull m = 1 ;
+   uchar *p = pos.dat ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      if (!sd.uniq)
+         error("! we don't support dense packing of non-unique yet") ;
+      if (sd.pparity)
+         r += m * permtoindex2(p, n) ;
+      else
+         r += m * permtoindex(p, n) ;
+      m *= sd.llperms ;
+      p += n ;
+      if (sd.omod != 1) {
+         if (sd.oparity)
+            r += m * ordstoindex(p, sd.omod, n-1) ;
+         else
+            r += m * ordstoindex(p, sd.omod, n) ;
+         m *= sd.llords ;
+      }
+      p += n ;
+   }
+   return r ;
+}
+void denseunpack(const puzdef &pd, ull v, setvals pos) {
+   uchar *p = pos.dat ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      ull nv = v / sd.llperms ;
+      if (sd.pparity)
+         indextoperm2(p, v - nv * sd.llperms, n) ;
+      else
+         indextoperm(p, v - nv * sd.llperms, n) ;
+      v = nv ;
+      p += n ;
+      if (sd.omod != 1) {
+         ull nv = v / sd.llords ;
+         if (sd.oparity)
+            indextoords2(p, v - nv * sd.llords, sd.omod, n) ;
+         else
+            indextoords(p, v - nv * sd.llords, sd.omod, n) ;
+         v = nv ;
+      }
+      p += n ;
+   }
+}
+void dotwobitgod(puzdef &pd) {
+   ull nlongs = (pd.llstates + 31) >> 5 ;
+   ull memneeded = nlongs * 8 ;
+   ull *mem = (ull *)malloc(memneeded) ;
+   if (mem == 0)
+      error("! not enough memory") ;
+   memset(mem, -1, memneeded) ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   ull off = densepack(pd, p1) ;
+   mem[off >> 5] -= 3LL << (2 * (off & 31)) ;
+   vector<ull> cnts ;
+   cnts.push_back(1) ;
+   ull tot = 1 ;
+   for (int d = 0; ; d++) {
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+           << duration() << endl << flush ;
+      if (cnts[d] == 0 || tot == pd.llstates)
+         break ;
+      ull newseen = 0 ;
+      int seek = d % 3 ;
+      int newv = (d + 1) % 3 ;
+      ull xorv = (3 - seek) * 0x5555555555555555LL ;
+      for (ull bigi=0; bigi<nlongs; bigi++) {
+         if (mem[bigi] == 0xffffffffffffffffLL)
+            continue ;
+         ull checkv = mem[bigi] ^ xorv ;
+         checkv = (checkv & 0x5555555555555555LL) &
+                  ((checkv >> 1) & 0x5555555555555555LL) ;
+         for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
+            checkv -= 1LL << smi ;
+            denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
+#ifdef CHECK
+            ull t1 = densepack(pd, p1) ;
+            if (t1 != (bigi << 5) + (smi >> 1))
+               cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
+#endif
+            for (int i=0; i<pd.moves.size(); i++) {
+               pd.mul(p1, pd.moves[i].pos, p2) ;
+               off = densepack(pd, p2) ;
+               int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
+               if (v == 3) {
+                  newseen++ ;
+                  mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
+               }
+            }
+         }
+      }
+      cnts.push_back(newseen) ;
+      tot += newseen ;
    }
 }
 int main(int argc, const char **argv) {
@@ -485,4 +704,9 @@ default:
    puzdef pd = readdef(stdin) ;
    addmovepowers(pd) ;
    calculatesizes(pd) ;
+   if (pd.logstates > 50)
+      error("! we don't support such big puzzles yet") ;
+   if ((pd.llstates >> 2) > maxmem)
+      error("! not enough memory") ;
+   dotwobitgod(pd) ;
 }
