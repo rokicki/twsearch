@@ -649,30 +649,60 @@ void dotwobitgod(puzdef &pd) {
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
       ull newseen = 0 ;
+// don't be too aggressive, because we might see parity and this might slow
+// things down dramatically; only go backwards after more than 50% full.
+      int back = (tot * 2 > pd.llstates) ;
       int seek = d % 3 ;
       int newv = (d + 1) % 3 ;
-      ull xorv = (3 - seek) * 0x5555555555555555LL ;
-      for (ull bigi=0; bigi<nlongs; bigi++) {
-         if (mem[bigi] == 0xffffffffffffffffLL)
-            continue ;
-         ull checkv = mem[bigi] ^ xorv ;
-         checkv = (checkv & 0x5555555555555555LL) &
-                  ((checkv >> 1) & 0x5555555555555555LL) ;
-         for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
-            checkv -= 1LL << smi ;
-            denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
+      if (back) {
+         for (ull bigi=0; bigi<nlongs; bigi++) {
+            ull checkv = mem[bigi] ;
+            checkv = (checkv & 0x5555555555555555LL) &
+                     ((checkv >> 1) & 0x5555555555555555LL) ;
+            for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
+               checkv -= 1LL << smi ;
+               denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
 #ifdef CHECK
-            ull t1 = densepack(pd, p1) ;
-            if (t1 != (bigi << 5) + (smi >> 1))
-               cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
+               ull t1 = densepack(pd, p1) ;
+               if (t1 != (bigi << 5) + (smi >> 1))
+                  cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
 #endif
-            for (int i=0; i<pd.moves.size(); i++) {
-               pd.mul(p1, pd.moves[i].pos, p2) ;
-               off = densepack(pd, p2) ;
-               int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
-               if (v == 3) {
-                  newseen++ ;
-                  mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
+               for (int i=0; i<pd.moves.size(); i++) {
+                  pd.mul(p1, pd.moves[i].pos, p2) ;
+                  off = densepack(pd, p2) ;
+                  int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
+                  if (v == seek) {
+                     newseen++ ;
+                     mem[bigi] -= (3LL - newv) << smi ;
+                     break ;
+                  }
+               }
+            }
+         }
+      } else {
+         ull xorv = (3 - seek) * 0x5555555555555555LL ;
+         for (ull bigi=0; bigi<nlongs; bigi++) {
+            if (mem[bigi] == 0xffffffffffffffffLL)
+               continue ;
+            ull checkv = mem[bigi] ^ xorv ;
+            checkv = (checkv & 0x5555555555555555LL) &
+                     ((checkv >> 1) & 0x5555555555555555LL) ;
+            for (int smi=ffsll(checkv)-1; checkv; smi=ffsll(checkv)-1) {
+               checkv -= 1LL << smi ;
+               denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
+#ifdef CHECK
+               ull t1 = densepack(pd, p1) ;
+               if (t1 != (bigi << 5) + (smi >> 1))
+                  cout << "Mispack " << " saw " << (bigi << 5) + (smi >> 1) << " but should have been " << t1 << endl ;
+#endif
+               for (int i=0; i<pd.moves.size(); i++) {
+                  pd.mul(p1, pd.moves[i].pos, p2) ;
+                  off = densepack(pd, p2) ;
+                  int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
+                  if (v == 3) {
+                     newseen++ ;
+                     mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
+                  }
                }
             }
          }
