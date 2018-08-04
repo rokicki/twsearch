@@ -41,7 +41,7 @@ struct setval {
    uchar *dat ;
 } ;
 typedef setval setvals ;
-typedef vector<setdef> setdefs ;
+typedef vector<setdef> setdefs_t ;
 uchar *gmoda[256] ;
 struct moove {
    moove() : name(0), pos(0), cost(1) {}
@@ -53,7 +53,7 @@ struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
               logstates(0), llstates(0) {}
    const char *name ;
-   setdefs setdefs ;
+   setdefs_t setdefs ;
    setvals solved ;
    vector<moove> basemoves, moves ;
    vector<int> basemoveorders ;
