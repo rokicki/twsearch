@@ -9,7 +9,6 @@ What is working so far:
 
 Things to do:
 
-* Multithreading
 * God's algorithm with long long per state
 * God's algorithm with > 64 bits per state
 * Parse scramble file
@@ -17,6 +16,7 @@ Things to do:
 
 Things to design:
 
+* Multithreading
 * Symmetry reduction
 
 Things to consider:
