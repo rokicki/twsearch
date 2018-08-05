@@ -9,6 +9,7 @@ What is working so far:
 
 Things to do:
 
+* Print antipodes
 * God's algorithm with long long per state
 * God's algorithm with > 64 bits per state
 * Parse scramble file

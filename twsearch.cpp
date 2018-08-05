@@ -702,6 +702,7 @@ void dotwobitgod(puzdef &pd) {
    }
 }
 int main(int argc, const char **argv) {
+   duration() ;
    fact.push_back(0) ;
    for (int i=1; i<=20; i++)
       fact.push_back(fact[i-1]*i) ;
