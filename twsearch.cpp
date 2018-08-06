@@ -587,13 +587,15 @@ ull densepack(const puzdef &pd, setvals pos) {
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
-      if (!sd.uniq)
-         error("! we don't support dense packing of non-unique yet") ;
-      if (sd.pparity)
-         r += m * permtoindex2(p, n) ;
-      else
-         r += m * permtoindex(p, n) ;
-      m *= sd.llperms ;
+      if (n > 1) {
+         if (!sd.uniq)
+            error("! we don't support dense packing of non-unique yet") ;
+         if (sd.pparity)
+            r += m * permtoindex2(p, n) ;
+         else
+            r += m * permtoindex(p, n) ;
+         m *= sd.llperms ;
+      }
       p += n ;
       if (sd.omod != 1) {
          if (sd.oparity)
@@ -611,12 +613,16 @@ void denseunpack(const puzdef &pd, ull v, setvals pos) {
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
-      ull nv = v / sd.llperms ;
-      if (sd.pparity)
-         indextoperm2(p, v - nv * sd.llperms, n) ;
-      else
-         indextoperm(p, v - nv * sd.llperms, n) ;
-      v = nv ;
+      if (n > 1) {
+         ull nv = v / sd.llperms ;
+         if (sd.pparity)
+            indextoperm2(p, v - nv * sd.llperms, n) ;
+         else
+            indextoperm(p, v - nv * sd.llperms, n) ;
+         v = nv ;
+      } else {
+         *p = 0 ;
+      }
       p += n ;
       if (sd.omod != 1) {
          ull nv = v / sd.llords ;
