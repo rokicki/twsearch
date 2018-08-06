@@ -557,11 +557,11 @@ void indextoperm2(uchar *perm, ull ind, int n) {
 ll ordstoindex(const uchar *p, int omod, int n) {
    ull r = 0 ;
    ull m = 1 ;
-   for (int i=0; i<n; i++) {
+   for (int i=0; i+1<n; i++) {
       r += m * p[i] ;
       m *= omod ;
    }
-   return r ;
+   return r + m * p[n-1] ;
 }
 void indextoords(uchar *p, ull v, int omod, int n) {
    for (int i=0; i<n; i++) {
