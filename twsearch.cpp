@@ -113,6 +113,7 @@ struct allocsetval : setval {
 vector<ll> fact ;
 ll maxmem = 7LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
+int quarter = 0 ;
 string curline ;
 void error(string msg, string extra="") {
    cerr << msg << extra << endl ;
@@ -387,6 +388,8 @@ void addmovepowers(puzdef &pd) {
    vector<string> newnames ;
    for (int i=0; i<pd.moves.size(); i++) {
       moove &m = pd.moves[i] ;
+      if (m.cost > 1)
+         continue ;
       vector<setvals> movepowers ;
       movepowers.push_back(m.pos) ;
       pd.assignpos(p1, m.pos) ;
@@ -681,6 +684,8 @@ void dotwobitgod(puzdef &pd) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<pd.moves.size(); i++) {
+                  if (pd.moves[i].cost > 1)
+                     continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
@@ -704,6 +709,8 @@ void dotwobitgod(puzdef &pd) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<pd.moves.size(); i++) {
+                  if (pd.moves[i].cost > 1)
+                     continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
@@ -892,6 +899,8 @@ void doarraygod(puzdef &pd) {
       for (loosetype *pr=reader; pr<levend; pr += looseper) {
          looseunpack(pd, p1, pr) ;
          for (int i=0; i<pd.moves.size(); i++) {
+            if (pd.moves[i].cost > 1)
+               continue ;
             pd.mul(p1, pd.moves[i].pos, p2) ;
             loosepack(pd, p2, writer) ;
             writer += looseper ;
@@ -917,6 +926,9 @@ int main(int argc, const char **argv) {
       argc-- ;
       argv++ ;
       switch (argv[0][1]) {
+case 'q':
+         quarter++ ;
+         break ;
 case 'v':
          verbose++ ;
          break ;
