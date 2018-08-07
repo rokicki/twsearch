@@ -14,6 +14,8 @@ using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
 typedef unsigned char uchar ;
+typedef unsigned int loosetype ;
+const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 static double start ;
 double walltime() {
    struct timeval tv ;
@@ -717,8 +719,8 @@ void dotwobitgod(puzdef &pd) {
       tot += newseen ;
    }
 }
-int bytesper ;
-void calcbytesper(puzdef &pd) {
+int looseper ;
+void calclooseper(puzdef &pd) {
    int bits = 0 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
@@ -729,11 +731,11 @@ void calcbytesper(puzdef &pd) {
       else
          bits += sd.obits * n ;
    }
-   bytesper = (bits + 7) >> 3 ;
+   looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
 }
-void loosepack(const puzdef &pd, setvals pos, uchar *w) {
+void loosepack(const puzdef &pd, setvals pos, loosetype *w) {
    uchar *p = pos.dat ;
-   unsigned int accum = 0 ;
+   ull accum = 0 ;
    int storedbits = 0 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
@@ -741,12 +743,12 @@ void loosepack(const puzdef &pd, setvals pos, uchar *w) {
       if (n > 1) {
          int bitsper = sd.pbits ;
          for (int j=0; j+1<n; j++) {
-            if (bitsper + storedbits > 32) {
+            if (bitsper + storedbits > 64) {
                *w++ = accum ;
-               accum >>= 8 ;
-               storedbits -= 8 ;
+               accum >>= BITSPERLOOSE ;
+               storedbits -= BITSPERLOOSE ;
             }
-            accum += p[j] << storedbits ;
+            accum += ((ull)p[j]) << storedbits ;
             storedbits += bitsper ;
          }
       }
@@ -755,12 +757,12 @@ void loosepack(const puzdef &pd, setvals pos, uchar *w) {
          int lim = (sd.oparity ? n-1 : n) ;
          int bitsper = sd.obits ;
          for (int j=0; j<lim; j++) {
-            if (bitsper + storedbits > 32) {
+            if (bitsper + storedbits > 64) {
                *w++ = accum ;
-               accum >>= 8 ;
-               storedbits -= 8 ;
+               accum >>= BITSPERLOOSE ;
+               storedbits -= BITSPERLOOSE ;
             }
-            accum += p[j] << storedbits ;
+            accum += ((ull)p[j]) << storedbits ;
             storedbits += bitsper ;
          }
       }
@@ -768,25 +770,25 @@ void loosepack(const puzdef &pd, setvals pos, uchar *w) {
    }
    while (storedbits > 0) {
       *w++ = accum ;
-      accum >>= 8 ;
-      storedbits -= 8 ;
+      accum >>= BITSPERLOOSE ;
+      storedbits -= BITSPERLOOSE ;
    }
 }
-void looseunpack(const puzdef &pd, setvals pos, uchar *r) {
+void looseunpack(const puzdef &pd, setvals pos, loosetype *r) {
    uchar *p = pos.dat ;
-   unsigned int accum = 0 ;
+   ull accum = 0 ;
    int storedbits = 0 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
          int bitsper = sd.pbits ;
-         int mask = (1 << bitsper) - 1 ;
+         ull mask = (1 << bitsper) - 1 ;
          int msum = 0 ;
          for (int j=0; j+1<n; j++) {
             if (storedbits < bitsper) {
-               accum += *r++ << storedbits ;
-               storedbits += 8 ;
+               accum += ((ull)(*r++)) << storedbits ;
+               storedbits += BITSPERLOOSE ;
             }
             p[j] = accum & mask ;
             msum += p[j] ;
@@ -801,12 +803,12 @@ void looseunpack(const puzdef &pd, setvals pos, uchar *r) {
       if (sd.omod != 1) {
          int lim = (sd.oparity ? n-1 : n) ;
          int bitsper = sd.obits ;
-         int mask = (1 << bitsper) - 1 ;
+         ull mask = (1 << bitsper) - 1 ;
          int msum = 0 ;
          for (int j=0; j<lim; j++) {
             if (storedbits < bitsper) {
-               accum += *r++ << storedbits ;
-               storedbits += 8 ;
+               accum += ((ull)(*r++)) << storedbits ;
+               storedbits += BITSPERLOOSE ;
             }
             p[j] = accum & mask ;
             msum += sd.omod - p[j] ;
@@ -822,34 +824,40 @@ void looseunpack(const puzdef &pd, setvals pos, uchar *r) {
       p += n ;
    }
 }
-static inline int compare(const void *a, const void *b) {
-   return memcmp(a, b, bytesper) ;
+static inline int compare(const void *a_, const void *b_) {
+   loosetype *a = (loosetype *)a_ ;
+   loosetype *b = (loosetype *)b_ ;
+   for (int i=0; i<looseper; i++)
+      if (a[i] != b[i])
+         return (a[i] < b[i] ? -1 : 1) ;
+   return 0 ;
 }
-uchar *sortuniq(uchar *s_2, uchar *s_1, uchar *beg, uchar *end, int temp) {
-   size_t numel = (end-beg) / bytesper ;
+loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
+                    loosetype *beg, loosetype *end, int temp) {
+   size_t numel = (end-beg) / looseper ;
    cout << "Created " << numel << " elements in " << duration() << endl << flush ;
-   qsort(beg, numel, bytesper, compare) ;
+   qsort(beg, numel, looseper*sizeof(loosetype), compare) ;
    cout << "Sorted " << flush ;
-   uchar *s_0 = beg ;
-   uchar *w = beg ;
-   uchar *r_2 = s_2 ;
-   uchar *r_1 = s_1 ;
+   loosetype *s_0 = beg ;
+   loosetype *w = beg ;
+   loosetype *r_2 = s_2 ;
+   loosetype *r_1 = s_1 ;
    while (beg < end) {
-      if (beg + bytesper >= end || compare(beg, beg+bytesper)) {
-         while (r_2 + bytesper < s_1 && compare(beg, r_2) > 0)
-            r_2 += bytesper ;
+      if (beg + looseper >= end || compare(beg, beg+looseper)) {
+         while (r_2 + looseper < s_1 && compare(beg, r_2) > 0)
+            r_2 += looseper ;
          if (compare(beg, r_2)) {
-            while (r_1 + bytesper < s_0 && compare(beg, r_1) > 0)
-               r_1 += bytesper ;
+            while (r_1 + looseper < s_0 && compare(beg, r_1) > 0)
+               r_1 += looseper ;
             if (compare(beg, r_1)) {
-               memcpy(w, beg, bytesper) ;
-               w += bytesper ;
+               memcpy(w, beg, looseper*sizeof(loosetype)) ;
+               w += looseper ;
             }
          }
       }
-      beg += bytesper ;
+      beg += looseper ;
    }
-   cout << "to " << (w - s_0) / bytesper << " in " << duration() << endl << flush ;
+   cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
    return w ;
 }
 /*
@@ -858,41 +866,41 @@ uchar *sortuniq(uchar *s_2, uchar *s_1, uchar *beg, uchar *end, int temp) {
  */
 void doarraygod(puzdef &pd) {
    ull memneeded = maxmem ;
-   uchar *mem = (uchar *)malloc(memneeded) ;
+   loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
       error("! not enough memory") ;
-   stacksetval p1(pd), p2(pd) ;
+   stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p1, pd.solved) ;
-   calcbytesper(pd) ;
-   cout << "Requiring " << bytesper << " bytes per entry." << endl ;
+   calclooseper(pd) ;
+   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
    loosepack(pd, p1, mem) ;
    vector<ull> cnts ;
    cnts.push_back(1) ;
    ull tot = 1 ;
-   uchar *lim = mem + memneeded / bytesper * bytesper ;
-   uchar *reader = mem ;
-   uchar *writer = mem + bytesper ;
-   uchar *s_1 = mem ;
-   uchar *s_2 = mem ;
+   loosetype *lim = mem + memneeded / looseper * looseper ;
+   loosetype *reader = mem ;
+   loosetype *writer = mem + looseper ;
+   loosetype *s_1 = mem ;
+   loosetype *s_2 = mem ;
    for (int d = 0; ; d++) {
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
       ull newseen = 0 ;
-      uchar *levend = writer ;
-      for (uchar *pr=reader; pr<levend; pr += bytesper) {
+      loosetype *levend = writer ;
+      for (loosetype *pr=reader; pr<levend; pr += looseper) {
          looseunpack(pd, p1, pr) ;
          for (int i=0; i<pd.moves.size(); i++) {
             pd.mul(p1, pd.moves[i].pos, p2) ;
             loosepack(pd, p2, writer) ;
-            writer += bytesper ;
+            writer += looseper ;
             if (writer >= lim)
                writer = sortuniq(s_2, s_1, levend, writer, 1) ;
          }
       }
       writer = sortuniq(s_2, s_1, levend, writer, 0) ;
-      newseen = (writer - levend) / bytesper ;
+      newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
       tot += newseen ;
       s_2 = s_1 ;
