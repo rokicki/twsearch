@@ -30,7 +30,7 @@ struct setdef {
    int size, off ;
    const char *name ;
    uchar omod ;
-   int pbits, obits ;
+   int pbits, obits, psum ;
    bool uniq, pparity, oparity ;
    double logstates ;
    unsigned long long llperms, llords, llstates ;
@@ -245,14 +245,18 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
       if (p[0] == 0) {
          for (int j=0; j<n; j++)
             p[j] = j ; // identity perm
+         pz.setdefs[i].psum = n * (n - 1) / 2 ;
       } else {
          vector<int> cnts ;
+         int sum = 0 ;
          for (int j=0; j<n; j++) {
             int v = --p[j] ;
+            sum += v ;
             if (v >= cnts.size())
                cnts.resize(v+1) ;
             cnts[v]++ ;
          }
+         pz.setdefs[i].psum = sum ;
          for (int j=0; j<cnts.size(); j++)
             if (cnts[j] == 0)
                error("! values are not contiguous") ;
@@ -635,6 +639,9 @@ void denseunpack(const puzdef &pd, ull v, setvals pos) {
       p += n ;
    }
 }
+/*
+ *   God's algorithm using two bits per state.
+ */
 void dotwobitgod(puzdef &pd) {
    ull nlongs = (pd.llstates + 31) >> 5 ;
    ull memneeded = nlongs * 8 ;
@@ -707,6 +714,189 @@ void dotwobitgod(puzdef &pd) {
       tot += newseen ;
    }
 }
+int bytesper ;
+void calcbytesper(puzdef &pd) {
+   int bits = 0 ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      bits += sd.pbits * (n-1) ;
+      if (sd.oparity)
+         bits += sd.obits * (n-1) ;
+      else
+         bits += sd.obits * n ;
+   }
+   bytesper = (bits + 7) >> 3 ;
+}
+void loosepack(const puzdef &pd, setvals pos, uchar *w) {
+   uchar *p = pos.dat ;
+   unsigned int accum = 0 ;
+   int storedbits = 0 ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      if (n > 1) {
+         int bitsper = sd.pbits ;
+         for (int j=0; j+1<n; j++) {
+            if (bitsper + storedbits > 32) {
+               *w++ = accum ;
+               accum >>= 8 ;
+               storedbits -= 8 ;
+            }
+            accum += p[j] << storedbits ;
+            storedbits += bitsper ;
+         }
+      }
+      p += n ;
+      if (sd.omod != 1) {
+         int lim = (sd.oparity ? n-1 : n) ;
+         int bitsper = sd.obits ;
+         for (int j=0; j<lim; j++) {
+            if (bitsper + storedbits > 32) {
+               *w++ = accum ;
+               accum >>= 8 ;
+               storedbits -= 8 ;
+            }
+            accum += p[j] << storedbits ;
+            storedbits += bitsper ;
+         }
+      }
+      p += n ;
+   }
+   while (storedbits > 0) {
+      *w++ = accum ;
+      accum >>= 8 ;
+      storedbits -= 8 ;
+   }
+}
+void looseunpack(const puzdef &pd, setvals pos, uchar *r) {
+   uchar *p = pos.dat ;
+   unsigned int accum = 0 ;
+   int storedbits = 0 ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      if (n > 1) {
+         int bitsper = sd.pbits ;
+         int mask = (1 << bitsper) - 1 ;
+         int msum = 0 ;
+         for (int j=0; j+1<n; j++) {
+            if (storedbits < bitsper) {
+               accum += *r++ << storedbits ;
+               storedbits += 8 ;
+            }
+            p[j] = accum & mask ;
+            msum += p[j] ;
+            storedbits -= bitsper ;
+            accum >>= bitsper ;
+         }
+         p[n-1] = sd.psum - msum ;
+      } else {
+         *p = 0 ;
+      }
+      p += n ;
+      if (sd.omod != 1) {
+         int lim = (sd.oparity ? n-1 : n) ;
+         int bitsper = sd.obits ;
+         int mask = (1 << bitsper) - 1 ;
+         int msum = 0 ;
+         for (int j=0; j<lim; j++) {
+            if (storedbits < bitsper) {
+               accum += *r++ << storedbits ;
+               storedbits += 8 ;
+            }
+            p[j] = accum & mask ;
+            msum += sd.omod - p[j] ;
+            storedbits -= bitsper ;
+            accum >>= bitsper ;
+         }
+         if (sd.oparity)
+            p[n-1] = msum % sd.omod ;
+      } else {
+         for (int j=0; j<n; j++)
+            p[j] = 0 ;
+      }
+      p += n ;
+   }
+}
+static inline int compare(const void *a, const void *b) {
+   return memcmp(a, b, bytesper) ;
+}
+uchar *sortuniq(uchar *s_2, uchar *s_1, uchar *beg, uchar *end, int temp) {
+   size_t numel = (end-beg) / bytesper ;
+   cout << "Created " << numel << " elements in " << duration() << endl << flush ;
+   qsort(beg, numel, bytesper, compare) ;
+   cout << "Sorted " << flush ;
+   uchar *s_0 = beg ;
+   uchar *w = beg ;
+   uchar *r_2 = s_2 ;
+   uchar *r_1 = s_1 ;
+   while (beg < end) {
+      if (beg + bytesper >= end || compare(beg, beg+bytesper)) {
+         while (r_2 + bytesper < s_1 && compare(beg, r_2) > 0)
+            r_2 += bytesper ;
+         if (compare(beg, r_2)) {
+            while (r_1 + bytesper < s_0 && compare(beg, r_1) > 0)
+               r_1 += bytesper ;
+            if (compare(beg, r_1)) {
+               memcpy(w, beg, bytesper) ;
+               w += bytesper ;
+            }
+         }
+      }
+      beg += bytesper ;
+   }
+   cout << "to " << (w - s_0) / bytesper << " in " << duration() << endl << flush ;
+   return w ;
+}
+/*
+ *   God's algorithm as far as we can go, using fixed-length byte chunks
+ *   packed (but not densely) and sorting.
+ */
+void doarraygod(puzdef &pd) {
+   ull memneeded = maxmem ;
+   uchar *mem = (uchar *)malloc(memneeded) ;
+   if (mem == 0)
+      error("! not enough memory") ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   calcbytesper(pd) ;
+   cout << "Requiring " << bytesper << " bytes per entry." << endl ;
+   loosepack(pd, p1, mem) ;
+   vector<ull> cnts ;
+   cnts.push_back(1) ;
+   ull tot = 1 ;
+   uchar *lim = mem + memneeded / bytesper * bytesper ;
+   uchar *reader = mem ;
+   uchar *writer = mem + bytesper ;
+   uchar *s_1 = mem ;
+   uchar *s_2 = mem ;
+   for (int d = 0; ; d++) {
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+           << duration() << endl << flush ;
+      if (cnts[d] == 0 || tot == pd.llstates)
+         break ;
+      ull newseen = 0 ;
+      uchar *levend = writer ;
+      for (uchar *pr=reader; pr<levend; pr += bytesper) {
+         looseunpack(pd, p1, pr) ;
+         for (int i=0; i<pd.moves.size(); i++) {
+            pd.mul(p1, pd.moves[i].pos, p2) ;
+            loosepack(pd, p2, writer) ;
+            writer += bytesper ;
+            if (writer >= lim)
+               writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+         }
+      }
+      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      newseen = (writer - levend) / bytesper ;
+      cnts.push_back(newseen) ;
+      tot += newseen ;
+      s_2 = s_1 ;
+      s_1 = levend ;
+      reader = levend ;
+   }
+}
 int main(int argc, const char **argv) {
    duration() ;
    fact.push_back(0) ;
@@ -731,9 +921,9 @@ default:
    puzdef pd = readdef(stdin) ;
    addmovepowers(pd) ;
    calculatesizes(pd) ;
-   if (pd.logstates > 50)
-      error("! we don't support such big puzzles yet") ;
-   if ((pd.llstates >> 2) > maxmem)
-      error("! not enough memory") ;
-   dotwobitgod(pd) ;
+   if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
+      dotwobitgod(pd) ;
+   } else {
+      doarraygod(pd) ;
+   }
 }
