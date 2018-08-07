@@ -199,6 +199,12 @@ int oddperm(uchar *p, int n) {
       }
    return r & 1 ;
 }
+int ceillog2(int v) {
+   int r = 0 ;
+   while (v > (1 << r))
+      r++ ;
+   return r ;
+}
 setvals readposition(puzdef &pz, char typ, FILE *f) {
    setvals r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
@@ -245,7 +251,8 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
       if (p[0] == 0) {
          for (int j=0; j<n; j++)
             p[j] = j ; // identity perm
-         pz.setdefs[i].psum = n * (n - 1) / 2 ;
+         if (typ == 's')
+            pz.setdefs[i].psum = n * (n - 1) / 2 ;
       } else {
          vector<int> cnts ;
          int sum = 0 ;
@@ -256,7 +263,8 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
                cnts.resize(v+1) ;
             cnts[v]++ ;
          }
-         pz.setdefs[i].psum = sum ;
+         if (typ == 's')
+            pz.setdefs[i].psum = sum ;
          for (int j=0; j<cnts.size(); j++)
             if (cnts[j] == 0)
                error("! values are not contiguous") ;
@@ -266,6 +274,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
             else {
                pz.setdefs[i].uniq = 0 ;
                pz.setdefs[i].cnts = cnts ;
+               pz.setdefs[i].pbits = ceillog2(cnts.size()) ;
             }
          } else {
             if (oddperm(p, n))
@@ -289,12 +298,6 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
             p[j] = f[p[j-n]] ;
       }
    }
-   return r ;
-}
-int ceillog2(int v) {
-   int r = 0 ;
-   while (v > (1 << r))
-      r++ ;
    return r ;
 }
 puzdef readdef(FILE *f) {
