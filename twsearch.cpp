@@ -877,7 +877,7 @@ void doarraygod(puzdef &pd) {
    vector<ull> cnts ;
    cnts.push_back(1) ;
    ull tot = 1 ;
-   loosetype *lim = mem + memneeded / looseper * looseper ;
+   loosetype *lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
    loosetype *reader = mem ;
    loosetype *writer = mem + looseper ;
    loosetype *s_1 = mem ;
