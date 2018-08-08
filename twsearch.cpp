@@ -838,11 +838,11 @@ void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar, vector<u
    if (sdpair & 1) {
       ull sz = sd.llords ;
       for (ull val=0; val<sz; val++) {
+         if (sd.oparity)
+            indextoords2(wmem, val, sd.omod, sd.size) ;
+         else
+            indextoords(wmem, val, sd.omod, sd.size) ;
          for (int m=0; m<nmoves; m++) {
-            if (sd.oparity)
-               indextoords2(wmem, val, sd.omod, sd.size) ;
-            else
-               indextoords(wmem, val, sd.omod, sd.size) ;
             sd.mulo(wmem, pd.moves[movemap[m]].pos.dat+sd.off+sd.size, wmem2) ;
             if (sd.oparity)
                muld2[m] = ordstoindex(wmem2, sd.omod, sd.size-1) + sz * muld[m] ;
@@ -854,11 +854,11 @@ void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar, vector<u
    } else {
       ull sz = sd.llperms ;
       for (ull val=0; val<sz; val++) {
+         if (sd.pparity)
+            indextoperm2(wmem, val, sd.size) ;
+         else
+            indextoperm(wmem, val, sd.size) ;
          for (int m=0; m<nmoves; m++) {
-            if (sd.pparity)
-               indextoperm2(wmem, val, sd.size) ;
-            else
-               indextoperm(wmem, val, sd.size) ;
             sd.mulp(wmem, pd.moves[movemap[m]].pos.dat+sd.off, wmem2) ;
             if (sd.pparity)
                muld2[m] = permtoindex2(wmem2, sd.size) + sz * muld[m] ;
@@ -1224,7 +1224,13 @@ default:
          error("! did not argument ", argv[0]) ;
       }
    }
-   puzdef pd = readdef(stdin) ;
+   FILE *f = stdin ;
+   if (argc > 1) {
+      f = fopen(argv[1], "r") ;
+      if (f == 0)
+         error("! could not open file ", argv[1]) ;
+   }
+   puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
    calculatesizes(pd) ;
    if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
