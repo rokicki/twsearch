@@ -1197,6 +1197,10 @@ void doarraygod(puzdef &pd) {
 }
 int main(int argc, const char **argv) {
    duration() ;
+   cout << "-" ;
+   for (int i=0; i<argc; i++)
+      cout << " " << argv[i] ;
+   cout << endl << flush ;
    fact.push_back(0) ;
    for (int i=1; i<=20; i++)
       fact.push_back(fact[i-1]*i) ;
