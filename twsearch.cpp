@@ -28,6 +28,7 @@ double duration() {
    start = now ;
    return r ;
 }
+uchar *gmoda[256] ;
 struct setdef {
    int size, off ;
    const char *name ;
@@ -37,6 +38,21 @@ struct setdef {
    double logstates ;
    unsigned long long llperms, llords, llstates ;
    vector<int> cnts ; // only not empty when not unique.
+   void mulp(uchar *ap, uchar *bp, uchar *cp) {
+      for (int j=0; j<size; j++)
+         cp[j] = ap[bp[j]] ;
+   }
+   // the right side must be a move so we can access the permutation part
+   void mulo(uchar *ap, uchar *bp, uchar *cp) {
+      if (omod > 1) {
+         uchar *moda = gmoda[omod] ;
+         for (int j=0; j<size; j++)
+            cp[j] = moda[ap[bp[j-size]]+bp[j]] ;
+      } else {
+         for (int j=0; j<size; j++)
+            cp[j] = 0 ;
+      }
+   }
 } ;
 struct setval {
    setval(uchar *dat_) : dat(dat_) {}
@@ -44,7 +60,6 @@ struct setval {
 } ;
 typedef setval setvals ;
 typedef vector<setdef> setdefs_t ;
-uchar *gmoda[256] ;
 struct moove {
    moove() : name(0), pos(0), cost(1) {}
    const char *name ;
@@ -647,6 +662,7 @@ void denseunpack(const puzdef &pd, ull v, setvals pos) {
       p += n ;
    }
 }
+vector<ull> cnts ;
 /*
  *   God's algorithm using two bits per state.
  */
@@ -661,7 +677,7 @@ void dotwobitgod(puzdef &pd) {
    pd.assignpos(p1, pd.solved) ;
    ull off = densepack(pd, p1) ;
    mem[off >> 5] -= 3LL << (2 * (off & 31)) ;
-   vector<ull> cnts ;
+   cnts.clear() ;
    cnts.push_back(1) ;
    ull tot = 1 ;
    for (int d = 0; ; d++) {
@@ -722,6 +738,265 @@ void dotwobitgod(puzdef &pd) {
             }
          }
       }
+      cnts.push_back(newseen) ;
+      tot += newseen ;
+   }
+}
+/*
+ *   God's algorithm using two bits per state, but we also try to decompose
+ *   the state so we can use symcoords at the lowest level, for speed.
+ */
+ull symcoordgoal = 2000 ;
+int numsym = 0 ;
+ull symcoordsize = 0 ;
+vector<pair<ull, int> > parts ;
+int nmoves ;
+vector<int> movemap ;
+ull densepack_ordered(const puzdef &pd, setvals pos) {
+   ull r = 0 ;
+   for (int ii=0; ii<parts.size(); ii++) {
+      int sdpair = parts[ii].second ;
+      const setdef &sd = pd.setdefs[sdpair>>1] ;
+      int n = sd.size ;
+      if (sdpair & 1) {
+         uchar *p = pos.dat + sd.off + sd.size ;
+         if (sd.oparity)
+            r = ordstoindex(p, sd.omod, n-1) + sd.llords * r ;
+         else
+            r = ordstoindex(p, sd.omod, n) + sd.llords * r ;
+      } else {
+         uchar *p = pos.dat + sd.off ;
+         if (sd.pparity)
+            r = permtoindex2(p, n) + sd.llperms * r ;
+         else
+            r = permtoindex(p, n) + sd.llperms * r ;
+      }
+   }
+   return r ;
+}
+ull newseen ;
+uint *symc ;
+ull *mem ;
+void innerloop(int at, int back, int seek, int newv,
+               ull sofar, vector<ull> &muld) {
+   sofar *= symcoordsize ;
+   for (int i=0; i<nmoves; i++)
+      muld[i] *= symcoordsize ;
+   uint *symtab = symc ;
+   if (back) {
+      for (int smoff=0; smoff<symcoordsize; smoff++, symtab += nmoves) {
+         ull off = sofar + smoff ;
+         int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
+         if (v == 3) {
+            for (int m=0; m<nmoves; m++) {
+               ull off2 = muld[m] + symtab[m] ;
+               int v2 = 3 & (mem[off2 >> 5] >> (2 * (off2 & 31))) ;
+               if (v2 == seek) {
+                  mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
+                  newseen++ ;
+                  break ;
+               }
+            }
+         }
+      }
+   } else {
+      for (int smoff=0; smoff<symcoordsize; smoff++, symtab += nmoves) {
+         ull off = sofar + smoff ;
+         if (mem[off >> 5] == 0xffffffffffffffffLL) {
+            int acc = 31 - (off & 31) ;
+            smoff += acc ;
+            symtab += acc * nmoves ;
+            continue ;
+         }
+         int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
+         if (v == seek) {
+            for (int m=0; m<nmoves; m++) {
+               ull off2 = muld[m] + symtab[m] ;
+               int v2 = 3 & (mem[off2 >> 5] >> (2 * (off2 & 31))) ;
+               if (v2 == 3) {
+                  mem[off2 >> 5] -= (3LL - newv) << (2 * (off2 & 31)) ;
+// cout << "From " << off << " to " << off2 << endl ;
+                  newseen++ ;
+               }
+            }
+         }
+      }
+   }
+}
+void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar, vector<ull> &muld) {
+   if (at + numsym == parts.size()) {
+      innerloop(at, back, seek, newv, sofar, muld) ;
+      return ;
+   }
+   int sdpair = parts[at].second ;
+   setdef &sd = pd.setdefs[sdpair>>1] ;
+   vector<ull> muld2(nmoves) ;
+   stacksetval p1(pd) ;
+   stacksetval p2(pd) ;
+   uchar *wmem = p1.dat ;
+   uchar *wmem2 = p2.dat ;
+   if (sdpair & 1) {
+      ull sz = sd.llords ;
+      for (ull val=0; val<sz; val++) {
+         for (int m=0; m<nmoves; m++) {
+            if (sd.oparity)
+               indextoords2(wmem, val, sd.omod, sd.size) ;
+            else
+               indextoords(wmem, val, sd.omod, sd.size) ;
+            sd.mulo(wmem, pd.moves[movemap[m]].pos.dat+sd.off+sd.size, wmem2) ;
+            if (sd.oparity)
+               muld2[m] = ordstoindex(wmem2, sd.omod, sd.size-1) + sz * muld[m] ;
+            else
+               muld2[m] = ordstoindex(wmem2, sd.omod, sd.size) + sz * muld[m] ;
+         }
+         recur(pd, at+1, back, seek, newv, val + sofar * sz, muld2) ;
+      }
+   } else {
+      ull sz = sd.llperms ;
+      for (ull val=0; val<sz; val++) {
+         for (int m=0; m<nmoves; m++) {
+            if (sd.pparity)
+               indextoperm2(wmem, val, sd.size) ;
+            else
+               indextoperm(wmem, val, sd.size) ;
+            sd.mulp(wmem, pd.moves[movemap[m]].pos.dat+sd.off, wmem2) ;
+            if (sd.pparity)
+               muld2[m] = permtoindex2(wmem2, sd.size) + sz * muld[m] ;
+            else
+               muld2[m] = permtoindex(wmem2, sd.size) + sz * muld[m] ;
+         }
+         recur(pd, at+1, back, seek, newv, val + sofar * sz, muld2) ;
+      }
+   }
+}
+void dotwobitgod2(puzdef &pd) {
+   ull nlongs = (pd.llstates + 31) >> 5 ;
+   ull memneeded = nlongs * 8 ;
+   /*
+    *   First, try to develop a strategy.
+    */
+   parts.clear() ;
+   movemap.clear() ;
+   for (int i=0; i<pd.moves.size(); i++)
+      if (!quarter || pd.moves[i].cost == 1)
+         movemap.push_back(i) ;
+   nmoves = movemap.size() ;
+   for (int i=0; i<pd.setdefs.size(); i++) {
+      setdef &sd = pd.setdefs[i] ;
+      if (!sd.uniq)
+         error("! we don't support dense packing of non-unique yet") ;
+      if (sd.llperms > 1)
+         parts.push_back(make_pair(sd.llperms, i*2)) ;
+      if (sd.llords > 1)
+         parts.push_back(make_pair(sd.llords, i*2+1)) ;
+   }
+   sort(parts.begin(), parts.end()) ;
+   // how many parts should we use for the sym coord?
+   numsym = 0 ;
+   symcoordsize = 1 ;
+   ull hicount = (maxmem - memneeded) / (4 * nmoves) ;
+   while (numsym < parts.size()) {
+      ull tsymcoordsize = symcoordsize * parts[numsym].first ;
+      // never go past 32 bits, or past maxmem
+      if (tsymcoordsize > 0xffffffffLL || tsymcoordsize > hicount)
+         break ;
+      if (tsymcoordsize / symcoordgoal > symcoordgoal / symcoordsize)
+         break ;
+      numsym++ ;
+      symcoordsize = tsymcoordsize ;
+   }
+   // can't split, fall back to simpler way
+   if (numsym == 0) {
+      dotwobitgod(pd) ;
+      return ;
+   }
+   cout << "Sizes [" ;
+   for (int i=0; i<parts.size(); i++) {
+      if (i)
+         cout << " " ;
+      cout << parts[i].first ;
+      if (i + 1 == numsym)
+         cout << "]" ;
+   }
+   cout << endl << flush ;
+   reverse(parts.begin(), parts.end()) ;
+   // consider adding support for shorts here for cache friendliness.
+   symc = (uint *)calloc(symcoordsize * nmoves, sizeof(uint)) ;
+   if (symc == 0)
+      error("! not enough memory") ;
+   cout << "Making symcoord lookup table size " << symcoordsize <<
+           " x " << nmoves << flush ;
+   uint *ss = symc ;
+   for (ull i=0; i<symcoordsize; i++, ss += nmoves) {
+      stacksetval p1(pd) ;
+      stacksetval p2(pd) ;
+      uchar *wmem = p1.dat ;
+      uchar *wmem2 = p2.dat ;
+      ull u = i ;
+      ull mul = 1 ;
+      for (int j=parts.size()-1; j>=parts.size()-numsym; j--) {
+         int sdpair = parts[j].second ;
+         setdef &sd = pd.setdefs[sdpair>>1] ;
+         if (sdpair & 1) {
+            ull sz = sd.llords ;
+            ull val = u % sz ;
+            u /= sz ;
+            for (int m=0; m<nmoves; m++) {
+               if (sd.oparity)
+                  indextoords2(wmem, val, sd.omod, sd.size) ;
+               else
+                  indextoords(wmem, val, sd.omod, sd.size) ;
+               sd.mulo(wmem, pd.moves[movemap[m]].pos.dat+sd.off+sd.size, wmem2) ;
+               if (sd.oparity)
+                  ss[m] += mul * ordstoindex(wmem2, sd.omod, sd.size-1) ;
+               else
+                  ss[m] += mul * ordstoindex(wmem2, sd.omod, sd.size) ;
+            }
+            mul *= sz ;
+         } else {
+            ull sz = sd.llperms ;
+            ull val = u % sz ;
+            u /= sz ;
+            for (int m=0; m<nmoves; m++) {
+               if (sd.pparity)
+                  indextoperm2(wmem, val, sd.size) ;
+               else
+                  indextoperm(wmem, val, sd.size) ;
+               sd.mulp(wmem, pd.moves[movemap[m]].pos.dat+sd.off, wmem2) ;
+               if (sd.pparity)
+                  ss[m] += mul * permtoindex2(wmem2, sd.size) ;
+               else
+                  ss[m] += mul * permtoindex(wmem2, sd.size) ;
+            }
+            mul *= sz ;
+         }
+      }
+   }
+   cout << " in " << duration() << endl << flush ;
+   mem = (ull *)malloc(memneeded) ;
+   if (mem == 0)
+      error("! not enough memory") ;
+   memset(mem, -1, memneeded) ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   ull off = densepack_ordered(pd, p1) ;
+   mem[off >> 5] -= 3LL << (2 * (off & 31)) ;
+   cnts.clear() ;
+   cnts.push_back(1) ;
+   ull tot = 1 ;
+   for (int d = 0; ; d++) {
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+           << duration() << endl << flush ;
+      if (cnts[d] == 0 || tot == pd.llstates)
+         break ;
+      newseen = 0 ;
+// don't be too aggressive, because we might see parity and this might slow
+// things down dramatically; only go backwards after more than 50% full.
+      int back = (tot * 2 > pd.llstates) ;
+      int seek = d % 3 ;
+      int newv = (d + 1) % 3 ;
+      vector<ull> muld(nmoves) ;
+      recur(pd, 0, back, seek, newv, 0, muld) ;
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
@@ -842,9 +1117,11 @@ static inline int compare(const void *a_, const void *b_) {
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
                     loosetype *beg, loosetype *end, int temp) {
    size_t numel = (end-beg) / looseper ;
-   cout << "Created " << numel << " elements in " << duration() << endl << flush ;
+   if (verbose)
+      cout << "Created " << numel << " elements in " << duration() << endl << flush ;
    qsort(beg, numel, looseper*sizeof(loosetype), compare) ;
-   cout << "Sorted " << flush ;
+   if (verbose)
+      cout << "Sorted " << flush ;
    loosetype *s_0 = beg ;
    loosetype *w = beg ;
    loosetype *r_2 = s_2 ;
@@ -864,7 +1141,8 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
       }
       beg += looseper ;
    }
-   cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
+   if (verbose)
+      cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
    return w ;
 }
 /*
@@ -881,7 +1159,7 @@ void doarraygod(puzdef &pd) {
    calclooseper(pd) ;
    cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
    loosepack(pd, p1, mem) ;
-   vector<ull> cnts ;
+   cnts.clear() ;
    cnts.push_back(1) ;
    ull tot = 1 ;
    loosetype *lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
@@ -937,6 +1215,11 @@ case 'M':
          argc-- ;
          argv++ ;
          break ;
+case 'y':
+         symcoordgoal = atoll(argv[1]) ;
+         argc-- ;
+         argv++ ;
+         break ;
 default:
          error("! did not argument ", argv[0]) ;
       }
@@ -945,7 +1228,7 @@ default:
    addmovepowers(pd) ;
    calculatesizes(pd) ;
    if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
-      dotwobitgod(pd) ;
+      dotwobitgod2(pd) ;
    } else {
       doarraygod(pd) ;
    }
