@@ -388,7 +388,7 @@ void addmovepowers(puzdef &pd) {
    vector<string> newnames ;
    for (int i=0; i<pd.moves.size(); i++) {
       moove &m = pd.moves[i] ;
-      if (m.cost > 1)
+      if (quarter && m.cost > 1)
          continue ;
       vector<setvals> movepowers ;
       movepowers.push_back(m.pos) ;
@@ -684,7 +684,7 @@ void dotwobitgod(puzdef &pd) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<pd.moves.size(); i++) {
-                  if (pd.moves[i].cost > 1)
+                  if (quarter && pd.moves[i].cost > 1)
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
@@ -709,7 +709,7 @@ void dotwobitgod(puzdef &pd) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<pd.moves.size(); i++) {
-                  if (pd.moves[i].cost > 1)
+                  if (quarter && pd.moves[i].cost > 1)
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
@@ -899,7 +899,7 @@ void doarraygod(puzdef &pd) {
       for (loosetype *pr=reader; pr<levend; pr += looseper) {
          looseunpack(pd, p1, pr) ;
          for (int i=0; i<pd.moves.size(); i++) {
-            if (pd.moves[i].cost > 1)
+            if (quarter && pd.moves[i].cost > 1)
                continue ;
             pd.mul(p1, pd.moves[i].pos, p2) ;
             loosepack(pd, p2, writer) ;
