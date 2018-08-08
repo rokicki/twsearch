@@ -1117,7 +1117,7 @@ static inline int compare(const void *a_, const void *b_) {
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
                     loosetype *beg, loosetype *end, int temp) {
    size_t numel = (end-beg) / looseper ;
-   if (verbose)
+   if (verbose || temp)
       cout << "Created " << numel << " elements in " << duration() << endl << flush ;
    qsort(beg, numel, looseper*sizeof(loosetype), compare) ;
    if (verbose)
@@ -1141,7 +1141,7 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
       }
       beg += looseper ;
    }
-   if (verbose)
+   if (verbose || temp)
       cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
    return w ;
 }
