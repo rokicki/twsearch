@@ -1197,6 +1197,7 @@ void doarraygod(puzdef &pd) {
 }
 int main(int argc, const char **argv) {
    duration() ;
+   cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
    cout << "-" ;
    for (int i=0; i<argc; i++)
       cout << " " << argv[i] ;
