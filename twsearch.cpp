@@ -38,12 +38,12 @@ struct setdef {
    double logstates ;
    unsigned long long llperms, llords, llstates ;
    vector<int> cnts ; // only not empty when not unique.
-   void mulp(uchar *ap, uchar *bp, uchar *cp) {
+   void mulp(const uchar *ap, const uchar *bp, uchar *cp) const {
       for (int j=0; j<size; j++)
          cp[j] = ap[bp[j]] ;
    }
    // the right side must be a move so we can access the permutation part
-   void mulo(uchar *ap, uchar *bp, uchar *cp) {
+   void mulo(const uchar *ap, const uchar *bp, uchar *cp) const {
       if (omod > 1) {
          uchar *moda = gmoda[omod] ;
          for (int j=0; j<size; j++)
@@ -64,7 +64,7 @@ struct moove {
    moove() : name(0), pos(0), cost(1) {}
    const char *name ;
    setvals pos ;
-   int cost ;
+   int cost, base ;
 } ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
@@ -78,19 +78,19 @@ struct puzdef {
    setval id ;
    double logstates ;
    unsigned long long llstates ;
-   int comparepos(setvals &a, setvals &b) {
+   int comparepos(const setvals &a, const setvals &b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
-   void assignpos(setvals &a, setvals &b) {
+   void assignpos(setvals &a, const setvals &b) const {
       memcpy(a.dat, b.dat, totsize) ;
    }
-   void mul(setvals &a, setvals &b, setvals &c) {
+   void mul(const setvals &a, const setvals &b, setvals &c) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       uchar *cp = c.dat ;
       memset(cp, 0, totsize) ;
       for (int i=0; i<setdefs.size(); i++) {
-         setdef &sd = setdefs[i] ;
+         const setdef &sd = setdefs[i] ;
          int n = sd.size ;
          for (int j=0; j<n; j++)
             cp[j] = ap[bp[j]] ;
@@ -370,6 +370,7 @@ puzdef readdef(FILE *f) {
          m.name = strdup(toks[1].c_str()) ;
          m.pos = readposition(pz, 'm', f) ;
          m.cost = 1 ;
+         m.base = pz.moves.size() ;
          pz.moves.push_back(m) ;
       } else {
          error("! unexpected first token on line ", toks[0]) ;
@@ -447,9 +448,11 @@ void addmovepowers(puzdef &pd) {
       pd.moves = pd.basemoves ;
    }
 }
+double dllstates ;
 void calculatesizes(puzdef &pd) {
    ull gllstates = 1 ;
    double glogstates = 0 ;
+   dllstates = 1 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
       ull llperms = 1 ;
       ull llords = 1 ;
@@ -463,6 +466,7 @@ void calculatesizes(puzdef &pd) {
          for (int i=st; i<=n; i++) {
             llperms *= i ;
             logstates += log2(i) ;
+            dllstates *= i ;
          }
       } else {
          int left = n ;
@@ -470,9 +474,11 @@ void calculatesizes(puzdef &pd) {
             for (int k=0; k<sd.cnts[j]; k++) {
                llperms *= left ;
                logstates += log2(left) ;
+               dllstates *= left ;
                left-- ;
                llperms /= (k+1) ;
                logstates -= log2(k+1) ;
+               dllstates /= k+1 ;
             }
          }
          if (left != 0)
@@ -485,6 +491,7 @@ void calculatesizes(puzdef &pd) {
          for (int j=st; j<n; j++) {
             llords *= sd.omod ;
             logstates += log2(sd.omod) ;
+            dllstates *= sd.omod ;
          }
       }
       sd.llperms = llperms ;
@@ -1195,7 +1202,85 @@ void doarraygod(puzdef &pd) {
       reader = levend ;
    }
 }
-int dogod ;
+/*
+ *   Do canonicalization calculations by finding commutating moves.
+ */
+vector<ull> canonmask ;
+vector<vector<int> > canonnext ;
+void makecanonstates(const puzdef &pd) {
+   int nbase = pd.basemoves.size() ;
+   if (nbase > 63)
+      error("! too many base moves for canonicalization calculation") ;
+   vector<ull> commutes(nbase) ;
+   stacksetval p1(pd), p2(pd) ;
+   for (int i=0; i<nbase; i++)
+      for (int j=0; j<i; j++) {
+         pd.mul(pd.basemoves[i].pos, pd.basemoves[j].pos, p1) ;
+         pd.mul(pd.basemoves[j].pos, pd.basemoves[i].pos, p2) ;
+         if (pd.comparepos(p1, p2) == 0) {
+            commutes[i] |= 1LL << j ;
+            commutes[j] |= 1LL << i ;
+         }
+      }
+   map<ull, int> statemap ;
+   vector<ull> statebits ;
+   statemap[0] = 0 ;
+   statebits.push_back(0) ;
+   int qg = 0 ;
+   int statecount = 1 ;
+   while (qg < statebits.size()) {
+      vector<int> nextstate(nbase) ;
+      for (int i=0; i<nbase; i++)
+         nextstate[i] = -1 ;
+      ull stateb = statebits[qg] ;
+      canonmask.push_back(0) ;
+      int fromst = qg++ ;
+      for (int m=0; m<nbase; m++) {
+         if (((stateb >> m) & 1) == 0 &&
+             (stateb & commutes[m] & ((1 << m) - 1)) == 0) {
+            ull nstb = (stateb & commutes[m]) | (1LL << m) ;
+            if (statemap.find(nstb) == statemap.end()) {
+               statemap[nstb] = statecount++ ;
+               statebits.push_back(nstb) ;
+            }
+            int nextst = statemap[nstb] ;
+            nextstate[m] = nextst ;
+         } else {
+            canonmask[fromst] |= 1LL << m ;
+         }
+      }
+      canonnext.push_back(nextstate) ;
+   }
+   cout << "Found " << statecount << " canonical move states." << endl ;
+}
+void showcanon(const puzdef &pd) {
+   cout.precision(16) ;
+   int nstates = canonmask.size() ;
+   vector<double> counts(nstates) ;
+   counts[0] = 1 ;
+   double gsum = 0 ;
+   for (int d=0; d<=100; d++) {
+      double sum = 0 ;
+      for (int i=0; i<nstates; i++)
+         sum += counts[i] ;
+      gsum += sum ;
+      cout << "D " << d << " this " << sum << " total " << gsum << endl << flush ;
+      if (gsum > dllstates)
+         break ;
+      vector<double> ncounts(nstates) ;
+      for (int st=0; st<nstates; st++) {
+         ull mask = canonmask[st] ;
+         for (int m=0; m<pd.basemoves.size(); m++) {
+            if ((mask >> m) & 1)
+               continue ;
+// cout << "From state " << st << " on move " << m << " next " << canonnext[st][m] << " adding " << pd.basemoveorders[m] << " times " << counts[st] << endl ;
+            ncounts[canonnext[st][m]] += (pd.basemoveorders[m]-1) * counts[st] ;
+         }
+      }
+      swap(counts, ncounts) ;
+   }
+}
+int dogod, docanon ;
 int main(int argc, const char **argv) {
    duration() ;
    cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
@@ -1231,6 +1316,9 @@ case 'y':
 case 'g':
          dogod++ ;
          break ;
+case 'C':
+         docanon++ ;
+         break ;
 default:
          error("! did not argument ", argv[0]) ;
       }
@@ -1244,11 +1332,15 @@ default:
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
    calculatesizes(pd) ;
+   makecanonstates(pd) ;
    if (dogod) {
       if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
          dotwobitgod2(pd) ;
       } else {
          doarraygod(pd) ;
       }
+   }
+   if (docanon) {
+      showcanon(pd) ;
    }
 }
