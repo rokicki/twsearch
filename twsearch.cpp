@@ -1256,28 +1256,42 @@ void makecanonstates(const puzdef &pd) {
 void showcanon(const puzdef &pd) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
-   vector<double> counts(nstates) ;
-   counts[0] = 1 ;
+   vector<vector<double> > counts ;
+   vector<double> zeros(nstates) ;
+   counts.push_back(zeros) ;
+   int lookahead = 1 ;
+   int nbase = pd.basemoves.size() ;
+   if (quarter)
+      for (int i=0; i<nbase; i++)
+         lookahead = max(lookahead, pd.basemoveorders[i] >> 1) ;
+   counts[0][0] = 1 ;
    double gsum = 0 ;
    for (int d=0; d<=100; d++) {
+      while (counts.size() <= d+lookahead)
+         counts.push_back(zeros) ;
       double sum = 0 ;
       for (int i=0; i<nstates; i++)
-         sum += counts[i] ;
+         sum += counts[d][i] ;
       gsum += sum ;
       cout << "D " << d << " this " << sum << " total " << gsum << endl << flush ;
       if (gsum > dllstates)
          break ;
-      vector<double> ncounts(nstates) ;
       for (int st=0; st<nstates; st++) {
          ull mask = canonmask[st] ;
-         for (int m=0; m<pd.basemoves.size(); m++) {
+         for (int m=0; m<nbase; m++) {
             if ((mask >> m) & 1)
                continue ;
-// cout << "From state " << st << " on move " << m << " next " << canonnext[st][m] << " adding " << pd.basemoveorders[m] << " times " << counts[st] << endl ;
-            ncounts[canonnext[st][m]] += (pd.basemoveorders[m]-1) * counts[st] ;
+            if (quarter) {
+               for (int j=1; j+j<=pd.basemoveorders[m]; j++)
+                  if (j+j==pd.basemoveorders[m])
+                     counts[d+j][canonnext[st][m]] += 1 * counts[d][st] ;
+                  else
+                     counts[d+j][canonnext[st][m]] += 2 * counts[d][st] ;
+            } else
+               counts[d+1][canonnext[st][m]] +=
+                                  (pd.basemoveorders[m]-1) * counts[d][st] ;
          }
       }
-      swap(counts, ncounts) ;
    }
 }
 int dogod, docanon ;
