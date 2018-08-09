@@ -746,7 +746,7 @@ void dotwobitgod(puzdef &pd) {
  *   God's algorithm using two bits per state, but we also try to decompose
  *   the state so we can use symcoords at the lowest level, for speed.
  */
-ull symcoordgoal = 2000 ;
+ull symcoordgoal = 20000 ;
 int numsym = 0 ;
 ull symcoordsize = 0 ;
 vector<pair<ull, int> > parts ;
@@ -1195,6 +1195,7 @@ void doarraygod(puzdef &pd) {
       reader = levend ;
    }
 }
+int dogod ;
 int main(int argc, const char **argv) {
    duration() ;
    cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
@@ -1222,8 +1223,13 @@ case 'M':
          break ;
 case 'y':
          symcoordgoal = atoll(argv[1]) ;
+         if (symcoordgoal <= 0)
+            symcoordgoal = 1 ;
          argc-- ;
          argv++ ;
+         break ;
+case 'g':
+         dogod++ ;
          break ;
 default:
          error("! did not argument ", argv[0]) ;
@@ -1238,9 +1244,11 @@ default:
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
    calculatesizes(pd) ;
-   if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
-      dotwobitgod2(pd) ;
-   } else {
-      doarraygod(pd) ;
+   if (dogod) {
+      if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
+         dotwobitgod2(pd) ;
+      } else {
+         doarraygod(pd) ;
+      }
    }
 }
