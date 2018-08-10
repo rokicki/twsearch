@@ -1210,6 +1210,7 @@ void doarraygod(puzdef &pd) {
  */
 vector<ull> canonmask ;
 vector<vector<int> > canonnext ;
+vector<ull> canonseqcnt ;
 void makecanonstates(const puzdef &pd) {
    int nbase = pd.basemoves.size() ;
    if (nbase > 63)
@@ -1256,7 +1257,7 @@ void makecanonstates(const puzdef &pd) {
    }
    cout << "Found " << statecount << " canonical move states." << endl ;
 }
-void showcanon(const puzdef &pd) {
+void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
    vector<vector<double> > counts ;
@@ -1269,14 +1270,24 @@ void showcanon(const puzdef &pd) {
          lookahead = max(lookahead, pd.basemoveorders[i] >> 1) ;
    counts[0][0] = 1 ;
    double gsum = 0 ;
+   double osum = 1 ;
    for (int d=0; d<=100; d++) {
       while (counts.size() <= d+lookahead)
          counts.push_back(zeros) ;
       double sum = 0 ;
       for (int i=0; i<nstates; i++)
          sum += counts[d][i] ;
+      canonseqcnt.push_back((ull)sum) ;
       gsum += sum ;
-      cout << "D " << d << " this " << sum << " total " << gsum << endl << flush ;
+      if (show) {
+         if (d == 0)
+            cout << "D " << d << " this " << sum << " total " << gsum
+                 << endl << flush ;
+         else
+            cout << "D " << d << " this " << sum << " total " << gsum
+                 << " br " << (sum / osum) << endl << flush ;
+      }
+      osum = sum ;
       if (gsum > dllstates)
          break ;
       for (int st=0; st<nstates; st++) {
@@ -1404,6 +1415,7 @@ default:
    addmovepowers(pd) ;
    calculatesizes(pd) ;
    makecanonstates(pd) ;
+   showcanon(pd, docanon) ;
    if (dogod) {
       if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
          dotwobitgod2(pd) ;
@@ -1411,8 +1423,6 @@ default:
          doarraygod(pd) ;
       }
    }
-   if (docanon)
-      showcanon(pd) ;
    if (doalgo)
       findalgos(pd) ;
 }
