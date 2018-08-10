@@ -124,6 +124,9 @@ struct allocsetval : setval {
    allocsetval(const puzdef &pd, const setvals &iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
+   ~allocsetval() {
+      // we drop memory here; need fix
+   }
 } ;
 vector<ll> fact ;
 ll maxmem = 7LL * 1024LL * 1024LL * 1024LL ;
@@ -1294,7 +1297,58 @@ void showcanon(const puzdef &pd) {
       }
    }
 }
-int dogod, docanon ;
+//   Do a recursive search to find good algorithms that only affect three
+//   or fewer cubicles.
+vector<allocsetval> posns ;
+vector<int> movehist ;
+ll bigcnt = 0 ;
+void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
+   if (togo == 0) {
+      bigcnt++ ;
+      int wr = 0 ;
+      const uchar *p1 = posns[sp].dat ;
+      const uchar *so = pd.solved.dat ;
+      for (int i=0; i<pd.setdefs.size(); i++) {
+         int n = pd.setdefs[i].size ;
+         for (int j=0; j<n; j++) {
+            if (p1[j] != so[j] || p1[j+n] != so[j+n]) {
+               wr++ ;
+               if (wr > 3)
+                  return ;
+            }
+         }
+         p1 += 2 * n ;
+         so += 2 * n ;
+      }
+      cout << wr ;
+      for (int i=0; i<sp; i++)
+         cout << " " << pd.moves[movehist[i]].name ;
+      cout << endl << flush ;
+      return ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int m=0; m<pd.moves.size(); m++) {
+      const moove &mv = pd.moves[m] ;
+      if ((mask >> mv.base) & 1)
+         continue ;
+      movehist[sp] = m ;
+      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      recurfindalgo(pd, togo-1, sp+1, ns[mv.base]) ;
+   }
+}
+void findalgos(const puzdef &pd) {
+   for (int d=1; ; d++) {
+      while (posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.solved)) ;
+         movehist.push_back(-1) ;
+      }
+      bigcnt = 0 ;
+      recurfindalgo(pd, d, 0, 0) ;
+      cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
+   }
+}
+int dogod, docanon, doalgo ;
 int main(int argc, const char **argv) {
    duration() ;
    cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
@@ -1333,6 +1387,9 @@ case 'g':
 case 'C':
          docanon++ ;
          break ;
+case 'A':
+         doalgo++ ;
+         break ;
 default:
          error("! did not argument ", argv[0]) ;
       }
@@ -1354,7 +1411,8 @@ default:
          doarraygod(pd) ;
       }
    }
-   if (docanon) {
+   if (docanon)
       showcanon(pd) ;
-   }
+   if (doalgo)
+      findalgos(pd) ;
 }
