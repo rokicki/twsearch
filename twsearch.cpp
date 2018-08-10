@@ -1012,7 +1012,7 @@ void dotwobitgod2(puzdef &pd) {
    }
 }
 int looseper ;
-void calclooseper(puzdef &pd) {
+void calclooseper(const puzdef &pd) {
    int bits = 0 ;
    for (int i=0; i<pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
@@ -1138,12 +1138,12 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
    loosetype *r_1 = s_1 ;
    while (beg < end) {
       if (beg + looseper >= end || compare(beg, beg+looseper)) {
-         while (r_2 + looseper < s_1 && compare(beg, r_2) > 0)
+         while (r_2 < s_1 && compare(beg, r_2) > 0)
             r_2 += looseper ;
-         if (compare(beg, r_2)) {
-            while (r_1 + looseper < s_0 && compare(beg, r_1) > 0)
+         if (r_2 >= s_1 || compare(beg, r_2)) {
+            while (r_1 < s_0 && compare(beg, r_1) > 0)
                r_1 += looseper ;
-            if (compare(beg, r_1)) {
+            if (r_1 >= s_0 || compare(beg, r_1)) {
                memcpy(w, beg, looseper*sizeof(loosetype)) ;
                w += looseper ;
             }
@@ -1159,7 +1159,7 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
  *   God's algorithm as far as we can go, using fixed-length byte chunks
  *   packed (but not densely) and sorting.
  */
-void doarraygod(puzdef &pd) {
+void doarraygod(const puzdef &pd) {
    ull memneeded = maxmem ;
    loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
@@ -1288,7 +1288,7 @@ void showcanon(const puzdef &pd, int show) {
                  << " br " << (sum / osum) << endl << flush ;
       }
       osum = sum ;
-      if (gsum > dllstates)
+      if (sum == 0 || gsum > dllstates)
          break ;
       for (int st=0; st<nstates; st++) {
          ull mask = canonmask[st] ;
@@ -1308,11 +1308,69 @@ void showcanon(const puzdef &pd, int show) {
       }
    }
 }
-//   Do a recursive search to find good algorithms that only affect three
-//   or fewer cubicles.
+/*
+ *   God's algorithm as far as we can go, using fixed-length byte chunks
+ *   packed (but not densely) and sorting, but this time using a recursive
+ *   enumeration process rather than using a frontier.
+ */
 vector<allocsetval> posns ;
 vector<int> movehist ;
 ll bigcnt = 0 ;
+loosetype *s_1, *s_2, *reader, *levend, *writer, *lim ;
+void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
+   if (togo == 0) {
+      loosepack(pd, posns[sp], writer) ;
+      writer += looseper ;
+      if (writer >= lim)
+         writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+      return ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int m=0; m<pd.moves.size(); m++) {
+      const moove &mv = pd.moves[m] ;
+      if ((mask >> mv.base) & 1)
+         continue ;
+      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      dorecurgod(pd, togo-1, sp+1, ns[mv.base]) ;
+   }
+}
+void doarraygod2(const puzdef &pd) {
+   ull memneeded = maxmem ;
+   loosetype *mem = (loosetype *)malloc(memneeded) ;
+   if (mem == 0)
+      error("! not enough memory") ;
+   calclooseper(pd) ;
+   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
+   cnts.clear() ;
+   ull tot = 0 ;
+   lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
+   reader = mem ;
+   writer = mem ;
+   s_1 = mem ;
+   s_2 = mem ;
+   for (int d=0; ; d++) {
+      while (posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.solved)) ;
+         movehist.push_back(-1) ;
+      }
+      ull newseen = 0 ;
+      levend = writer ;
+      dorecurgod(pd, d, 0, 0) ;
+      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      newseen = (writer - levend) / looseper ;
+      cnts.push_back(newseen) ;
+      tot += newseen ;
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+           << duration() << endl << flush ;
+      if (cnts[d] == 0 || tot == pd.llstates)
+         break ;
+      if (levend != s_2)
+         qsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype), compare) ;
+      s_1 = levend ;
+      reader = levend ;
+   }
+}
 void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       bigcnt++ ;
@@ -1420,7 +1478,7 @@ default:
       if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
          dotwobitgod2(pd) ;
       } else {
-         doarraygod(pd) ;
+         doarraygod2(pd) ;
       }
    }
    if (doalgo)
