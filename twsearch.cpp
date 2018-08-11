@@ -16,7 +16,7 @@ typedef long long ll ;
 typedef unsigned long long ull ;
 typedef unsigned char uchar ;
 typedef unsigned int loosetype ;
-string basename ;
+string inputbasename ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 20 ; // start and end of data files
 static double start ;
@@ -1617,7 +1617,7 @@ struct prunetable {
             codevals[i] = widthbases[codewidths[i]] ;
             widthbases[codewidths[i]]++ ;
          }
-      string filename = "tws-" + basename + ".dat" ;
+      string filename = "tws-" + inputbasename + ".dat" ;
       cout << "Writing " << filename << " " << flush ;
       FILE *w = fopen(filename.c_str(), "wb") ;
       if (w == 0)
@@ -1777,7 +1777,7 @@ default:
    for (int i=0; argv[1][i]; i++) {
       if (argv[1][i] == '.')
          break ;
-      basename.push_back(argv[1][i]) ;
+      inputbasename.push_back(argv[1][i]) ;
    }
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
