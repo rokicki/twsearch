@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <set>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -15,7 +16,9 @@ typedef long long ll ;
 typedef unsigned long long ull ;
 typedef unsigned char uchar ;
 typedef unsigned int loosetype ;
+string basename ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
+const int SIGNATURE = 20 ; // start and end of data files
 static double start ;
 double walltime() {
    struct timeval tv ;
@@ -1464,6 +1467,7 @@ struct prunetable {
             val = d - baseval + 1 ;
          filltable(pd, d, val) ;
       }
+      writept() ;
    }
    void filltable(const puzdef &pd, int d, int val) {
       popped = 0 ;
@@ -1501,6 +1505,7 @@ struct prunetable {
    void checkextend(const puzdef &pd) {
       if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size)
          return ;
+      cout << endl ;
       ull longcnt = (size + 31) >> 5 ;
       for (ull i=0; i<longcnt; i++) {
          ull v = mem[i] ;
@@ -1509,6 +1514,7 @@ struct prunetable {
       }
       baseval++ ;
       filltable(pd, baseval+1, 2) ;
+      writept() ;
    }
    int lookup(const setval sv) {
       lookupcnt++ ;
@@ -1518,6 +1524,140 @@ struct prunetable {
          return 0 ;
       else
          return v + baseval - 1 ;
+   }
+   void writept() {
+      // only write the table if at least 1 in 10 elements has a value
+      if (totpop * 10 < size)
+         return ;
+      // this *could* be calculated more efficiently, but the runtime is
+      // dominated by scanning the array so we use simple code.
+      // We use optimal huffman coding; for tables that fit on real
+      // machines, this should probably never exceed a code length of
+      // 56-bits, so we don't use the more complicated length-limited
+      // coding.  We use 56-bits so we can use a 64-bit accumulator and
+      // still shift things out in byte-sized chunks.
+      ll bytecnts[256] ;
+      for (int i=0; i<256; i++)
+         bytecnts[i] = 0 ;
+      ll longcnt = (size + 31) >> 5 ;
+      for (ll i=0; i<longcnt; i++) {
+         ll v = mem[i] ;
+         for (int j=0; j<8; j++) {
+            bytecnts[v & 255]++ ;
+            v >>= 8 ;
+         }
+      }
+      set<pair<ll, int> > codes ;
+      vector<pair<int, int> > tree ; // binary tree
+      vector<int> depths ; // max depths
+      for (int i=0; i<256; i++)
+         if (bytecnts[i])
+            codes.insert(make_pair(bytecnts[i], i)) ;
+      int nextcode = 256 ;
+      int maxwidth = 0 ;
+      ull bitcost = 0 ;
+      while (codes.size() > 1) { // take out least two and insert sum
+         auto a = *(codes.begin()) ;
+         codes.erase(a) ;
+         auto b = *(codes.begin()) ;
+         codes.erase(b) ;
+         tree.push_back(make_pair(a.second, b.second)) ;
+         int dep = 1 ;
+         if (a.second >= 256)
+            dep = 1 + depths[a.second-256] ;
+         if (b.second >= 256)
+            dep = max(dep, 1 + depths[b.second-256]) ;
+         maxwidth = max(maxwidth, dep) ;
+         if (maxwidth > 56)
+            error("! exceeded maxwidth in Huffman encoding; fix the code") ;
+         depths.push_back(dep) ;
+         codes.insert(make_pair(a.first+b.first, nextcode)) ;
+         bitcost += a.first + b.first ;
+         nextcode++ ;
+      }
+      cout << "Encoding; max width is " << maxwidth << " bitcost "
+         << bitcost << " compression " << (bitcost / (64.0 * longcnt)) << endl ;
+      uchar codewidths[512] ;
+      ull codevals[512] ;
+      codewidths[nextcode-1] = 0 ;
+      codevals[nextcode-1] = 0 ;
+      for (int i=0; i<256; i++) {
+         codewidths[i] = 0 ;
+         codevals[i] = 0 ;
+      }
+      int widthcounts[64] ;
+      for (int i=0; i<64; i++)
+         widthcounts[i] = 0 ;
+      codewidths[nextcode-1] = 0 ;
+      for (int i=nextcode-1; i>=256; i--) {
+         int a = tree[i-256].first ;
+         int b = tree[i-256].second ;
+         codewidths[a] = codewidths[i] + 1 ;
+         codewidths[b] = codewidths[i] + 1 ;
+      }
+      for (int i=0; i<256; i++)
+         widthcounts[codewidths[i]]++ ;
+      ull widthbases[64] ;
+      ull at = 0 ;
+      for (int i=63; i>0; i--) {
+         if (widthcounts[i]) {
+            widthbases[i] = at >> (maxwidth - i) ;
+            at += ((ull)widthcounts[i]) << (maxwidth - i) ;
+         }
+      }
+      if (at != (1LL << maxwidth))
+         error("! Bad calculation in codes") ;
+      for (int i=0; i<256; i++)
+         if (codewidths[i]) {
+            codevals[i] = widthbases[codewidths[i]] ;
+            widthbases[codewidths[i]]++ ;
+         }
+      string filename = "tws-" + basename + ".dat" ;
+      cout << "Writing " << filename << " " << flush ;
+      FILE *w = fopen(filename.c_str(), "wb") ;
+      if (w == 0)
+         error("! can't open filename") ;
+      if (putc(SIGNATURE, w) < 0)
+         error("! I/O error") ;
+      fwrite(&size, sizeof(size), 1, w) ;
+      fwrite(&hmask, sizeof(hmask), 1, w) ;
+      fwrite(&popped, sizeof(popped), 1, w) ;
+      fwrite(&totpop, sizeof(totpop), 1, w) ;
+      fwrite(&fillcnt, sizeof(fillcnt), 1, w) ;
+      fwrite(&totsize, sizeof(totsize), 1, w) ;
+      fwrite(&baseval, sizeof(baseval), 1, w) ;
+      fwrite(&hibase, sizeof(hibase), 1, w) ;
+      fwrite(codewidths, sizeof(codewidths[0]), 256, w) ;
+      ull accum = 0 ;
+      int havebits = 0 ;
+      for (ll i=0; i<longcnt; i++) {
+         ll v = mem[i] ;
+         for (int j=0; j<8; j++) {
+            int cp = v & 255 ;
+            int cpw = codewidths[cp] ;
+            if (cpw == 0)
+               error("! internal error in Huffman encoding") ;
+            while (havebits + cpw > 64) {
+               if (putc((accum & 255), w) < 0)
+                  error("! I/O error") ;
+               accum >>= 8 ;
+               havebits -= 8 ;
+            }
+            accum += codevals[cp] << havebits ;
+            havebits += cpw ;
+            v >>= 8 ;
+         }
+      }
+      while (havebits > 0) {
+         if (putc((accum & 255), w) < 0)
+            error("! I/O error") ;
+         accum >>= 8 ;
+         havebits -= 8 ;
+      }
+      if (putc(SIGNATURE, w) < 0)
+         error("! I/O error") ;
+      fclose(w) ;
+      cout << "written in " << duration() << endl << flush ;
    }
    ull size, hmask, popped, totpop ;
    ull lookupcnt ;
@@ -1560,12 +1700,14 @@ int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
 void solve(const puzdef &pd, prunetable &pt, const setval p) {
    long long oldlookups = pt.lookupcnt ;
    for (int d=pt.lookup(p); ; d++) {
+      cout << " " << d << flush ;
       while (posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
       pd.assignpos(posns[0], p) ;
       if (solverecur(pd, pt, d, 0, 0) == 1) {
+         cout << endl ;
          cout << "Solved at " << d << " lookups " << pt.lookupcnt-oldlookups << " in " << duration() << endl << flush ;
          for (int i=0; i<d; i++)
             cout << " " << pd.moves[movehist[i]].name ;
@@ -1621,11 +1763,15 @@ default:
          error("! did not argument ", argv[0]) ;
       }
    }
-   FILE *f = stdin ;
-   if (argc > 1) {
-      f = fopen(argv[1], "r") ;
-      if (f == 0)
-         error("! could not open file ", argv[1]) ;
+   if (argc <= 1)
+      error("! please provide a twsearch file name on the command line") ;
+   FILE *f = fopen(argv[1], "r") ;
+   if (f == 0)
+      error("! could not open file ", argv[1]) ;
+   for (int i=0; argv[1][i]; i++) {
+      if (argv[1][i] == '.')
+         break ;
+      basename.push_back(argv[1][i]) ;
    }
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
