@@ -78,13 +78,13 @@ struct puzdef {
    setval id ;
    double logstates ;
    unsigned long long llstates ;
-   int comparepos(const setvals &a, const setvals &b) const {
+   int comparepos(const setvals a, const setvals b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
-   void assignpos(setvals &a, const setvals &b) const {
+   void assignpos(setvals a, const setvals b) const {
       memcpy(a.dat, b.dat, totsize) ;
    }
-   void mul(const setvals &a, const setvals &b, setvals &c) const {
+   void mul(const setvals a, const setvals b, setvals c) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       uchar *cp = c.dat ;
@@ -115,13 +115,13 @@ struct stacksetval : setval {
    stacksetval(const puzdef &pd) : setval(new uchar[pd.totsize]) {
       memcpy(dat, pd.id.dat, pd.totsize) ;
    }
-   stacksetval(const puzdef &pd, const setvals &iv) : setval(new uchar[pd.totsize]) {
+   stacksetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
    ~stacksetval() { delete dat ; }
 } ;
 struct allocsetval : setval {
-   allocsetval(const puzdef &pd, const setvals &iv) : setval(new uchar[pd.totsize]) {
+   allocsetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
    ~allocsetval() {
@@ -1211,6 +1211,7 @@ void doarraygod(const puzdef &pd) {
 vector<ull> canonmask ;
 vector<vector<int> > canonnext ;
 vector<ull> canonseqcnt ;
+vector<ull> canontotcnt ;
 void makecanonstates(const puzdef &pd) {
    int nbase = pd.basemoves.size() ;
    if (nbase > 63)
@@ -1279,6 +1280,7 @@ void showcanon(const puzdef &pd, int show) {
          sum += counts[d][i] ;
       canonseqcnt.push_back((ull)sum) ;
       gsum += sum ;
+      canontotcnt.push_back((ull)gsum) ;
       if (show) {
          if (d == 0)
             cout << "D " << d << " this " << sum << " total " << gsum
@@ -1288,7 +1290,7 @@ void showcanon(const puzdef &pd, int show) {
                  << " br " << (sum / osum) << endl << flush ;
       }
       osum = sum ;
-      if (sum == 0 || gsum > dllstates)
+      if (sum == 0 || gsum > 1e18)
          break ;
       for (int st=0; st<nstates; st++) {
          ull mask = canonmask[st] ;
@@ -1417,6 +1419,148 @@ void findalgos(const puzdef &pd) {
       cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
    }
 }
+// we take advantage of the fact that the totsize is always divisible by 4.
+ull fasthash(int n, const setvals sv) {
+   ull r = 0 ;
+   const uchar *p = sv.dat ;
+   while (n > 4) {
+      r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 + p[2] * 127
+          + p[3] * 8191 ;
+      n -= 4 ;
+      p += 4 ;
+   }
+   if (n)
+      r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 ;
+   return r ;
+}
+struct prunetable {
+   prunetable(const puzdef &pd, ull maxmem) {
+      totsize = pd.totsize ;
+      ull bytesize = 16 ;
+      while (2 * bytesize <= maxmem &&
+             (pd.logstates > 55 || 8 * bytesize < pd.llstates))
+         bytesize *= 2 ;
+      size = bytesize * 4 ;
+      hmask = size - 1 ;
+      totpop = 0 ;
+      int base = 1 ;
+      while (base + 2 < canontotcnt.size() && canontotcnt[base+2] < size)
+         base++ ;
+      cout << "Size is " << size << " base " << base
+           << " expect distribution of " <<
+           canontotcnt[base-1]/(double)size << " " <<
+           canonseqcnt[base]/(double)size << " " <<
+           canonseqcnt[base+1]/(double)size << " " <<
+           (size-canonseqcnt[base+1])/(double)size << endl ;
+      mem = (ull *)calloc(bytesize >> 3, sizeof(ull)) ;
+      memset(mem, -1, bytesize) ;
+      lookupcnt = 0 ;
+      fillcnt = 0 ;
+      hibase = base ;
+      baseval = min(hibase, 2) ;
+      for (int d=0; d<=baseval+1; d++) {
+         int val = 0 ;
+         if (d >= baseval)
+            val = d - baseval + 1 ;
+         filltable(pd, d, val) ;
+      }
+   }
+   void filltable(const puzdef &pd, int d, int val) {
+      popped = 0 ;
+      while (posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.solved)) ;
+         movehist.push_back(-1) ;
+      }
+      pd.assignpos(posns[0], pd.solved) ;
+      cout << "Filling table at depth " << d << " with val " << val << flush ;
+      filltable(pd, d, 0, 0, val) ;
+      fillcnt += canonseqcnt[d] ;
+      cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
+           << duration() << endl << flush ;
+      totpop += popped ;
+   }
+   void filltable(const puzdef &pd, int togo, int sp, int st, int val) {
+      if (togo == 0) {
+         ull h = fasthash(totsize, posns[sp]) & hmask ;
+         if ((3 & (mem[h >> 5] >> ((h & 31) * 2))) == 3) {
+            mem[h >> 5] -= (3LL - val) << ((h & 31) * 2) ;
+            popped++ ;
+         }
+         return ;
+      }
+      ull mask = canonmask[st] ;
+      const vector<int> &ns = canonnext[st] ;
+      for (int m=0; m<pd.moves.size(); m++) {
+         const moove &mv = pd.moves[m] ;
+         if ((mask >> mv.base) & 1)
+            continue ;
+         pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+         filltable(pd, togo-1, sp+1, ns[mv.base], val) ;
+      }
+   }
+   void checkextend(const puzdef &pd) {
+      if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size)
+         return ;
+      ull longcnt = (size + 31) >> 5 ;
+      for (ull i=0; i<longcnt; i++) {
+         ull v = mem[i] ;
+         // decrement 1's and 2's; leave 3's alone
+         mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+      }
+      baseval++ ;
+      filltable(pd, baseval+1, 2) ;
+   }
+   int lookup(const setval sv) {
+      lookupcnt++ ;
+      ull h = fasthash(totsize, sv) & hmask ;
+      int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
+      if (v == 0)
+         return 0 ;
+      else
+         return v + baseval - 1 ;
+   }
+   ull size, hmask, popped, totpop ;
+   ull lookupcnt ;
+   ull fillcnt ;
+   ull *mem ;
+   int totsize ;
+   int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
+} ;
+int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
+   if (pt.lookup(posns[sp]) > togo)
+      return 0 ;
+   if (togo == 0) {
+      if (pd.comparepos(posns[sp], pd.solved) == 0)
+         return 1 ;
+      else
+         return 0 ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int m=0; m<pd.moves.size(); m++) {
+      const moove &mv = pd.moves[m] ;
+      if ((mask >> mv.base) & 1)
+         continue ;
+      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      if (solverecur(pd, pt, togo-1, sp+1, ns[mv.base]))
+         return 1 ;
+   }
+   return 0 ;
+}
+void solve(const puzdef &pd, prunetable &pt, const setval p) {
+   for (int d=pt.lookup(p); ; d++) {
+      while (posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.solved)) ;
+         movehist.push_back(-1) ;
+      }
+      pd.assignpos(posns[0], p) ;
+      if (solverecur(pd, pt, d, 0, 0)) {
+         cout << "Solved at " << d << " in " << duration() << endl << flush ;
+         return ;
+      }
+      pt.checkextend(pd) ; // fill table up a bit more if needed
+   }
+}
 int dogod, docanon, doalgo ;
 int main(int argc, const char **argv) {
    duration() ;
@@ -1483,4 +1627,13 @@ default:
    }
    if (doalgo)
       findalgos(pd) ;
+   prunetable pt(pd, maxmem) ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   while (1) {
+      solve(pd, pt, p1) ;
+      int rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p1, pd.moves[rmv].pos, p2) ;
+      pd.assignpos(p1, p2) ;
+   }
 }
