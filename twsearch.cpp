@@ -1527,7 +1527,10 @@ struct prunetable {
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
 } ;
 int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
-   if (pt.lookup(posns[sp]) > togo)
+   int v = pt.lookup(posns[sp]) ;
+   if (v > togo + 1)
+      return -1 ;
+   if (v > togo)
       return 0 ;
    if (togo == 0) {
       if (pd.comparepos(posns[sp], pd.solved) == 0)
@@ -1542,8 +1545,14 @@ int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
       if ((mask >> mv.base) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      if (solverecur(pd, pt, togo-1, sp+1, ns[mv.base]))
+      v = solverecur(pd, pt, togo-1, sp+1, ns[mv.base]) ;
+      if (v == 1)
          return 1 ;
+      if (v == -1) {
+         // skip similar rotations
+         while (m+1 < pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
+            m++ ;
+      }
    }
    return 0 ;
 }
@@ -1554,7 +1563,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
          movehist.push_back(-1) ;
       }
       pd.assignpos(posns[0], p) ;
-      if (solverecur(pd, pt, d, 0, 0)) {
+      if (solverecur(pd, pt, d, 0, 0) == 1) {
          cout << "Solved at " << d << " in " << duration() << endl << flush ;
          return ;
       }
