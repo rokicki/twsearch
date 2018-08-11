@@ -71,7 +71,7 @@ struct moove {
 } ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
-              logstates(0), llstates(0) {}
+              logstates(0), llstates(0), checksum(0) {}
    const char *name ;
    setdefs_t setdefs ;
    setvals solved ;
@@ -81,6 +81,7 @@ struct puzdef {
    setval id ;
    double logstates ;
    unsigned long long llstates ;
+   ull checksum ;
    int comparepos(const setvals a, const setvals b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
@@ -142,13 +143,15 @@ void error(string msg, string extra="") {
       cerr << "At: " << curline << endl ;
    exit(10) ;
 }
-vector<string> getline(FILE *f) {
+vector<string> getline(FILE *f, ull &checksum) {
    string s ;
    int c ;
    while (1) {
       s.clear() ;
       while (1) {
          c = getc(f) ;
+         if (c != EOF)
+            checksum = 31 * checksum + c ;
          if (c == EOF || c == 10 || c == 13) {
             if (c == EOF || s.size() > 0)
                break ;
@@ -229,12 +232,12 @@ int ceillog2(int v) {
       r++ ;
    return r ;
 }
-setvals readposition(puzdef &pz, char typ, FILE *f) {
+setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
    setvals r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
    int numseq = 0 ;
    while (1) {
-      vector<string> toks = getline(f) ;
+      vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          error("! premature end while reading position") ;
       if (toks[0] == "End") {
@@ -327,8 +330,9 @@ setvals readposition(puzdef &pz, char typ, FILE *f) {
 puzdef readdef(FILE *f) {
    puzdef pz ;
    int state = 0 ;
+   ull checksum = 0 ;
    while (1) {
-      vector<string> toks = getline(f) ;
+      vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          break ;
       if (toks[0] == "Name") {
@@ -367,14 +371,14 @@ puzdef readdef(FILE *f) {
             error("! Solved in wrong place") ;
          state++ ;
          expect(toks, 1) ;
-         pz.solved = readposition(pz, 's', f) ;
+         pz.solved = readposition(pz, 's', f, checksum) ;
       } else if (toks[0] == "Move") {
          if (state != 2)
             error("! Move in wrong place") ;
          expect(toks, 2) ;
          moove m ;
          m.name = strdup(toks[1].c_str()) ;
-         m.pos = readposition(pz, 'm', f) ;
+         m.pos = readposition(pz, 'm', f, checksum) ;
          m.cost = 1 ;
          m.base = pz.moves.size() ;
          pz.moves.push_back(m) ;
@@ -401,6 +405,7 @@ puzdef readdef(FILE *f) {
          p[j] = 0 ;
       p += n ;
    }
+   pz.checksum = checksum ;
    return pz ;
 }
 void addmovepowers(puzdef &pd) {
@@ -1526,8 +1531,8 @@ struct prunetable {
          return v + baseval - 1 ;
    }
    void writept() {
-      // only write the table if at least 1 in 10 elements has a value
-      if (totpop * 10 < size)
+      // only write the table if at least 1 in 30 elements has a value
+      if (totpop * 30 < size)
          return ;
       // this *could* be calculated more efficiently, but the runtime is
       // dominated by scanning the array so we use simple code.
