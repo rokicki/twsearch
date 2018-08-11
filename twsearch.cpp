@@ -944,7 +944,7 @@ void dotwobitgod2(puzdef &pd) {
       uchar *wmem2 = p2.dat ;
       ull u = i ;
       ull mul = 1 ;
-      for (int j=parts.size()-1; j>=parts.size()-numsym; j--) {
+      for (int j=parts.size()-1; j+numsym>=parts.size(); j--) {
          int sdpair = parts[j].second ;
          setdef &sd = pd.setdefs[sdpair>>1] ;
          if (sdpair & 1) {
@@ -1545,6 +1545,7 @@ int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
       if ((mask >> mv.base) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      movehist[sp] = m ;
       v = solverecur(pd, pt, togo-1, sp+1, ns[mv.base]) ;
       if (v == 1)
          return 1 ;
@@ -1557,6 +1558,7 @@ int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
    return 0 ;
 }
 void solve(const puzdef &pd, prunetable &pt, const setval p) {
+   long long oldlookups = pt.lookupcnt ;
    for (int d=pt.lookup(p); ; d++) {
       while (posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
@@ -1564,7 +1566,10 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       }
       pd.assignpos(posns[0], p) ;
       if (solverecur(pd, pt, d, 0, 0) == 1) {
-         cout << "Solved at " << d << " in " << duration() << endl << flush ;
+         cout << "Solved at " << d << " lookups " << pt.lookupcnt-oldlookups << " in " << duration() << endl << flush ;
+         for (int i=0; i<d; i++)
+            cout << " " << pd.moves[movehist[i]].name ;
+         cout << endl << flush ;
          return ;
       }
       pt.checkextend(pd) ; // fill table up a bit more if needed
