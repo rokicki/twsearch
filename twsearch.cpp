@@ -1472,7 +1472,7 @@ struct prunetable {
             val = d - baseval + 1 ;
          filltable(pd, d, val) ;
       }
-      writept() ;
+      writept(pd) ;
    }
    void filltable(const puzdef &pd, int d, int val) {
       popped = 0 ;
@@ -1519,7 +1519,7 @@ struct prunetable {
       }
       baseval++ ;
       filltable(pd, baseval+1, 2) ;
-      writept() ;
+      writept(pd) ;
    }
    int lookup(const setval sv) {
       lookupcnt++ ;
@@ -1530,7 +1530,7 @@ struct prunetable {
       else
          return v + baseval - 1 ;
    }
-   void writept() {
+   void writept(const puzdef &pd) {
       // only write the table if at least 1 in 30 elements has a value
       if (totpop * 30 < size)
          return ;
@@ -1624,6 +1624,7 @@ struct prunetable {
          error("! can't open filename") ;
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
+      fwrite(&pd.checksum, sizeof(pd.checksum), 1, w) ;
       fwrite(&size, sizeof(size), 1, w) ;
       fwrite(&hmask, sizeof(hmask), 1, w) ;
       fwrite(&popped, sizeof(popped), 1, w) ;
