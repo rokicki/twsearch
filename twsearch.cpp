@@ -1699,7 +1699,8 @@ struct prunetable {
          return 0 ;
       }
       ull temp = 0 ;
-      fread(&temp, sizeof(temp), 1, r) ;
+      if (fread(&temp, sizeof(temp), 1, r) != 1)
+         error("! I/O error in reading pruning table") ;
       if (temp != size) {
          cout <<
  "Pruning table size is different; recreating pruning table" << endl ;
