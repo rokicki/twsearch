@@ -1494,6 +1494,7 @@ struct prunetable {
       cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
            << duration() << endl << flush ;
       totpop += popped ;
+      justread = 0 ;
    }
    void filltable(const puzdef &pd, int togo, int sp, int st, int val) {
       if (togo == 0) {
