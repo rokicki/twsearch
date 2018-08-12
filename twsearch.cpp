@@ -1538,6 +1538,32 @@ struct prunetable {
       else
          return v + baseval - 1 ;
    }
+   string makefilename() const {
+      string filename = "tws-" + inputbasename + "-" ;
+      ull bytes = size >> 2 ;
+      char suffix = 0 ;
+      if (bytes >= 1024) {
+         suffix = 'K' ;
+         bytes >>= 10 ;
+      }
+      if (bytes >= 1024) {
+         suffix = 'M' ;
+         bytes >>= 10 ;
+      }
+      if (bytes >= 1024) {
+         suffix = 'G' ;
+         bytes >>= 10 ;
+      }
+      if (bytes >= 1024) {
+         suffix = 'T' ;
+         bytes >>= 10 ;
+      }
+      filename += to_string(bytes) ;
+      if (suffix)
+         filename += suffix ;
+      filename += ".dat" ;
+      return filename ;
+   }
    void writept(const puzdef &pd) {
       // only write the table if at least 1 in 100 elements has a value
       if (justread || totpop * 100 < size)
@@ -1625,7 +1651,7 @@ struct prunetable {
             codevals[i] = widthbases[codewidths[i]] ;
             widthbases[codewidths[i]]++ ;
          }
-      string filename = "tws-" + inputbasename + ".dat" ;
+      string filename = makefilename() ;
       cout << "Writing " << filename << " " << flush ;
       FILE *w = fopen(filename.c_str(), "wb") ;
       if (w == 0)
@@ -1682,7 +1708,7 @@ struct prunetable {
          codewidths[i] = 0 ;
          codevals[i] = 0 ;
       }
-      string filename = "tws-" + inputbasename + ".dat" ;
+      string filename = makefilename() ;
       FILE *r = fopen(filename.c_str(), "rb") ;
       if (r == 0)
          return 0 ;
