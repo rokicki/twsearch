@@ -1539,8 +1539,8 @@ struct prunetable {
          return v + baseval - 1 ;
    }
    void writept(const puzdef &pd) {
-      // only write the table if at least 1 in 30 elements has a value
-      if (justread || totpop * 30 < size)
+      // only write the table if at least 1 in 100 elements has a value
+      if (justread || totpop * 100 < size)
          return ;
       // this *could* be calculated more efficiently, but the runtime is
       // dominated by scanning the array so we use simple code.
@@ -1690,7 +1690,7 @@ struct prunetable {
       if (getc(r) != SIGNATURE)
          return warn("! first byte not signature") ;
       ull checksum = 0 ;
-      fread(&checksum, sizeof(checksum), 1, r) ;
+      (void)fread(&checksum, sizeof(checksum), 1, r) ;
       if (checksum != pd.checksum) {
          cout <<
  "Puzzle definition appears to have changed; recreating pruning table" << endl ;
@@ -1705,13 +1705,13 @@ struct prunetable {
          fclose(r) ;
          return 0 ;
       }
-      fread(&hmask, sizeof(hmask), 1, r) ;
-      fread(&popped, sizeof(popped), 1, r) ;
-      fread(&totpop, sizeof(totpop), 1, r) ;
-      fread(&fillcnt, sizeof(fillcnt), 1, r) ;
-      fread(&totsize, sizeof(totsize), 1, r) ;
-      fread(&baseval, sizeof(baseval), 1, r) ;
-      fread(&hibase, sizeof(hibase), 1, r) ;
+      (void)fread(&hmask, sizeof(hmask), 1, r) ;
+      (void)fread(&popped, sizeof(popped), 1, r) ;
+      (void)fread(&totpop, sizeof(totpop), 1, r) ;
+      (void)fread(&fillcnt, sizeof(fillcnt), 1, r) ;
+      (void)fread(&totsize, sizeof(totsize), 1, r) ;
+      (void)fread(&baseval, sizeof(baseval), 1, r) ;
+      (void)fread(&hibase, sizeof(hibase), 1, r) ;
       if (fread(codewidths, sizeof(codewidths[0]), 256, r) != 256) {
          warn("I/O error in reading pruning table") ;
          fclose(r) ;
