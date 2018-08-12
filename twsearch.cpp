@@ -1690,7 +1690,8 @@ struct prunetable {
       if (getc(r) != SIGNATURE)
          return warn("! first byte not signature") ;
       ull checksum = 0 ;
-      (void)fread(&checksum, sizeof(checksum), 1, r) ;
+      if (fread(&checksum, sizeof(checksum), 1, r) < 1)
+         error("! I/O error reading pruning table") ;
       if (checksum != pd.checksum) {
          cout <<
  "Puzzle definition appears to have changed; recreating pruning table" << endl ;
@@ -1705,13 +1706,14 @@ struct prunetable {
          fclose(r) ;
          return 0 ;
       }
-      (void)fread(&hmask, sizeof(hmask), 1, r) ;
-      (void)fread(&popped, sizeof(popped), 1, r) ;
-      (void)fread(&totpop, sizeof(totpop), 1, r) ;
-      (void)fread(&fillcnt, sizeof(fillcnt), 1, r) ;
-      (void)fread(&totsize, sizeof(totsize), 1, r) ;
-      (void)fread(&baseval, sizeof(baseval), 1, r) ;
-      (void)fread(&hibase, sizeof(hibase), 1, r) ;
+      if (fread(&hmask, sizeof(hmask), 1, r) < 1 ||
+          fread(&popped, sizeof(popped), 1, r) < 1 ||
+          fread(&totpop, sizeof(totpop), 1, r) < 1 ||
+          fread(&fillcnt, sizeof(fillcnt), 1, r) < 1 ||
+          fread(&totsize, sizeof(totsize), 1, r) < 1 ||
+          fread(&baseval, sizeof(baseval), 1, r) < 1 ||
+          fread(&hibase, sizeof(hibase), 1, r) < 1)
+         error("! I/O error reading pruning table") ;
       if (fread(codewidths, sizeof(codewidths[0]), 256, r) != 256) {
          warn("I/O error in reading pruning table") ;
          fclose(r) ;
