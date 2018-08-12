@@ -143,6 +143,10 @@ void error(string msg, string extra="") {
       cerr << "At: " << curline << endl ;
    exit(10) ;
 }
+int warn(string msg, string extra="") {
+   cerr << msg << extra << endl ;
+   return 0 ;
+}
 vector<string> getline(FILE *f, ull &checksum) {
    string s ;
    int c ;
@@ -1461,16 +1465,19 @@ struct prunetable {
            canonseqcnt[base+1]/(double)size << " " <<
            (size-canonseqcnt[base+1])/(double)size << endl ;
       mem = (ull *)calloc(bytesize >> 3, sizeof(ull)) ;
-      memset(mem, -1, bytesize) ;
       lookupcnt = 0 ;
       fillcnt = 0 ;
       hibase = base ;
-      baseval = min(hibase, 2) ;
-      for (int d=0; d<=baseval+1; d++) {
-         int val = 0 ;
-         if (d >= baseval)
-            val = d - baseval + 1 ;
-         filltable(pd, d, val) ;
+      justread = 0 ;
+      if (!readpt(pd)) {
+         memset(mem, -1, bytesize) ;
+         baseval = min(hibase, 2) ;
+         for (int d=0; d<=baseval+1; d++) {
+            int val = 0 ;
+            if (d >= baseval)
+               val = d - baseval + 1 ;
+            filltable(pd, d, val) ;
+         }
       }
       writept(pd) ;
    }
@@ -1532,7 +1539,7 @@ struct prunetable {
    }
    void writept(const puzdef &pd) {
       // only write the table if at least 1 in 30 elements has a value
-      if (totpop * 30 < size)
+      if (justread || totpop * 30 < size)
          return ;
       // this *could* be calculated more efficiently, but the runtime is
       // dominated by scanning the array so we use simple code.
@@ -1546,7 +1553,7 @@ struct prunetable {
          bytecnts[i] = 0 ;
       ll longcnt = (size + 31) >> 5 ;
       for (ll i=0; i<longcnt; i++) {
-         ll v = mem[i] ;
+         ull v = mem[i] ;
          for (int j=0; j<8; j++) {
             bytecnts[v & 255]++ ;
             v >>= 8 ;
@@ -1637,33 +1644,187 @@ struct prunetable {
       ull accum = 0 ;
       int havebits = 0 ;
       for (ll i=0; i<longcnt; i++) {
-         ll v = mem[i] ;
+         ull v = mem[i] ;
          for (int j=0; j<8; j++) {
             int cp = v & 255 ;
             int cpw = codewidths[cp] ;
             if (cpw == 0)
                error("! internal error in Huffman encoding") ;
             while (havebits + cpw > 64) {
-               if (putc((accum & 255), w) < 0)
+               if (putc(((accum >> (havebits - 8)) & 255), w) < 0)
                   error("! I/O error") ;
-               accum >>= 8 ;
                havebits -= 8 ;
             }
-            accum += codevals[cp] << havebits ;
+            accum = (accum << cpw) + codevals[cp] ;
             havebits += cpw ;
             v >>= 8 ;
          }
       }
+      // ensure power of two here
+      int extra = (8 - havebits) & 7 ;
+      havebits += extra ;
+      accum <<= extra ;
       while (havebits > 0) {
-         if (putc((accum & 255), w) < 0)
+         if (putc(((accum >> (havebits - 8)) & 255), w) < 0)
             error("! I/O error") ;
-         accum >>= 8 ;
          havebits -= 8 ;
       }
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
       fclose(w) ;
-      cout << "written in " << duration() << endl << flush ;
+      cout << " written in " << duration() << endl << flush ;
+   }
+   int readpt(const puzdef &pd) {
+      uchar codewidths[256] ;
+      ull codevals[256] ;
+      for (int i=0; i<256; i++) {
+         codewidths[i] = 0 ;
+         codevals[i] = 0 ;
+      }
+      string filename = "tws-" + inputbasename + ".dat" ;
+      FILE *r = fopen(filename.c_str(), "rb") ;
+      if (r == 0)
+         return 0 ;
+      cout << "Reading " << filename << " " << flush ;
+      if (getc(r) != SIGNATURE)
+         return warn("! first byte not signature") ;
+      ull checksum = 0 ;
+      fread(&checksum, sizeof(checksum), 1, r) ;
+      if (checksum != pd.checksum) {
+         cout <<
+ "Puzzle definition appears to have changed; recreating pruning table" << endl ;
+         fclose(r) ;
+         return 0 ;
+      }
+      ull temp = 0 ;
+      fread(&temp, sizeof(temp), 1, r) ;
+      if (temp != size) {
+         cout <<
+ "Pruning table size is different; recreating pruning table" << endl ;
+         fclose(r) ;
+         return 0 ;
+      }
+      fread(&hmask, sizeof(hmask), 1, r) ;
+      fread(&popped, sizeof(popped), 1, r) ;
+      fread(&totpop, sizeof(totpop), 1, r) ;
+      fread(&fillcnt, sizeof(fillcnt), 1, r) ;
+      fread(&totsize, sizeof(totsize), 1, r) ;
+      fread(&baseval, sizeof(baseval), 1, r) ;
+      fread(&hibase, sizeof(hibase), 1, r) ;
+      if (fread(codewidths, sizeof(codewidths[0]), 256, r) != 256) {
+         warn("I/O error in reading pruning table") ;
+         fclose(r) ;
+         return 0 ;
+      }
+      int widthcounts[64] ;
+      for (int i=0; i<64; i++)
+         widthcounts[i] = 0 ;
+      int maxwidth = 1 ;
+      for (int i=0; i<256; i++) {
+         if (codewidths[i] >= 56)
+            error("! bad code widths in pruning table file") ;
+         maxwidth = max(maxwidth, (int)codewidths[i]) ;
+         widthcounts[codewidths[i]]++ ;
+      }
+      ull widthbases[64] ;
+      ull at = 0 ;
+      for (int i=63; i>0; i--) {
+         if (widthcounts[i]) {
+            widthbases[i] = at >> (maxwidth - i) ;
+            at += ((ull)widthcounts[i]) << (maxwidth - i) ;
+         }
+      }
+      if (at != (1LL << maxwidth))
+         error("! Bad codewidth sum in codes") ;
+      for (int i=0; i<256; i++)
+         if (codewidths[i]) {
+            codevals[i] = widthbases[codewidths[i]] ;
+            widthbases[codewidths[i]]++ ;
+         }
+      at = 0 ; // restore the widthbases
+      int theight[7] ;
+      for (int i=63; i>0; i--) {
+         if (widthcounts[i]) {
+            widthbases[i] = at >> (maxwidth - i) ;
+            at += ((ull)widthcounts[i]) << (maxwidth - i) ;
+         }
+         if ((i & 7) == 1) {
+            int t = maxwidth - i - 7 ;
+            if (t < 0) {
+               theight[i>>3] = (at << -t) ;
+            } else {
+               theight[i>>3] = (at + (1LL << t) - 1) >> t ;
+            }
+         }
+      }
+      short *tabs[7] ;
+      for (int i=0; i<7; i++)
+         if (theight[i]) {
+            tabs[i] = (short *)malloc(theight[i] * sizeof(short)) ;
+            memset(tabs[i], -1, theight[i] * sizeof(short)) ;
+         }
+      at = 0 ;
+      int twidth = (maxwidth + 7) & -8 ;
+      for (int i=63; i>0; i--) {
+         if (widthcounts[i]) {
+            for (int cp=0; cp<256; cp++)
+               if (codewidths[cp] == i) {
+                  int k = (i - 1) >> 3 ;
+                  int incsh = twidth-8*k-8 ;
+                  int inc = 1LL << incsh ;
+                  ull nextat = at + (1LL << (twidth - i)) ;
+                  while (at < nextat) {
+                     tabs[k][at>>incsh] = cp ;
+                     at += inc ;
+                  }
+                  at = nextat ;
+               }
+         }
+      }
+      ull accum = 0 ;
+      int havebits = 0 ;
+      ll longcnt = (size + 31) >> 5 ;
+      for (ll i=0; i<longcnt; i++) {
+         ull v = 0 ;
+         for (int j=0; j<8; j++) {
+            int bitsneeded = 8 ;
+            int k = 0 ;
+            while (1) {
+               if (havebits < bitsneeded) {
+                  int c = getc(r) ;
+                  if (c == EOF)
+                     error("! I/O error in reading") ;
+                  accum = (accum << 8) + c ;
+                  havebits += 8 ;
+               }
+               int cp = tabs[k][accum >> (havebits - bitsneeded)] ;
+               if (cp >= 0) {
+                  v += ((ull)cp) << (8 * j) ;
+                  havebits -= codewidths[cp] ;
+                  if (havebits > 14)
+                     error("! oops; should not have this many bits left") ;
+                  accum &= ((1LL << havebits) - 1) ;
+                  break ;
+               }
+               bitsneeded += 8 ;
+               k++ ;
+               if (k >= 7)
+                  error("! failure while decoding") ;
+            }
+         }
+         mem[i] = v ;
+      }
+      int tv = 0 ;
+      if (havebits > 7)
+         tv = accum & 255 ;
+      else
+         tv = getc(r) ;
+      if (tv != SIGNATURE)
+         error("! I/O error reading final signature") ;
+      fclose(r) ;
+      cout << "read in " << duration() << endl << flush ;
+      justread = 1 ;
+      return 1 ;
    }
    ull size, hmask, popped, totpop ;
    ull lookupcnt ;
@@ -1671,6 +1832,7 @@ struct prunetable {
    ull *mem ;
    int totsize ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
+   char justread ;
 } ;
 int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
    int v = pt.lookup(posns[sp]) ;
