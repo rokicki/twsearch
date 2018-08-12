@@ -4,12 +4,12 @@
 #include <map>
 #include <set>
 #include <cstdlib>
-#include <cstdio>
 #include <cstring>
 #include <algorithm>
 #include <string>
 #include <math.h>
 #include <sys/time.h>
+#include <cstdio>
 #undef CHECK
 using namespace std ;
 typedef long long ll ;
@@ -1652,7 +1652,7 @@ struct prunetable {
             if (cpw == 0)
                error("! internal error in Huffman encoding") ;
             while (havebits + cpw > 64) {
-               if (putc(((accum >> (havebits - 8)) & 255), w) < 0)
+               if (putc_unlocked(((accum >> (havebits - 8)) & 255), w) < 0)
                   error("! I/O error") ;
                havebits -= 8 ;
             }
@@ -1792,7 +1792,7 @@ struct prunetable {
             int k = 0 ;
             while (1) {
                if (havebits < bitsneeded) {
-                  int c = getc(r) ;
+                  int c = getc_unlocked(r) ;
                   if (c == EOF)
                      error("! I/O error in reading") ;
                   accum = (accum << 8) + c ;
