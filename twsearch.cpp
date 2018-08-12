@@ -1673,7 +1673,7 @@ struct prunetable {
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
       fclose(w) ;
-      cout << " written in " << duration() << endl << flush ;
+      cout << "written in " << duration() << endl << flush ;
    }
    int readpt(const puzdef &pd) {
       uchar codewidths[256] ;
