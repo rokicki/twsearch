@@ -1454,7 +1454,7 @@ void findalgos(const puzdef &pd) {
       cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
    }
 }
-// we take advantage of the fact that the totsize is always divisible by 4.
+// we take advantage of the fact that the totsize is always divisible by 2.
 ull fasthash(int n, const setvals sv) {
    ull r = 0 ;
    const uchar *p = sv.dat ;
@@ -1556,10 +1556,8 @@ struct prunetable {
    int lookup(const setval sv) {
       ull h = fasthash(totsize, sv) & hmask ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 0)
-         return 0 ;
-      else
-         return v + baseval - 1 ;
+      /* avoid unpredictable branches with this bit twiddle hack */
+      return (v + baseval - 1) & ((-v) >> 2) ;
    }
    void addlookups(ull lookups) {
       lookupcnt += lookups ;
