@@ -1838,7 +1838,7 @@ struct prunetable {
                if (codewidths[cp] == i) {
                   int k = (i - 1) >> 3 ;
                   int incsh = twidth-8*k-8 ;
-                  int inc = 1LL << incsh ;
+                  ull inc = 1LL << incsh ;
                   ull nextat = at + (1LL << (twidth - i)) ;
                   while (at < nextat) {
                      tabs[k][at>>incsh] = cp ;
