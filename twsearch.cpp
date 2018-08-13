@@ -1482,12 +1482,6 @@ struct prunetable {
       int base = 1 ;
       while (base + 2 < canontotcnt.size() && canontotcnt[base+2] < size)
          base++ ;
-      cout << "Size is " << size << " base " << base
-           << " expect distribution of " <<
-           canontotcnt[base-1]/(double)size << " " <<
-           canonseqcnt[base]/(double)size << " " <<
-           canonseqcnt[base+1]/(double)size << " " <<
-           (size-canonseqcnt[base+1])/(double)size << endl ;
       // hack memalign
       mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
       while (((ull)mem) & (CACHELINESIZE - 1))
@@ -1544,6 +1538,7 @@ struct prunetable {
    }
    void checkextend(const puzdef &pd) {
       if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
+          baseval >= hibase ||
           (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
          return ;
       cout << endl ;
@@ -1652,7 +1647,7 @@ struct prunetable {
          nextcode++ ;
       }
       cout << "Encoding; max width is " << maxwidth << " bitcost "
-         << bitcost << " compression " << (bitcost / (64.0 * longcnt)) << endl ;
+         << bitcost << " compression " << ((64.0 * longcnt) / bitcost) << endl ;
       uchar codewidths[512] ;
       ull codevals[512] ;
       codewidths[nextcode-1] = 0 ;
