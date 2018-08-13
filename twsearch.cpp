@@ -1469,6 +1469,7 @@ ull fasthash(int n, const setvals sv) {
       r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 ;
    return r ;
 }
+const int PEEKSIZE = 8 ;
 struct prunetable {
    prunetable(const puzdef &pd, ull maxmem) {
       totsize = pd.totsize ;
@@ -1497,33 +1498,46 @@ struct prunetable {
             int val = 0 ;
             if (d >= baseval)
                val = d - baseval + 1 ;
-            filltable(pd, d, val) ;
+            wval = val ;
+            filltable(pd, d) ;
          }
       }
       writept(pd) ;
    }
-   void filltable(const puzdef &pd, int d, int val) {
+   void flushone() {
+      if (peekaround >= PEEKSIZE) {
+         ull h = peek[peekaround & (PEEKSIZE - 1)] ;
+         if ((3 & (mem[h >> 5] >> ((h & 31) * 2))) == 3) {
+            mem[h >> 5] -= (3LL - wval) << ((h & 31) * 2) ;
+            popped++ ;
+         }
+      }
+   }
+   void filltable(const puzdef &pd, int d) {
       popped = 0 ;
       while (posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
       pd.assignpos(posns[0], pd.solved) ;
-      cout << "Filling table at depth " << d << " with val " << val << flush ;
-      filltable(pd, d, 0, 0, val) ;
+      cout << "Filling table at depth " << d << " with val " << wval << flush ;
+      peekaround = 0 ;
+      filltable(pd, d, 0, 0) ;
+      for (int i=0; i<PEEKSIZE; i++, peekaround++)
+         flushone() ;
       fillcnt += canonseqcnt[d] ;
       cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
            << duration() << endl << flush ;
       totpop += popped ;
       justread = 0 ;
    }
-   void filltable(const puzdef &pd, int togo, int sp, int st, int val) {
+   void filltable(const puzdef &pd, int togo, int sp, int st) {
       if (togo == 0) {
+         flushone() ;
          ull h = fasthash(totsize, posns[sp]) & hmask ;
-         if ((3 & (mem[h >> 5] >> ((h & 31) * 2))) == 3) {
-            mem[h >> 5] -= (3LL - val) << ((h & 31) * 2) ;
-            popped++ ;
-         }
+         __builtin_prefetch(mem+(h>>5)) ;
+         peek[peekaround & (PEEKSIZE - 1)] = h ;
+         peekaround++ ;
          return ;
       }
       ull mask = canonmask[st] ;
@@ -1533,7 +1547,7 @@ struct prunetable {
          if ((mask >> mv.base) & 1)
             continue ;
          pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-         filltable(pd, togo-1, sp+1, ns[mv.base], val) ;
+         filltable(pd, togo-1, sp+1, ns[mv.base]) ;
       }
    }
    void checkextend(const puzdef &pd) {
@@ -1549,7 +1563,8 @@ struct prunetable {
          mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
       }
       baseval++ ;
-      filltable(pd, baseval+1, 2) ;
+      wval = 2 ;
+      filltable(pd, baseval+1) ;
       writept(pd) ;
    }
    int lookuph(ull h) const {
@@ -1894,6 +1909,9 @@ struct prunetable {
    ull *mem ;
    int totsize ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
+   ull peek[PEEKSIZE] ;
+   ull peekaround ;
+   int wval ;
    char justread ;
 } ;
 vector<ull> workchunks ;
