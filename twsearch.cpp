@@ -18,6 +18,7 @@ typedef unsigned long long ull ;
 typedef unsigned char uchar ;
 typedef unsigned int loosetype ;
 string inputbasename ;
+const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 20 ; // start and end of data files
 static double start ;
@@ -1487,7 +1488,10 @@ struct prunetable {
            canonseqcnt[base]/(double)size << " " <<
            canonseqcnt[base+1]/(double)size << " " <<
            (size-canonseqcnt[base+1])/(double)size << endl ;
-      mem = (ull *)calloc(bytesize >> 3, sizeof(ull)) ;
+      // hack memalign
+      mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
+      while (((ull)mem) & (CACHELINESIZE - 1))
+         mem++ ;
       lookupcnt = 0 ;
       fillcnt = 0 ;
       hibase = base ;
@@ -1553,7 +1557,16 @@ struct prunetable {
       filltable(pd, baseval+1, 2) ;
       writept(pd) ;
    }
-   int lookup(const setval sv) {
+   int lookuph(ull h) const {
+      h &= hmask ;
+      int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
+      /* avoid unpredictable branches with this bit twiddle hack */
+      return (v + baseval - 1) & ((-v) >> 2) ;
+   }
+   void prefetch(ull h) const {
+      __builtin_prefetch(mem+((h & hmask) >> 5)) ;
+   }
+   int lookup(const setval sv) const {
       ull h = fasthash(totsize, sv) & hmask ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       /* avoid unpredictable branches with this bit twiddle hack */
@@ -2039,6 +2052,10 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
          spawn_thread(i, threadworker, &(wp[i])) ;
       for (int i=0; i<wthreads; i++)
          join_thread(i) ;
+ cout << "chunks " << workchunks.size() << " look" ;
+ for (int i=0; i<wthreads; i++)
+    cout << " " << solveworkers[i].lookups ;
+ cout << endl ;
       for (int i=0; i<wthreads; i++) {
          totlookups += solveworkers[i].lookups ;
          pt.addlookups(solveworkers[i].lookups) ;
@@ -2134,9 +2151,77 @@ default:
    }
    if (doalgo)
       findalgos(pd) ;
-   prunetable pt(pd, maxmem) ;
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
+ /*
+   cout << "Timing moves." << endl << flush ;
+   duration() ;
+   int cnt = 100000000 ;
+   for (int i=0; i<cnt; i += 2) {
+      int rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p1, pd.moves[rmv].pos, p2) ;
+      rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p2, pd.moves[rmv].pos, p1) ;
+   }
+   double tim = duration() ;
+   cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << endl << flush ;
+   cout << "Timing moves plus hash." << endl << flush ;
+   duration() ;
+   cnt = 100000000 ;
+   ull sum = 0 ;
+   for (int i=0; i<cnt; i += 2) {
+      int rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p1, pd.moves[rmv].pos, p2) ;
+      sum += fasthash(pd.totsize, p2) ;
+      rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p2, pd.moves[rmv].pos, p1) ;
+      sum += fasthash(pd.totsize, p1) ;
+   }
+   tim = duration() ;
+   cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
+ */
+   prunetable pt(pd, maxmem) ;
+ /*
+   cout << "Timing moves plus lookup." << endl << flush ;
+   duration() ;
+   cnt = 100000000 ;
+   sum = 0 ;
+   for (int i=0; i<cnt; i += 2) {
+      int rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p1, pd.moves[rmv].pos, p2) ;
+      sum += pt.lookup(p2) ;
+      rmv = (int)(pd.moves.size() * drand48()) ;
+      pd.mul(p2, pd.moves[rmv].pos, p1) ;
+      sum += pt.lookup(p1) ;
+   }
+   tim = duration() ;
+   cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
+   const int MAXLOOK = 128 ;
+   ull tgo[MAXLOOK] ;
+   for (int look=2; look<=MAXLOOK; look *= 2) {
+      int mask = look - 1 ;
+      for (int i=0; i<look; i++)
+         tgo[i] = 0 ;
+      cout << "Timing moves plus lookup piped " << look << endl << flush ;
+      duration() ;
+      cnt = 100000000 ;
+      sum = 0 ;
+      for (int i=0; i<cnt; i += 2) {
+         int rmv = (int)(pd.moves.size() * drand48()) ;
+         pd.mul(p1, pd.moves[rmv].pos, p2) ;
+         sum += pt.lookuph(tgo[i&mask]) ;
+         tgo[i&mask] = fasthash(pd.totsize, p2) ;
+         pt.prefetch(tgo[i&mask]) ;
+         rmv = (int)(pd.moves.size() * drand48()) ;
+         pd.mul(p2, pd.moves[rmv].pos, p1) ;
+         sum += pt.lookuph(tgo[1+(i&mask)]) ;
+         tgo[1+(i&mask)] = fasthash(pd.totsize, p1) ;
+         pt.prefetch(tgo[1+(i&mask)]) ;
+      }
+      tim = duration() ;
+      cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
+   }
+ */
    while (1) {
       solve(pd, pt, p1) ;
       int rmv = (int)(pd.moves.size() * drand48()) ;
