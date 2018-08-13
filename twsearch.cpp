@@ -2053,10 +2053,6 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
          spawn_thread(i, threadworker, &(wp[i])) ;
       for (int i=0; i<wthreads; i++)
          join_thread(i) ;
- cout << "chunks " << workchunks.size() << " look" ;
- for (int i=0; i<wthreads; i++)
-    cout << " " << solveworkers[i].lookups ;
- cout << endl ;
       for (int i=0; i<wthreads; i++) {
          totlookups += solveworkers[i].lookups ;
          pt.addlookups(solveworkers[i].lookups) ;
