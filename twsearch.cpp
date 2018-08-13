@@ -1516,7 +1516,8 @@ struct prunetable {
       }
    }
    void checkextend(const puzdef &pd) {
-      if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size)
+      if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
+          (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
          return ;
       cout << endl ;
       ull longcnt = (size + 31) >> 5 ;

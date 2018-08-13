@@ -29,3 +29,5 @@ Things to consider:
 
 * Ignore pieces
 * Blocking moves
+* Are we spending too much time in the zeros?  Time to add values
+  lower in the cache lines?  Two bits or four bits?
