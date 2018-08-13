@@ -20,7 +20,7 @@ typedef unsigned int loosetype ;
 string inputbasename ;
 const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
-const int SIGNATURE = 20 ; // start and end of data files
+const int SIGNATURE = 21 ; // start and end of data files
 static double start ;
 double walltime() {
    struct timeval tv ;
@@ -1470,6 +1470,7 @@ ull fasthash(int n, const setvals sv) {
    return r ;
 }
 const int PEEKSIZE = 8 ;
+const int BLOCKSIZE = 8192 ; // in long longs
 struct prunetable {
    prunetable(const puzdef &pd, ull maxmem) {
       totsize = pd.totsize ;
@@ -1611,6 +1612,124 @@ struct prunetable {
       filename += ".dat" ;
       return filename ;
    }
+   ull calcblocksize(ull *mem, ull longcnt) {
+      ull bits = 0 ;
+      for (ull i=0; i<longcnt; i++) {
+         ull v = mem[i] ;
+         for (int j=0; j<8; j++) {
+            bits += codewidths[v & 255] ;
+            v >>= 8 ;
+         }
+      }
+      return ((bits + 7) >> 3) ;
+   }
+   void packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
+      ull accum = 0 ;
+      int havebits = 0 ;
+      int bytectr = 0 ;
+      for (ll i=0; i<longcnt; i++) {
+         ull v = mem[i] ;
+         for (int j=0; j<8; j++) {
+            int cp = v & 255 ;
+            int cpw = codewidths[cp] ;
+            if (cpw == 0)
+               error("! internal error in Huffman encoding") ;
+            while (havebits + cpw > 64) {
+               buf[bytectr++] = accum >> (havebits - 8) ;
+               if (bytectr > bytecnt)
+                  error("! packing issue") ;
+               havebits -= 8 ;
+            }
+            accum = (accum << cpw) + codevals[cp] ;
+            havebits += cpw ;
+            v >>= 8 ;
+         }
+      }
+      int extra = (8 - havebits) & 7 ;
+      havebits += extra ;
+      accum <<= extra ;
+      while (havebits > 0) {
+         buf[bytectr++] = accum >> (havebits - 8) ;
+         if (bytectr > bytecnt)
+            error("! packing issue 2") ;
+         havebits -= 8 ;
+      }
+      if (bytectr != bytecnt)
+         error("! packing issue 3") ;
+   }
+   void unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
+      int bytectr = 0 ;
+      int havebits = 0 ;
+      ull accum = 0 ;
+      for (ll i=0; i<longcnt; i++) {
+         ull v = 0 ;
+         for (int j=0; j<8; j++) {
+            int bitsneeded = 8 ;
+            int k = 0 ;
+            while (1) {
+               if (havebits < bitsneeded) {
+                  int c = 0 ;
+                  if (bytectr < bytecnt)
+                     c = block[bytectr++] ;
+                  accum = (accum << 8) + c ;
+                  havebits += 8 ;
+               }
+               int cp = tabs[k][accum >> (havebits - bitsneeded)] ;
+               if (cp >= 0) {
+                  v += ((ull)cp) << (8 * j) ;
+                  havebits -= codewidths[cp] ;
+                  if (havebits > 14)
+                     error("! oops; should not have this many bits left") ;
+                  accum &= ((1LL << havebits) - 1) ;
+                  break ;
+               }
+               bitsneeded += 8 ;
+               k++ ;
+               if (k >= 7)
+                  error("! failure while decoding") ;
+            }
+         }
+         mem[i] = v ;
+      }
+      if (bytecnt != bytectr)
+         error("! error when unpacking bytes") ;
+   }
+   void writeblock(ull *mem, ull longcnt, FILE *f) {
+      ull bytecnt = calcblocksize(mem, longcnt) ;
+      uchar *buf = (uchar *)malloc(bytecnt) ;
+      packblock(mem, longcnt, buf, bytecnt) ;
+      putc(bytecnt & 255, f) ;
+      putc((bytecnt >> 8) & 255, f) ;
+      putc((bytecnt >> 16) & 255, f) ;
+      putc((bytecnt >> 24) & 255, f) ;
+      putc(longcnt & 255, f) ;
+      putc((longcnt >> 8) & 255, f) ;
+      putc((longcnt >> 16) & 255, f) ;
+      putc((longcnt >> 24) & 255, f) ;
+      if (fwrite(buf, 1, bytecnt, f) != bytecnt)
+         error("! I/O error writing block") ;
+      free(buf) ;
+   }
+   void readblock(ull *mem, ull explongcnt, FILE *f) {
+      unsigned int bytecnt, longcnt ;
+      bytecnt = getc(f) ;
+      bytecnt += getc(f) << 8 ;
+      bytecnt += getc(f) << 16 ;
+      bytecnt += getc(f) << 24 ;
+      longcnt = getc(f) ;
+      longcnt += getc(f) << 8 ;
+      longcnt += getc(f) << 16 ;
+      longcnt += getc(f) << 24 ;
+      if (longcnt != explongcnt || bytecnt <= 0 || bytecnt > 32 * BLOCKSIZE) {
+ cout << "Long cnt " << longcnt << " expected " << explongcnt << " bytecnt " << bytecnt << endl ;
+         error("! I/O error while reading block") ;
+      }
+      uchar *buf = (uchar *)malloc(bytecnt) ;
+      if (fread(buf, 1, bytecnt, f) != bytecnt)
+         error("! I/O error while reading block") ;
+      unpackblock(mem, longcnt, buf, bytecnt) ;
+      free(buf) ;
+   }
    void writept(const puzdef &pd) {
       // only write the table if at least 1 in 100 elements has a value
       if (justread || totpop * 100 < size)
@@ -1662,9 +1781,8 @@ struct prunetable {
          nextcode++ ;
       }
       cout << "Encoding; max width is " << maxwidth << " bitcost "
-         << bitcost << " compression " << ((64.0 * longcnt) / bitcost) << endl ;
-      uchar codewidths[512] ;
-      ull codevals[512] ;
+         << bitcost << " compression " << ((64.0 * longcnt) / bitcost)
+         << " in " << duration() << endl ;
       codewidths[nextcode-1] = 0 ;
       codevals[nextcode-1] = 0 ;
       for (int i=0; i<256; i++) {
@@ -1715,42 +1833,16 @@ struct prunetable {
       fwrite(&baseval, sizeof(baseval), 1, w) ;
       fwrite(&hibase, sizeof(hibase), 1, w) ;
       fwrite(codewidths, sizeof(codewidths[0]), 256, w) ;
-      ull accum = 0 ;
-      int havebits = 0 ;
-      for (ll i=0; i<longcnt; i++) {
-         ull v = mem[i] ;
-         for (int j=0; j<8; j++) {
-            int cp = v & 255 ;
-            int cpw = codewidths[cp] ;
-            if (cpw == 0)
-               error("! internal error in Huffman encoding") ;
-            while (havebits + cpw > 64) {
-               if (putc_unlocked(((accum >> (havebits - 8)) & 255), w) < 0)
-                  error("! I/O error") ;
-               havebits -= 8 ;
-            }
-            accum = (accum << cpw) + codevals[cp] ;
-            havebits += cpw ;
-            v >>= 8 ;
-         }
-      }
-      // ensure power of two here
-      int extra = (8 - havebits) & 7 ;
-      havebits += extra ;
-      accum <<= extra ;
-      while (havebits > 0) {
-         if (putc(((accum >> (havebits - 8)) & 255), w) < 0)
-            error("! I/O error") ;
-         havebits -= 8 ;
-      }
+      if (longcnt % BLOCKSIZE != 0)
+         error("Size must be a multiple of block size") ;
+      for (ull i=0; i<longcnt; i += BLOCKSIZE)
+         writeblock(mem+i, BLOCKSIZE, w) ;
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
       fclose(w) ;
       cout << "written in " << duration() << endl << flush ;
    }
    int readpt(const puzdef &pd) {
-      uchar codewidths[256] ;
-      ull codevals[256] ;
       for (int i=0; i<256; i++) {
          codewidths[i] = 0 ;
          codevals[i] = 0 ;
@@ -1834,7 +1926,6 @@ struct prunetable {
             }
          }
       }
-      short *tabs[7] ;
       for (int i=0; i<7; i++)
          if (theight[i]) {
             tabs[i] = (short *)malloc(theight[i] * sizeof(short)) ;
@@ -1858,44 +1949,12 @@ struct prunetable {
                }
          }
       }
-      ull accum = 0 ;
-      int havebits = 0 ;
       ll longcnt = (size + 31) >> 5 ;
-      for (ll i=0; i<longcnt; i++) {
-         ull v = 0 ;
-         for (int j=0; j<8; j++) {
-            int bitsneeded = 8 ;
-            int k = 0 ;
-            while (1) {
-               if (havebits < bitsneeded) {
-                  int c = getc_unlocked(r) ;
-                  if (c == EOF)
-                     error("! I/O error in reading") ;
-                  accum = (accum << 8) + c ;
-                  havebits += 8 ;
-               }
-               int cp = tabs[k][accum >> (havebits - bitsneeded)] ;
-               if (cp >= 0) {
-                  v += ((ull)cp) << (8 * j) ;
-                  havebits -= codewidths[cp] ;
-                  if (havebits > 14)
-                     error("! oops; should not have this many bits left") ;
-                  accum &= ((1LL << havebits) - 1) ;
-                  break ;
-               }
-               bitsneeded += 8 ;
-               k++ ;
-               if (k >= 7)
-                  error("! failure while decoding") ;
-            }
-         }
-         mem[i] = v ;
-      }
-      int tv = 0 ;
-      if (havebits > 7)
-         tv = accum & 255 ;
-      else
-         tv = getc(r) ;
+      if (longcnt % BLOCKSIZE != 0)
+         error("! when reading, expected multiple of longcnt") ;
+      for (ll i=0; i<longcnt; i += BLOCKSIZE)
+         readblock(mem+i, BLOCKSIZE, r) ;
+      int tv = getc(r) ;
       if (tv != SIGNATURE)
          error("! I/O error reading final signature") ;
       fclose(r) ;
@@ -1912,6 +1971,9 @@ struct prunetable {
    ull peek[PEEKSIZE] ;
    ull peekaround ;
    int wval ;
+   uchar codewidths[512] ;
+   ull codevals[512] ;
+   short *tabs[7] ;
    char justread ;
 } ;
 vector<ull> workchunks ;
