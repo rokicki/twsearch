@@ -2006,6 +2006,7 @@ void *threadworker(void *o) {
    return 0 ;
 }
 void solve(const puzdef &pd, prunetable &pt, const setval p) {
+   double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
    vector<workerparams> wp ;
@@ -2061,7 +2062,9 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       }
       if (solveloc >= 0) {
          cout << endl ;
-         cout << "Solved at " << d << " lookups " << totlookups << " in " << duration() << endl << flush ;
+         duration() ;
+         double actualtime = start - starttime ;
+         cout << "Solved at " << d << " lookups " << totlookups << " in " << actualtime << " rate " << (totlookups/actualtime) << endl << flush ;
          for (int i=0; i<d; i++)
             cout << " " << pd.moves[solveworkers[solveloc].movehist[i]].name ;
          cout << endl << flush ;
