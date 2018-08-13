@@ -10,6 +10,7 @@
 #include <math.h>
 #include <sys/time.h>
 #include <cstdio>
+#include <pthread.h>
 #undef CHECK
 using namespace std ;
 typedef long long ll ;
@@ -30,6 +31,28 @@ double duration() {
    double r = now - start ;
    start = now ;
    return r ;
+}
+const int MAXTHREADS = 256 ;
+int numthreads = 2 ;
+pthread_mutex_t mmutex ;
+void init_mutex() {
+  pthread_mutex_init(&mmutex, NULL) ;
+}
+void get_global_lock() {
+   pthread_mutex_lock(&mmutex) ;
+}
+void release_global_lock() {
+   pthread_mutex_unlock(&mmutex) ;
+}
+pthread_t p_thread[MAXTHREADS] ;
+#define THREAD_RETURN_TYPE void *
+#define THREAD_DECLARATOR
+void spawn_thread(int i, THREAD_RETURN_TYPE(THREAD_DECLARATOR *p)(void *),
+                                                                     void *o) {
+   pthread_create(&(p_thread[i]), NULL, p, o) ;
+}
+void join_thread(int i) {
+   pthread_join(p_thread[i], 0) ;
 }
 uchar *gmoda[256] ;
 struct setdef {
@@ -1531,13 +1554,15 @@ struct prunetable {
       writept(pd) ;
    }
    int lookup(const setval sv) {
-      lookupcnt++ ;
       ull h = fasthash(totsize, sv) & hmask ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 0)
          return 0 ;
       else
          return v + baseval - 1 ;
+   }
+   void addlookups(ull lookups) {
+      lookupcnt += lookups ;
    }
    string makefilename() const {
       string filename = "tws-" + inputbasename + "-" ;
@@ -1865,51 +1890,168 @@ struct prunetable {
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
    char justread ;
 } ;
-int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
-   int v = pt.lookup(posns[sp]) ;
-   if (v > togo + 1)
-      return -1 ;
-   if (v > togo)
-      return 0 ;
-   if (togo == 0) {
-      if (pd.comparepos(posns[sp], pd.solved) == 0)
-         return 1 ;
-      else
-         return 0 ;
-   }
-   ull mask = canonmask[st] ;
-   const vector<int> &ns = canonnext[st] ;
-   for (int m=0; m<pd.moves.size(); m++) {
-      const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
-         continue ;
-      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      movehist[sp] = m ;
-      v = solverecur(pd, pt, togo-1, sp+1, ns[mv.base]) ;
-      if (v == 1)
-         return 1 ;
-      if (v == -1) {
-         // skip similar rotations
-         while (m+1 < pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
-            m++ ;
-      }
-   }
-   return 0 ;
-}
-void solve(const puzdef &pd, prunetable &pt, const setval p) {
-   long long oldlookups = pt.lookupcnt ;
-   for (int d=pt.lookup(p); ; d++) {
-      cout << " " << d << flush ;
-      while (posns.size() <= d + 1) {
+vector<ull> workchunks ;
+vector<int> workstates ;
+int workat ;
+int globalsolved ;
+struct workerparams {
+   workerparams(const puzdef &pd_, prunetable &pt_, int tid_) :
+      pd(pd_), pt(pt_), tid(tid_) {}
+   const puzdef &pd ;
+   prunetable pt ;
+   int tid ;
+} ;
+struct solveworker {
+   vector<allocsetval> posns ;
+   vector<int> movehist ;
+   long long lookups ;
+   int d ;
+   uchar solved ;
+   char padding[256] ; // kill false sharing
+   void init(const puzdef &pd, prunetable &pt, int d_, const setval &p) {
+      while (posns.size() <= d_+1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
       pd.assignpos(posns[0], p) ;
-      if (solverecur(pd, pt, d, 0, 0) == 1) {
+      solved = 0 ;
+      lookups = 0 ;
+      d = d_ ;
+   }
+   int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
+      lookups++ ;
+      int v = pt.lookup(posns[sp]) ;
+      if (v > togo + 1)
+         return -1 ;
+      if (v > togo)
+         return 0 ;
+      if (togo == 0) {
+         if (pd.comparepos(posns[sp], pd.solved) == 0)
+            return 1 ;
+         else
+            return 0 ;
+      }
+      ull mask = canonmask[st] ;
+      const vector<int> &ns = canonnext[st] ;
+      for (int m=0; m<pd.moves.size(); m++) {
+         const moove &mv = pd.moves[m] ;
+         if ((mask >> mv.base) & 1)
+            continue ;
+         pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+         movehist[sp] = m ;
+         v = solverecur(pd, pt, togo-1, sp+1, ns[mv.base]) ;
+         if (v == 1)
+            return 1 ;
+         if (v == -1) {
+            // skip similar rotations
+            while (m+1 < pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
+               m++ ;
+         }
+      }
+      return 0 ;
+   }
+   int solvestart(const puzdef &pd, prunetable &pt, int w) {
+      ull initmoves = workchunks[w] ;
+      int nmoves = pd.moves.size() ;
+      int sp = 0 ;
+      int st = 0 ;
+      int togo = d ;
+      while (initmoves > 1) {
+         int mv = initmoves % nmoves ;
+         pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
+         movehist[sp] = mv ;
+         st = canonnext[st][pd.moves[mv].base] ;
+         sp++ ;
+         togo-- ;
+         initmoves /= nmoves ;
+      }
+      return solverecur(pd, pt, togo, sp, st) ;
+   }
+   void dowork(const puzdef &pd, prunetable &pt) {
+      while (1) {
+         int w = -1 ;
+         int finished = 0 ;
+         get_global_lock() ;
+         finished = globalsolved ;
+         if (workat < workchunks.size())
+            w = workat++ ;
+         release_global_lock() ;
+         if (finished || w < 0)
+            return ;
+         if (solvestart(pd, pt, w) == 1) {
+            solved = 1 ;
+            get_global_lock() ;
+            globalsolved = 1 ;
+            release_global_lock() ;
+            return ;
+         }
+      }
+   }
+} solveworkers[MAXTHREADS] ;
+void *threadworker(void *o) {
+   workerparams *wp = (workerparams *)o ;
+   solveworkers[wp->tid].dowork(wp->pd, wp->pt) ;
+   return 0 ;
+}
+void solve(const puzdef &pd, prunetable &pt, const setval p) {
+   ull totlookups = 0 ;
+   int initd = pt.lookup(p) ;
+   vector<workerparams> wp ;
+   for (int d=initd; ; d++) {
+      cout << " " << d << flush ;
+      workchunks.clear() ;
+      workstates.clear() ;
+      workchunks.push_back(1) ;
+      workstates.push_back(0) ;
+      int nmoves = pd.moves.size() ;
+      int chunkmoves = 0 ;
+      if (numthreads > 1 && d >= 6 && d - initd >= 3) {
+         ull mul = 1 ;
+         while (chunkmoves + 3 < d && workchunks.size() < 40 * numthreads) {
+            vector<ull> wc2 ;
+            vector<int> ws2 ;
+            for (int i=0; i<workchunks.size(); i++) {
+               ull pmv = workchunks[i] ;
+               int st = workstates[i] ;
+               ull mask = canonmask[st] ;
+               const vector<int> &ns = canonnext[st] ;
+               for (int mv=0; mv<nmoves; mv++)
+                  if (0 == ((mask >> pd.moves[mv].base) & 1)) {
+                     wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
+                     ws2.push_back(ns[pd.moves[mv].base]) ;
+                  }
+            }
+            swap(wc2, workchunks) ;
+            swap(ws2, workstates) ;
+            chunkmoves++ ;
+            mul *= nmoves ;
+         }
+      }
+      int wthreads = min(numthreads, (int)workchunks.size()) ;
+      for (int t=0; t<wthreads; t++)
+         solveworkers[t].init(pd, pt, d, p) ;
+      workat = 0 ;
+      globalsolved = 0 ;
+      int solveloc = -1 ;
+      while (wp.size() < wthreads) {
+         int i = wp.size() ;
+         wp.push_back(workerparams(pd, pt, i)) ;
+      }
+      for (int i=0; i<wthreads; i++)
+         spawn_thread(i, threadworker, &(wp[i])) ;
+      for (int i=0; i<wthreads; i++)
+         join_thread(i) ;
+      for (int i=0; i<wthreads; i++) {
+         totlookups += solveworkers[i].lookups ;
+         pt.addlookups(solveworkers[i].lookups) ;
+         if (solveworkers[i].solved)
+            solveloc = i ;
+      }
+      if (solveloc >= 0) {
          cout << endl ;
-         cout << "Solved at " << d << " lookups " << pt.lookupcnt-oldlookups << " in " << duration() << endl << flush ;
+         cout << "Solved at " << d << " lookups " << totlookups << " in " << duration() << endl << flush ;
          for (int i=0; i<d; i++)
-            cout << " " << pd.moves[movehist[i]].name ;
+            cout << " " << pd.moves[solveworkers[solveloc].movehist[i]].name ;
          cout << endl << flush ;
          return ;
       }
@@ -1919,6 +2061,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
 int dogod, docanon, doalgo ;
 int main(int argc, const char **argv) {
    duration() ;
+   init_mutex() ;
    cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
    cout << "-" ;
    for (int i=0; i<argc; i++)
@@ -1957,6 +2100,13 @@ case 'C':
          break ;
 case 'A':
          doalgo++ ;
+         break ;
+case 't':
+         numthreads = atol(argv[1]) ;
+         if (numthreads > MAXTHREADS)
+            error("Numthreads cannot be more than ", to_string(MAXTHREADS)) ;
+         argc-- ;
+         argv++ ;
          break ;
 default:
          error("! did not argument ", argv[0]) ;
