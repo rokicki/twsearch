@@ -1920,7 +1920,8 @@ struct solveworker {
    uchar solved ;
    char padding[256] ; // kill false sharing
    void init(const puzdef &pd, prunetable &pt, int d_, const setval &p) {
-      while (posns.size() <= d_+1) {
+      // make the position table big to minimize false sharing.
+      while (posns.size() <= 100 || posns.size() <= d_+1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
