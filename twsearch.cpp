@@ -36,6 +36,17 @@ double duration() {
 const int MAXTHREADS = 256 ;
 int numthreads = 2 ;
 pthread_mutex_t mmutex ;
+/*
+ *   This sets a limit on the scalability of filling, but at the same
+ *   time introduces a need for more memory since we need
+ *   MAXTHREADS * MEMSHARDS * FILLCHUNKS * sizeof(ull) for shard
+ *   buffers.
+ */
+const int MEMSHARDS = 32 ;
+struct memshard {
+   pthread_mutex_t mutex ;
+   char pad[256] ;
+} memshards[MEMSHARDS] ;
 void init_mutex() {
   pthread_mutex_init(&mmutex, NULL) ;
 }
@@ -1524,22 +1535,26 @@ int setupthreads(const puzdef &pd, prunetable &pt) {
    return wthreads ;
 }
 const int BLOCKSIZE = 8192 ; // in long longs
-const int FILLCHUNKS = 2048 ;
+const int FILLCHUNKS = 64 ;
+struct fillbuf {
+   int nchunks ;
+   ull chunks[FILLCHUNKS] ;
+} ;
 struct fillworker {
    vector<allocsetval> posns ;
    int d ;
-   int nchunks ;
-   ull chunks[FILLCHUNKS] ;
+   fillbuf fillbufs[MEMSHARDS] ;
    char pad[256] ;
    void init(const puzdef &pd, prunetable &pt, int d_) {
       while (posns.size() <= 100 || posns.size() <= d_+1)
          posns.push_back(allocsetval(pd, pd.solved)) ;
       pd.assignpos(posns[0], pd.solved) ;
       d = d_ ;
-      nchunks = 0 ;
+      for (int i=0; i<MEMSHARDS; i++)
+         fillbufs[i].nchunks = 0 ;
    }
    ull fillstart(const puzdef &pd, prunetable &pt, int w) ;
-   ull fillflush(const prunetable &pt) ;
+   ull fillflush(const prunetable &pt, int shard) ;
    void dowork(const puzdef &pd, prunetable &pt) ;
    ull filltable(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
 } fillworkers[MAXTHREADS] ;
@@ -1556,6 +1571,9 @@ struct prunetable {
              (pd.logstates > 55 || 8 * bytesize < pd.llstates))
          bytesize *= 2 ;
       size = bytesize * 4 ;
+      shardshift = 0 ;
+      while ((size >> shardshift) > MEMSHARDS)
+         shardshift++ ;
       hmask = size - 1 ;
       totpop = 0 ;
       int base = 1 ;
@@ -1572,6 +1590,7 @@ struct prunetable {
       if (!readpt(pd)) {
          memset(mem, -1, bytesize) ;
          baseval = min(hibase, 2) ;
+ baseval = 20 ; // <><>
          for (int d=0; d<=baseval+1; d++) {
             int val = 0 ;
             if (d >= baseval)
@@ -2015,6 +2034,7 @@ struct prunetable {
    ull fillcnt ;
    ull *mem ;
    int totsize ;
+   int shardshift ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
    int wval ;
    uchar codewidths[512] ;
@@ -2037,22 +2057,24 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
       initmoves /= nmoves ;
    }
    ull r = filltable(pd, pt, togo, sp, st) ;
-   r += fillflush(pt) ;
+   for (int i=0; i<MEMSHARDS; i++)
+      r += fillflush(pt, i) ;
    return r ;
 }
-ull fillworker::fillflush(const prunetable &pt) {
+ull fillworker::fillflush(const prunetable &pt, int shard) {
    ull r = 0 ;
-   if (nchunks > 0) {
-      get_global_lock() ;
-      for (int i=0; i<nchunks; i++) {
-         ull h = chunks[i] & pt.hmask ;
+   fillbuf &fb = fillbufs[shard] ;
+   if (fb.nchunks > 0) {
+      pthread_mutex_lock(&(memshards[shard].mutex)) ;
+      for (int i=0; i<fb.nchunks; i++) {
+         ull h = fb.chunks[i] & pt.hmask ;
          if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
             pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
             r++ ;
          }
       }
-      release_global_lock() ;
-      nchunks = 0 ;
+      pthread_mutex_unlock(&(memshards[shard].mutex)) ;
+      fb.nchunks = 0 ;
    }
    return r ;
 }
@@ -2075,10 +2097,12 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
                           int sp, int st) {
    ull r = 0 ;
    if (togo == 0) {
-      ull h = fasthash(pd.totsize, posns[sp]) ;
-      chunks[nchunks++] = h ;
-      if (nchunks >= FILLCHUNKS)
-         r += fillflush(pt) ;
+      ull h = fasthash(pd.totsize, posns[sp]) & pt.hmask ;
+      int shard = (h >> pt.shardshift) ;
+      fillbuf &fb = fillbufs[shard] ;
+      fb.chunks[fb.nchunks++] = h ;
+      if (fb.nchunks >= FILLCHUNKS)
+         r += fillflush(pt, shard) ;
       return r ;
    }
    ull mask = canonmask[st] ;
@@ -2228,6 +2252,8 @@ int dogod, docanon, doalgo ;
 int main(int argc, const char **argv) {
    duration() ;
    init_mutex() ;
+   for (int i=0; i<MEMSHARDS; i++)
+      pthread_mutex_init(&(memshards[i].mutex), NULL) ;
    cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
    cout << "-" ;
    for (int i=0; i<argc; i++)
