@@ -42,7 +42,7 @@ pthread_mutex_t mmutex ;
  *   MAXTHREADS * MEMSHARDS * FILLCHUNKS * sizeof(ull) for shard
  *   buffers.
  */
-const int MEMSHARDS = 32 ;
+const int MEMSHARDS = 64 ;
 struct memshard {
    pthread_mutex_t mutex ;
    char pad[256] ;
