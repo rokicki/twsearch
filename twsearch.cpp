@@ -1469,8 +1469,85 @@ ull fasthash(int n, const setvals sv) {
       r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 ;
    return r ;
 }
-const int PEEKSIZE = 8 ;
+vector<ull> workchunks ;
+vector<int> workstates ;
+int workat ;
+void makeworkchunks(const puzdef &pd, int d) {
+   workchunks.clear() ;
+   workstates.clear() ;
+   workchunks.push_back(1) ;
+   workstates.push_back(0) ;
+   int nmoves = pd.moves.size() ;
+   int chunkmoves = 0 ;
+   if (numthreads > 1 && d >= 3) {
+      ull mul = 1 ;
+      while (chunkmoves + 3 < d && workchunks.size() < 40 * numthreads) {
+         vector<ull> wc2 ;
+         vector<int> ws2 ;
+         for (int i=0; i<workchunks.size(); i++) {
+            ull pmv = workchunks[i] ;
+            int st = workstates[i] ;
+            ull mask = canonmask[st] ;
+            const vector<int> &ns = canonnext[st] ;
+            for (int mv=0; mv<nmoves; mv++)
+               if (0 == ((mask >> pd.moves[mv].base) & 1)) {
+                  wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
+                  ws2.push_back(ns[pd.moves[mv].base]) ;
+               }
+         }
+         swap(wc2, workchunks) ;
+         swap(ws2, workstates) ;
+         chunkmoves++ ;
+         mul *= nmoves ;
+      }
+   }
+}
+struct prunetable ;
+struct workerparam {
+   workerparam(const puzdef &pd_, prunetable &pt_, int tid_) :
+      pd(pd_), pt(pt_), tid(tid_) {}
+   const puzdef &pd ;
+   prunetable &pt ;
+   int tid ;
+} ;
+vector<workerparam> workerparams ;
+void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
+   while (workerparams.size() < numthreads) {
+      int i = workerparams.size() ;
+      workerparams.push_back(workerparam(pd, pt, i)) ;
+   }
+}
+int setupthreads(const puzdef &pd, prunetable &pt) {
+   int wthreads = min(numthreads, (int)workchunks.size()) ;
+   workat = 0 ;
+   setupparams(pd, pt, wthreads) ;
+   return wthreads ;
+}
 const int BLOCKSIZE = 8192 ; // in long longs
+const int FILLCHUNKS = 2048 ;
+struct fillworker {
+   vector<allocsetval> posns ;
+   int d ;
+   int nchunks ;
+   ull chunks[FILLCHUNKS] ;
+   char pad[256] ;
+   void init(const puzdef &pd, prunetable &pt, int d_) {
+      while (posns.size() <= 100 || posns.size() <= d_+1)
+         posns.push_back(allocsetval(pd, pd.solved)) ;
+      pd.assignpos(posns[0], pd.solved) ;
+      d = d_ ;
+      nchunks = 0 ;
+   }
+   ull fillstart(const puzdef &pd, prunetable &pt, int w) ;
+   ull fillflush(const prunetable &pt) ;
+   void dowork(const puzdef &pd, prunetable &pt) ;
+   ull filltable(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
+} fillworkers[MAXTHREADS] ;
+void *fillthreadworker(void *o) {
+   workerparam *wp = (workerparam *)o ;
+   fillworkers[wp->tid].dowork(wp->pd, wp->pt) ;
+   return 0 ;
+}
 struct prunetable {
    prunetable(const puzdef &pd, ull maxmem) {
       totsize = pd.totsize ;
@@ -1505,51 +1582,22 @@ struct prunetable {
       }
       writept(pd) ;
    }
-   void flushone() {
-      if (peekaround >= PEEKSIZE) {
-         ull h = peek[peekaround & (PEEKSIZE - 1)] ;
-         if ((3 & (mem[h >> 5] >> ((h & 31) * 2))) == 3) {
-            mem[h >> 5] -= (3LL - wval) << ((h & 31) * 2) ;
-            popped++ ;
-         }
-      }
-   }
    void filltable(const puzdef &pd, int d) {
       popped = 0 ;
-      while (posns.size() <= d + 1) {
-         posns.push_back(allocsetval(pd, pd.solved)) ;
-         movehist.push_back(-1) ;
-      }
-      pd.assignpos(posns[0], pd.solved) ;
       cout << "Filling table at depth " << d << " with val " << wval << flush ;
-      peekaround = 0 ;
-      filltable(pd, d, 0, 0) ;
-      for (int i=0; i<PEEKSIZE; i++, peekaround++)
-         flushone() ;
+      makeworkchunks(pd, d) ;
+      int wthreads = setupthreads(pd, *this) ;
+      for (int t=0; t<wthreads; t++)
+         fillworkers[t].init(pd, *this, d) ;
+      for (int i=0; i<wthreads; i++)
+         spawn_thread(i, fillthreadworker, &(workerparams[i])) ;
+      for (int i=0; i<wthreads; i++)
+         join_thread(i) ;
       fillcnt += canonseqcnt[d] ;
       cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
            << duration() << endl << flush ;
       totpop += popped ;
       justread = 0 ;
-   }
-   void filltable(const puzdef &pd, int togo, int sp, int st) {
-      if (togo == 0) {
-         flushone() ;
-         ull h = fasthash(totsize, posns[sp]) & hmask ;
-         __builtin_prefetch(mem+(h>>5)) ;
-         peek[peekaround & (PEEKSIZE - 1)] = h ;
-         peekaround++ ;
-         return ;
-      }
-      ull mask = canonmask[st] ;
-      const vector<int> &ns = canonnext[st] ;
-      for (int m=0; m<pd.moves.size(); m++) {
-         const moove &mv = pd.moves[m] ;
-         if ((mask >> mv.base) & 1)
-            continue ;
-         pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-         filltable(pd, togo-1, sp+1, ns[mv.base]) ;
-      }
    }
    void checkextend(const puzdef &pd) {
       if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
@@ -1968,25 +2016,83 @@ struct prunetable {
    ull *mem ;
    int totsize ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
-   ull peek[PEEKSIZE] ;
-   ull peekaround ;
    int wval ;
    uchar codewidths[512] ;
    ull codevals[512] ;
    short *tabs[7] ;
    char justread ;
 } ;
-vector<ull> workchunks ;
-vector<int> workstates ;
-int workat ;
+ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
+   ull initmoves = workchunks[w] ;
+   int nmoves = pd.moves.size() ;
+   int sp = 0 ;
+   int st = 0 ;
+   int togo = d ;
+   while (initmoves > 1) {
+      int mv = initmoves % nmoves ;
+      pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
+      st = canonnext[st][pd.moves[mv].base] ;
+      sp++ ;
+      togo-- ;
+      initmoves /= nmoves ;
+   }
+   ull r = filltable(pd, pt, togo, sp, st) ;
+   r += fillflush(pt) ;
+   return r ;
+}
+ull fillworker::fillflush(const prunetable &pt) {
+   ull r = 0 ;
+   if (nchunks > 0) {
+      get_global_lock() ;
+      for (int i=0; i<nchunks; i++) {
+         ull h = chunks[i] & pt.hmask ;
+         if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
+            pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
+            r++ ;
+         }
+      }
+      release_global_lock() ;
+      nchunks = 0 ;
+   }
+   return r ;
+}
+void fillworker::dowork(const puzdef &pd, prunetable &pt) {
+   while (1) {
+      int w = -1 ;
+      get_global_lock() ;
+      if (workat < workchunks.size())
+         w = workat++ ;
+      release_global_lock() ;
+      if (w < 0)
+         return ;
+      ull cnt = fillstart(pd, pt, w) ;
+      get_global_lock() ;
+      pt.popped += cnt ;
+      release_global_lock() ;
+   }
+}
+ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
+                          int sp, int st) {
+   ull r = 0 ;
+   if (togo == 0) {
+      ull h = fasthash(pd.totsize, posns[sp]) ;
+      chunks[nchunks++] = h ;
+      if (nchunks >= FILLCHUNKS)
+         r += fillflush(pt) ;
+      return r ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int m=0; m<pd.moves.size(); m++) {
+      const moove &mv = pd.moves[m] ;
+      if ((mask >> mv.base) & 1)
+         continue ;
+      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      r += filltable(pd, pt, togo-1, sp+1, ns[mv.base]) ;
+   }
+   return r ;
+}
 int globalsolved ;
-struct workerparams {
-   workerparams(const puzdef &pd_, prunetable &pt_, int tid_) :
-      pd(pd_), pt(pt_), tid(tid_) {}
-   const puzdef &pd ;
-   prunetable pt ;
-   int tid ;
-} ;
 struct solveworker {
    vector<allocsetval> posns ;
    vector<int> movehist ;
@@ -2076,7 +2182,7 @@ struct solveworker {
    }
 } solveworkers[MAXTHREADS] ;
 void *threadworker(void *o) {
-   workerparams *wp = (workerparams *)o ;
+   workerparam *wp = (workerparam *)o ;
    solveworkers[wp->tid].dowork(wp->pd, wp->pt) ;
    return 0 ;
 }
@@ -2084,49 +2190,19 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
-   vector<workerparams> wp ;
    for (int d=initd; ; d++) {
       cout << " " << d << flush ;
-      workchunks.clear() ;
-      workstates.clear() ;
-      workchunks.push_back(1) ;
-      workstates.push_back(0) ;
-      int nmoves = pd.moves.size() ;
-      int chunkmoves = 0 ;
-      if (numthreads > 1 && d >= 6 && d - initd >= 3) {
-         ull mul = 1 ;
-         while (chunkmoves + 3 < d && workchunks.size() < 40 * numthreads) {
-            vector<ull> wc2 ;
-            vector<int> ws2 ;
-            for (int i=0; i<workchunks.size(); i++) {
-               ull pmv = workchunks[i] ;
-               int st = workstates[i] ;
-               ull mask = canonmask[st] ;
-               const vector<int> &ns = canonnext[st] ;
-               for (int mv=0; mv<nmoves; mv++)
-                  if (0 == ((mask >> pd.moves[mv].base) & 1)) {
-                     wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
-                     ws2.push_back(ns[pd.moves[mv].base]) ;
-                  }
-            }
-            swap(wc2, workchunks) ;
-            swap(ws2, workstates) ;
-            chunkmoves++ ;
-            mul *= nmoves ;
-         }
-      }
-      int wthreads = min(numthreads, (int)workchunks.size()) ;
+      if (d - initd > 3)
+         makeworkchunks(pd, d) ;
+      else
+         makeworkchunks(pd, 0) ;
+      int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, pt, d, p) ;
-      workat = 0 ;
       globalsolved = 0 ;
       int solveloc = -1 ;
-      while (wp.size() < wthreads) {
-         int i = wp.size() ;
-         wp.push_back(workerparams(pd, pt, i)) ;
-      }
       for (int i=0; i<wthreads; i++)
-         spawn_thread(i, threadworker, &(wp[i])) ;
+         spawn_thread(i, threadworker, &(workerparams[i])) ;
       for (int i=0; i<wthreads; i++)
          join_thread(i) ;
       for (int i=0; i<wthreads; i++) {
