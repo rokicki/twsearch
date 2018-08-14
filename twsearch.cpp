@@ -1692,7 +1692,7 @@ struct prunetable {
    void packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
       ull accum = 0 ;
       int havebits = 0 ;
-      int bytectr = 0 ;
+      ull bytectr = 0 ;
       for (ll i=0; i<longcnt; i++) {
          ull v = mem[i] ;
          for (int j=0; j<8; j++) {
@@ -1727,7 +1727,7 @@ struct prunetable {
       int bytectr = 0 ;
       int havebits = 0 ;
       ull accum = 0 ;
-      for (ll i=0; i<longcnt; i++) {
+      for (ull i=0; i<longcnt; i++) {
          ull v = 0 ;
          for (int j=0; j<8; j++) {
             int bitsneeded = 8 ;
@@ -1875,7 +1875,7 @@ struct prunetable {
             at += ((ull)widthcounts[i]) << (maxwidth - i) ;
          }
       }
-      if (at != (1LL << maxwidth))
+      if (at != (1ULL << maxwidth))
          error("! Bad calculation in codes") ;
       for (int i=0; i<256; i++)
          if (codewidths[i]) {
@@ -1901,7 +1901,7 @@ struct prunetable {
       fwrite(codewidths, sizeof(codewidths[0]), 256, w) ;
       if (longcnt % BLOCKSIZE != 0)
          error("Size must be a multiple of block size") ;
-      for (ull i=0; i<longcnt; i += BLOCKSIZE)
+      for (ll i=0; i<longcnt; i += BLOCKSIZE)
          writeblock(mem+i, BLOCKSIZE, w) ;
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
