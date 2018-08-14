@@ -1624,11 +1624,13 @@ struct prunetable {
          return ;
       cout << endl ;
       ull longcnt = (size + 31) >> 5 ;
+      cout << "Demoting memory values " << flush ;
       for (ull i=0; i<longcnt; i++) {
          ull v = mem[i] ;
          // decrement 1's and 2's; leave 3's alone
          mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
       }
+      cout << "in " << duration() << endl << flush ;
       baseval++ ;
       wval = 2 ;
       filltable(pd, baseval+1) ;
@@ -1811,6 +1813,7 @@ struct prunetable {
       for (int i=0; i<256; i++)
          bytecnts[i] = 0 ;
       ll longcnt = (size + 31) >> 5 ;
+      cout << "Scanning memory for compression information " << flush ;
       for (ll i=0; i<longcnt; i++) {
          ull v = mem[i] ;
          for (int j=0; j<8; j++) {
@@ -1818,6 +1821,7 @@ struct prunetable {
             v >>= 8 ;
          }
       }
+      cout << "in " << duration() << endl << flush ;
       set<pair<ll, int> > codes ;
       vector<pair<int, int> > tree ; // binary tree
       vector<int> depths ; // max depths
