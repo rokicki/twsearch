@@ -128,7 +128,7 @@ struct puzdef {
       const uchar *bp = b.dat ;
       uchar *cp = c.dat ;
       memset(cp, 0, totsize) ;
-      for (int i=0; i<setdefs.size(); i++) {
+      for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
          for (int j=0; j<n; j++)
@@ -209,7 +209,7 @@ vector<string> getline(FILE *f, ull &checksum) {
       if (s[0] == '#')
          continue ;
       string tok ;
-      for (int i=0; i<s.size(); i++) {
+      for (int i=0; i<(int)s.size(); i++) {
          if (s[i] <= ' ') {
             if (tok.size() > 0) {
                toks.push_back(tok) ;
@@ -228,13 +228,13 @@ vector<string> getline(FILE *f, ull &checksum) {
    }
 }
 void expect(const vector<string> &toks, int cnt) {
-   if (cnt != toks.size())
+   if (cnt != (int)toks.size())
       error("! wrong number of tokens on line") ;
 }
 // must be a number under 256.
 int getnumber(int minval, const string &s) {
    int r = 0 ;
-   for (int i=0; i<s.size(); i++) {
+   for (int i=0; i<(int)s.size(); i++) {
       if ('0' <= s[i] && s[i] <= '9')
          r = r * 10 + s[i] - '0' ;
       else
@@ -299,7 +299,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
             error("! empty set def?") ;
          expect(toks, 1) ;
          curset = -1 ;
-         for (int i=0; i<pz.setdefs.size(); i++)
+         for (int i=0; i<(int)pz.setdefs.size(); i++)
             if (toks[0] == pz.setdefs[i].name) {
                curset = i ;
                break ;
@@ -311,7 +311,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          numseq = 0 ;
       }
    }
-   for (int i=0; i<pz.setdefs.size(); i++) {
+   for (int i=0; i<(int)pz.setdefs.size(); i++) {
       uchar *p = r.dat + pz.setdefs[i].off ;
       int n = pz.setdefs[i].size ;
       if (p[0] == 0) {
@@ -325,16 +325,16 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          for (int j=0; j<n; j++) {
             int v = --p[j] ;
             sum += v ;
-            if (v >= cnts.size())
+            if (v >= (int)cnts.size())
                cnts.resize(v+1) ;
             cnts[v]++ ;
          }
          if (typ == 's')
             pz.setdefs[i].psum = sum ;
-         for (int j=0; j<cnts.size(); j++)
+         for (int j=0; j<(int)cnts.size(); j++)
             if (cnts[j] == 0)
                error("! values are not contiguous") ;
-         if (cnts.size() != n) {
+         if ((int)cnts.size() != n) {
             if (typ != 's')
                error("! expected, but did not see, a proper permutation") ;
             else {
@@ -435,7 +435,7 @@ puzdef readdef(FILE *f) {
       error("! puzzle must have moves") ;
    pz.id = setvals((uchar *)calloc(pz.totsize, 1)) ;
    uchar *p = pz.id.dat ;
-   for (int i=0; i<pz.setdefs.size(); i++) {
+   for (int i=0; i<(int)pz.setdefs.size(); i++) {
       int n = pz.setdefs[i].size ;
       for (int j=0; j<n; j++)
          p[j] = j ;
@@ -452,7 +452,7 @@ void addmovepowers(puzdef &pd) {
    pd.basemoves = pd.moves ;
    stacksetval p1(pd), p2(pd) ;
    vector<string> newnames ;
-   for (int i=0; i<pd.moves.size(); i++) {
+   for (int i=0; i<(int)pd.moves.size(); i++) {
       moove &m = pd.moves[i] ;
       if (quarter && m.cost > 1)
          continue ;
@@ -469,7 +469,7 @@ void addmovepowers(puzdef &pd) {
       }
       int order = movepowers.size() + 1 ;
       pd.basemoveorders.push_back(order) ;
-      for (int j=0; j<movepowers.size(); j++) {
+      for (int j=0; j<(int)movepowers.size(); j++) {
          int tw = j + 1 ;
          if (order - tw < tw)
             tw -= order ;
@@ -491,7 +491,7 @@ void addmovepowers(puzdef &pd) {
    if (newnames.size() > 0) {
       pd.moves = newmoves ;
       cout << "Created new moves" ;
-      for (int i=0; i<newnames.size(); i++)
+      for (int i=0; i<(int)newnames.size(); i++)
          cout << " " << newnames[i] ;
       cout << endl << flush ;
    } else {
@@ -503,7 +503,7 @@ void calculatesizes(puzdef &pd) {
    ull gllstates = 1 ;
    double glogstates = 0 ;
    dllstates = 1 ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       ull llperms = 1 ;
       ull llords = 1 ;
       double logstates = 0 ;
@@ -520,7 +520,7 @@ void calculatesizes(puzdef &pd) {
          }
       } else {
          int left = n ;
-         for (int j=0; j<sd.cnts.size(); j++) {
+         for (int j=0; j<(int)sd.cnts.size(); j++) {
             for (int k=0; k<sd.cnts[j]; k++) {
                llperms *= left ;
                logstates += log2(left) ;
@@ -668,7 +668,7 @@ ull densepack(const puzdef &pd, setvals pos) {
    ull r = 0 ;
    ull m = 1 ;
    uchar *p = pos.dat ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
@@ -694,7 +694,7 @@ ull densepack(const puzdef &pd, setvals pos) {
 }
 void denseunpack(const puzdef &pd, ull v, setvals pos) {
    uchar *p = pos.dat ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
@@ -756,7 +756,7 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
-               for (int i=0; i<pd.moves.size(); i++) {
+               for (int i=0; i<(int)pd.moves.size(); i++) {
                   if (quarter && pd.moves[i].cost > 1)
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
@@ -781,7 +781,7 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
-               for (int i=0; i<pd.moves.size(); i++) {
+               for (int i=0; i<(int)pd.moves.size(); i++) {
                   if (quarter && pd.moves[i].cost > 1)
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
@@ -805,13 +805,13 @@ void dotwobitgod(puzdef &pd) {
  */
 ull symcoordgoal = 20000 ;
 int numsym = 0 ;
-ull symcoordsize = 0 ;
+ll symcoordsize = 0 ;
 vector<pair<ull, int> > parts ;
 int nmoves ;
 vector<int> movemap ;
 ull densepack_ordered(const puzdef &pd, setvals pos) {
    ull r = 0 ;
-   for (int ii=0; ii<parts.size(); ii++) {
+   for (int ii=0; ii<(int)parts.size(); ii++) {
       int sdpair = parts[ii].second ;
       const setdef &sd = pd.setdefs[sdpair>>1] ;
       int n = sd.size ;
@@ -881,7 +881,7 @@ void innerloop(int at, int back, int seek, int newv,
    }
 }
 void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar, vector<ull> &muld) {
-   if (at + numsym == parts.size()) {
+   if (at + numsym == (int)parts.size()) {
       innerloop(at, back, seek, newv, sofar, muld) ;
       return ;
    }
@@ -934,11 +934,11 @@ void dotwobitgod2(puzdef &pd) {
     */
    parts.clear() ;
    movemap.clear() ;
-   for (int i=0; i<pd.moves.size(); i++)
+   for (int i=0; i<(int)pd.moves.size(); i++)
       if (!quarter || pd.moves[i].cost == 1)
          movemap.push_back(i) ;
    nmoves = movemap.size() ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       setdef &sd = pd.setdefs[i] ;
       if (!sd.uniq)
          error("! we don't support dense packing of non-unique yet") ;
@@ -952,7 +952,7 @@ void dotwobitgod2(puzdef &pd) {
    numsym = 0 ;
    symcoordsize = 1 ;
    ull hicount = (maxmem - memneeded) / (4 * nmoves) ;
-   while (numsym < parts.size()) {
+   while (numsym < (int)parts.size()) {
       ull tsymcoordsize = symcoordsize * parts[numsym].first ;
       // never go past 32 bits, or past maxmem
       if (tsymcoordsize > 0xffffffffLL || tsymcoordsize > hicount)
@@ -968,7 +968,7 @@ void dotwobitgod2(puzdef &pd) {
       return ;
    }
    cout << "Sizes [" ;
-   for (int i=0; i<parts.size(); i++) {
+   for (int i=0; i<(int)parts.size(); i++) {
       if (i)
          cout << " " ;
       cout << parts[i].first ;
@@ -991,7 +991,7 @@ void dotwobitgod2(puzdef &pd) {
       uchar *wmem2 = p2.dat ;
       ull u = i ;
       ull mul = 1 ;
-      for (int j=parts.size()-1; j+numsym>=parts.size(); j--) {
+      for (int j=parts.size()-1; j+numsym>=(int)parts.size(); j--) {
          int sdpair = parts[j].second ;
          setdef &sd = pd.setdefs[sdpair>>1] ;
          if (sdpair & 1) {
@@ -1061,7 +1061,7 @@ void dotwobitgod2(puzdef &pd) {
 int looseper ;
 void calclooseper(const puzdef &pd) {
    int bits = 0 ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       bits += sd.pbits * (n-1) ;
@@ -1076,7 +1076,7 @@ void loosepack(const puzdef &pd, setvals pos, loosetype *w) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
@@ -1117,7 +1117,7 @@ void looseunpack(const puzdef &pd, setvals pos, loosetype *r) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
-   for (int i=0; i<pd.setdefs.size(); i++) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
@@ -1233,7 +1233,7 @@ void doarraygod(const puzdef &pd) {
       loosetype *levend = writer ;
       for (loosetype *pr=reader; pr<levend; pr += looseper) {
          looseunpack(pd, p1, pr) ;
-         for (int i=0; i<pd.moves.size(); i++) {
+         for (int i=0; i<(int)pd.moves.size(); i++) {
             if (quarter && pd.moves[i].cost > 1)
                continue ;
             pd.mul(p1, pd.moves[i].pos, p2) ;
@@ -1280,7 +1280,7 @@ void makecanonstates(const puzdef &pd) {
    statebits.push_back(0) ;
    int qg = 0 ;
    int statecount = 1 ;
-   while (qg < statebits.size()) {
+   while (qg < (int)statebits.size()) {
       vector<int> nextstate(nbase) ;
       for (int i=0; i<nbase; i++)
          nextstate[i] = -1 ;
@@ -1320,7 +1320,7 @@ void showcanon(const puzdef &pd, int show) {
    double gsum = 0 ;
    double osum = 1 ;
    for (int d=0; d<=100; d++) {
-      while (counts.size() <= d+lookahead)
+      while ((int)counts.size() <= d+lookahead)
          counts.push_back(zeros) ;
       double sum = 0 ;
       for (int i=0; i<nstates; i++)
@@ -1376,7 +1376,7 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
    }
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
-   for (int m=0; m<pd.moves.size(); m++) {
+   for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
       if ((mask >> mv.base) & 1)
          continue ;
@@ -1399,7 +1399,7 @@ void doarraygod2(const puzdef &pd) {
    s_1 = mem ;
    s_2 = mem ;
    for (int d=0; ; d++) {
-      while (posns.size() <= d + 1) {
+      while ((int)posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
@@ -1426,7 +1426,7 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
       int wr = 0 ;
       const uchar *p1 = posns[sp].dat ;
       const uchar *so = pd.solved.dat ;
-      for (int i=0; i<pd.setdefs.size(); i++) {
+      for (int i=0; i<(int)pd.setdefs.size(); i++) {
          int n = pd.setdefs[i].size ;
          for (int j=0; j<n; j++) {
             if (p1[j] != so[j] || p1[j+n] != so[j+n]) {
@@ -1446,7 +1446,7 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
    }
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
-   for (int m=0; m<pd.moves.size(); m++) {
+   for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
       if ((mask >> mv.base) & 1)
          continue ;
@@ -1457,7 +1457,7 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
 }
 void findalgos(const puzdef &pd) {
    for (int d=1; ; d++) {
-      while (posns.size() <= d + 1) {
+      while ((int)posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
@@ -1492,10 +1492,10 @@ void makeworkchunks(const puzdef &pd, int d) {
    int chunkmoves = 0 ;
    if (numthreads > 1 && d >= 3) {
       ull mul = 1 ;
-      while (chunkmoves + 3 < d && workchunks.size() < 40 * numthreads) {
+      while (chunkmoves + 3 < d && (int)workchunks.size() < 40 * numthreads) {
          vector<ull> wc2 ;
          vector<int> ws2 ;
-         for (int i=0; i<workchunks.size(); i++) {
+         for (int i=0; i<(int)workchunks.size(); i++) {
             ull pmv = workchunks[i] ;
             int st = workstates[i] ;
             ull mask = canonmask[st] ;
@@ -1523,7 +1523,7 @@ struct workerparam {
 } ;
 vector<workerparam> workerparams ;
 void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
-   while (workerparams.size() < numthreads) {
+   while ((int)workerparams.size() < numthreads) {
       int i = workerparams.size() ;
       workerparams.push_back(workerparam(pd, pt, i)) ;
    }
@@ -1546,7 +1546,7 @@ struct fillworker {
    fillbuf fillbufs[MEMSHARDS] ;
    char pad[256] ;
    void init(const puzdef &pd, prunetable &pt, int d_) {
-      while (posns.size() <= 100 || posns.size() <= d_+1)
+      while (posns.size() <= 100 || (int)posns.size() <= d_+1)
          posns.push_back(allocsetval(pd, pd.solved)) ;
       pd.assignpos(posns[0], pd.solved) ;
       d = d_ ;
@@ -1577,7 +1577,7 @@ struct prunetable {
       hmask = size - 1 ;
       totpop = 0 ;
       int base = 1 ;
-      while (base + 2 < canontotcnt.size() && canontotcnt[base+2] < size)
+      while (base + 2 < (int)canontotcnt.size() && canontotcnt[base+2] < size)
          base++ ;
       // hack memalign
       mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
@@ -1693,7 +1693,7 @@ struct prunetable {
       ull accum = 0 ;
       int havebits = 0 ;
       ull bytectr = 0 ;
-      for (ll i=0; i<longcnt; i++) {
+      for (ull i=0; i<longcnt; i++) {
          ull v = mem[i] ;
          for (int j=0; j<8; j++) {
             int cp = v & 255 ;
