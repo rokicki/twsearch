@@ -984,7 +984,7 @@ void dotwobitgod2(puzdef &pd) {
    cout << "Making symcoord lookup table size " << symcoordsize <<
            " x " << nmoves << flush ;
    uint *ss = symc ;
-   for (ull i=0; i<symcoordsize; i++, ss += nmoves) {
+   for (ll i=0; i<symcoordsize; i++, ss += nmoves) {
       stacksetval p1(pd) ;
       stacksetval p2(pd) ;
       uchar *wmem = p1.dat ;
