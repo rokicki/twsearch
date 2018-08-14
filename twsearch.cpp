@@ -33,7 +33,7 @@ double duration() {
    start = now ;
    return r ;
 }
-const int MAXTHREADS = 256 ;
+const int MAXTHREADS = 64 ;
 int numthreads = 2 ;
 pthread_mutex_t mmutex ;
 /*
@@ -1535,7 +1535,7 @@ int setupthreads(const puzdef &pd, prunetable &pt) {
    return wthreads ;
 }
 const int BLOCKSIZE = 8192 ; // in long longs
-const int FILLCHUNKS = 64 ;
+const int FILLCHUNKS = 256 ; // long longs
 struct fillbuf {
    int nchunks ;
    ull chunks[FILLCHUNKS] ;
@@ -1590,7 +1590,6 @@ struct prunetable {
       if (!readpt(pd)) {
          memset(mem, -1, bytesize) ;
          baseval = min(hibase, 2) ;
- baseval = 20 ; // <><>
          for (int d=0; d<=baseval+1; d++) {
             int val = 0 ;
             if (d >= baseval)
@@ -2067,7 +2066,7 @@ ull fillworker::fillflush(const prunetable &pt, int shard) {
    if (fb.nchunks > 0) {
       pthread_mutex_lock(&(memshards[shard].mutex)) ;
       for (int i=0; i<fb.nchunks; i++) {
-         ull h = fb.chunks[i] & pt.hmask ;
+         ull h = fb.chunks[i] ;
          if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
             pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
             r++ ;
