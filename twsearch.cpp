@@ -1969,7 +1969,7 @@ struct prunetable {
             at += ((ull)widthcounts[i]) << (maxwidth - i) ;
          }
       }
-      if (at != (1LL << maxwidth))
+      if (at != (1ULL << maxwidth))
          error("! Bad codewidth sum in codes") ;
       for (int i=0; i<256; i++)
          if (codewidths[i]) {
@@ -2081,7 +2081,7 @@ void fillworker::dowork(const puzdef &pd, prunetable &pt) {
    while (1) {
       int w = -1 ;
       get_global_lock() ;
-      if (workat < workchunks.size())
+      if (workat < (int)workchunks.size())
          w = workat++ ;
       release_global_lock() ;
       if (w < 0)
@@ -2106,7 +2106,7 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
    }
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
-   for (int m=0; m<pd.moves.size(); m++) {
+   for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
       if ((mask >> mv.base) & 1)
          continue ;
@@ -2125,7 +2125,7 @@ struct solveworker {
    char padding[256] ; // kill false sharing
    void init(const puzdef &pd, prunetable &pt, int d_, const setval &p) {
       // make the position table big to minimize false sharing.
-      while (posns.size() <= 100 || posns.size() <= d_+1) {
+      while (posns.size() <= 100 || (int)posns.size() <= d_+1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
@@ -2149,7 +2149,7 @@ struct solveworker {
       }
       ull mask = canonmask[st] ;
       const vector<int> &ns = canonnext[st] ;
-      for (int m=0; m<pd.moves.size(); m++) {
+      for (int m=0; m<(int)pd.moves.size(); m++) {
          const moove &mv = pd.moves[m] ;
          if ((mask >> mv.base) & 1)
             continue ;
@@ -2160,7 +2160,7 @@ struct solveworker {
             return 1 ;
          if (v == -1) {
             // skip similar rotations
-            while (m+1 < pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
+            while (m+1 < (int)pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
                m++ ;
          }
       }
@@ -2189,7 +2189,7 @@ struct solveworker {
          int finished = 0 ;
          get_global_lock() ;
          finished = globalsolved ;
-         if (workat < workchunks.size())
+         if (workat < (int)workchunks.size())
             w = workat++ ;
          release_global_lock() ;
          if (finished || w < 0)
@@ -2319,7 +2319,7 @@ default:
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
    if (dogod) {
-      if (pd.logstates <= 50 && (pd.llstates >> 2) <= maxmem) {
+      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
          dotwobitgod2(pd) ;
       } else {
          doarraygod2(pd) ;
