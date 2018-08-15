@@ -1639,7 +1639,7 @@ struct prunetable {
           baseval >= hibase ||
           (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
          return ;
-      cout << endl ;
+      cout << endl << "Pausing solve; took " << duration() << " so far." << endl ;
       ull longcnt = (size + 31) >> 5 ;
       cout << "Demoting memory values " << flush ;
       for (ull i=0; i<longcnt; i++) {
