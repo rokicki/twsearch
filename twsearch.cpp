@@ -1580,6 +1580,55 @@ void *fillthreadworker(void *o) {
    fillworkers[wp->tid].dowork(wp->pd, wp->pt) ;
    return 0 ;
 }
+struct ioworkitem {
+   char state ;
+   ull *mem ;
+   ull longcnt ;
+   uchar *buf ;
+   prunetable *pt ;
+   unsigned int bytecnt ;
+} ;
+void *unpackworker(void *o) ;
+struct ioqueue {
+   void init(struct prunetable *pt_) {
+      pt = pt_ ;
+      for (int i=0; i<numthreads; i++)
+         ioworkitems[i].state = 0 ;
+      nextthread = 0 ;
+   }
+   void waitthread(int i) {
+      join_thread(i) ;
+   }
+   void queueunpackwork(ull *mem, ull longcnt,
+                        uchar *buf, unsigned int bytecnt) {
+      if (ioworkitems[nextthread].state != 0) {
+         waitthread(nextthread) ;
+         ioworkitems[nextthread].state = 0 ;
+      }
+      ioworkitems[nextthread].mem = mem ;
+      ioworkitems[nextthread].longcnt = longcnt ;
+      ioworkitems[nextthread].buf = buf ;
+      ioworkitems[nextthread].bytecnt = bytecnt ;
+      ioworkitems[nextthread].pt = pt ;
+      if (numthreads < 1) {
+         unpackworker(&ioworkitems[nextthread]) ;
+         return ;
+      }
+      ioworkitems[nextthread].state = 1 ;
+      spawn_thread(nextthread, unpackworker, &ioworkitems[nextthread]) ;
+      nextthread++ ;
+      if (nextthread >= numthreads)
+         nextthread = 0 ;
+   }
+   void finishall() {
+      for (int i=0; i<numthreads; i++)
+         if (ioworkitems[nextthread].state != 0)
+            waitthread(i) ;
+   }
+   int nextthread ;
+   struct prunetable *pt ;
+   ioworkitem ioworkitems[MAXTHREADS] ;
+} ioqueue ;
 struct prunetable {
    prunetable(const puzdef &pd, ull maxmem) {
       totsize = pd.totsize ;
@@ -1805,15 +1854,12 @@ struct prunetable {
       longcnt += getc(f) << 8 ;
       longcnt += getc(f) << 16 ;
       longcnt += getc(f) << 24 ;
-      if (longcnt != explongcnt || bytecnt <= 0 || bytecnt > 32 * BLOCKSIZE) {
- cout << "Long cnt " << longcnt << " expected " << explongcnt << " bytecnt " << bytecnt << endl ;
+      if (longcnt != explongcnt || bytecnt <= 0 || bytecnt > 32 * BLOCKSIZE)
          error("! I/O error while reading block") ;
-      }
       uchar *buf = (uchar *)malloc(bytecnt) ;
       if (fread(buf, 1, bytecnt, f) != bytecnt)
          error("! I/O error while reading block") ;
-      unpackblock(mem, longcnt, buf, bytecnt) ;
-      free(buf) ;
+      ioqueue.queueunpackwork(mem, longcnt, buf, bytecnt) ;
    }
    void writept(const puzdef &pd) {
       // only write the table if at least 1 in 100 elements has a value
@@ -2039,8 +2085,10 @@ struct prunetable {
       ll longcnt = (size + 31) >> 5 ;
       if (longcnt % BLOCKSIZE != 0)
          error("! when reading, expected multiple of longcnt") ;
+      ioqueue.init(this) ;
       for (ll i=0; i<longcnt; i += BLOCKSIZE)
          readblock(mem+i, BLOCKSIZE, r) ;
+      ioqueue.finishall() ;
       int tv = getc(r) ;
       if (tv != SIGNATURE)
          error("! I/O error reading final signature") ;
@@ -2062,6 +2110,12 @@ struct prunetable {
    short *tabs[7] ;
    char justread ;
 } ;
+void *unpackworker(void *o) {
+   ioworkitem *wi = (ioworkitem *)o ;
+   wi->pt->unpackblock(wi->mem, wi->longcnt, wi->buf, wi->bytecnt) ;
+   free(wi->buf) ;
+   return 0 ;
+}
 ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
    ull initmoves = workchunks[w] ;
    int nmoves = pd.moves.size() ;
