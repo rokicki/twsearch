@@ -105,11 +105,12 @@ struct moove {
    int cost, base ;
 } ;
 struct puzdef {
-   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
+   puzdef() : name(0), setdefs(), solved(0), identity(0), totsize(0), id(0),
               logstates(0), llstates(0), checksum(0) {}
    const char *name ;
    setdefs_t setdefs ;
    setvals solved ;
+   setvals identity ;
    vector<moove> basemoves, moves ;
    vector<int> basemoveorders ;
    int totsize ;
@@ -271,6 +272,21 @@ int ceillog2(int v) {
       r++ ;
    return r ;
 }
+setvals makeidentity(puzdef &pz) {
+   setvals r((uchar *)calloc(pz.totsize, 1)) ;
+   uchar *p = r.dat ;
+   for (int i=0; i<(int)pz.setdefs.size(); i++) {
+      setdef &sd = pz.setdefs[i] ;
+      int n = sd.size ;
+      for (int j=0; j<n; j++)
+         p[j] = j ;
+      p += n ;
+      for (int j=0; j<n; j++)
+         p[j] = 0 ;
+      p += n ;
+   }
+   return r ;
+}
 setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
    setvals r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
@@ -411,6 +427,7 @@ puzdef readdef(FILE *f) {
          state++ ;
          expect(toks, 1) ;
          pz.solved = readposition(pz, 's', f, checksum) ;
+         pz.identity = makeidentity(pz) ;
       } else if (toks[0] == "Move") {
          if (state != 2)
             error("! Move in wrong place") ;
