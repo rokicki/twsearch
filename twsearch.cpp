@@ -1589,15 +1589,49 @@ struct ioworkitem {
    unsigned int bytecnt ;
 } ;
 void *unpackworker(void *o) ;
+void *packworker(void *o) ;
 struct ioqueue {
-   void init(struct prunetable *pt_) {
+   void init(struct prunetable *pt_, FILE *f_ = 0) {
       pt = pt_ ;
+      f = f_ ;
       for (int i=0; i<numthreads; i++)
          ioworkitems[i].state = 0 ;
       nextthread = 0 ;
    }
    void waitthread(int i) {
       join_thread(i) ;
+      if (ioworkitems[i].state == 2) {
+         unsigned int bytecnt = ioworkitems[i].bytecnt ;
+         unsigned int longcnt = ioworkitems[i].longcnt ;
+         putc(bytecnt & 255, f) ;
+         putc((bytecnt >> 8) & 255, f) ;
+         putc((bytecnt >> 16) & 255, f) ;
+         putc((bytecnt >> 24) & 255, f) ;
+         putc(longcnt & 255, f) ;
+         putc((longcnt >> 8) & 255, f) ;
+         putc((longcnt >> 16) & 255, f) ;
+         putc((longcnt >> 24) & 255, f) ;
+         if (fwrite(ioworkitems[i].buf, 1, bytecnt, f) != bytecnt)
+            error("! I/O error writing block") ;
+         free(ioworkitems[i].buf) ;
+      }
+   }
+   void queuepackwork(ull *mem, ull longcnt,
+                        uchar *buf, unsigned int bytecnt) {
+      if (ioworkitems[nextthread].state != 0) {
+         waitthread(nextthread) ;
+         ioworkitems[nextthread].state = 0 ;
+      }
+      ioworkitems[nextthread].mem = mem ;
+      ioworkitems[nextthread].longcnt = longcnt ;
+      ioworkitems[nextthread].buf = buf ;
+      ioworkitems[nextthread].bytecnt = bytecnt ;
+      ioworkitems[nextthread].pt = pt ;
+      ioworkitems[nextthread].state = 2 ;
+      spawn_thread(nextthread, packworker, &ioworkitems[nextthread]) ;
+      nextthread++ ;
+      if (nextthread >= numthreads)
+         nextthread = 0 ;
    }
    void queueunpackwork(ull *mem, ull longcnt,
                         uchar *buf, unsigned int bytecnt) {
@@ -1610,10 +1644,6 @@ struct ioqueue {
       ioworkitems[nextthread].buf = buf ;
       ioworkitems[nextthread].bytecnt = bytecnt ;
       ioworkitems[nextthread].pt = pt ;
-      if (numthreads < 1) {
-         unpackworker(&ioworkitems[nextthread]) ;
-         return ;
-      }
       ioworkitems[nextthread].state = 1 ;
       spawn_thread(nextthread, unpackworker, &ioworkitems[nextthread]) ;
       nextthread++ ;
@@ -1628,6 +1658,7 @@ struct ioqueue {
    int nextthread ;
    struct prunetable *pt ;
    ioworkitem ioworkitems[MAXTHREADS] ;
+   FILE *f ;
 } ioqueue ;
 struct prunetable {
    prunetable(const puzdef &pd, ull maxmem) {
@@ -1831,18 +1862,7 @@ struct prunetable {
    void writeblock(ull *mem, ull longcnt, FILE *f) {
       ull bytecnt = calcblocksize(mem, longcnt) ;
       uchar *buf = (uchar *)malloc(bytecnt) ;
-      packblock(mem, longcnt, buf, bytecnt) ;
-      putc(bytecnt & 255, f) ;
-      putc((bytecnt >> 8) & 255, f) ;
-      putc((bytecnt >> 16) & 255, f) ;
-      putc((bytecnt >> 24) & 255, f) ;
-      putc(longcnt & 255, f) ;
-      putc((longcnt >> 8) & 255, f) ;
-      putc((longcnt >> 16) & 255, f) ;
-      putc((longcnt >> 24) & 255, f) ;
-      if (fwrite(buf, 1, bytecnt, f) != bytecnt)
-         error("! I/O error writing block") ;
-      free(buf) ;
+      ioqueue.queuepackwork(mem, longcnt, buf, bytecnt) ;
    }
    void readblock(ull *mem, ull explongcnt, FILE *f) {
       unsigned int bytecnt, longcnt ;
@@ -1968,8 +1988,10 @@ struct prunetable {
       fwrite(codewidths, sizeof(codewidths[0]), 256, w) ;
       if (longcnt % BLOCKSIZE != 0)
          error("Size must be a multiple of block size") ;
+      ioqueue.init(this, w) ;
       for (ll i=0; i<longcnt; i += BLOCKSIZE)
          writeblock(mem+i, BLOCKSIZE, w) ;
+      ioqueue.finishall() ;
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
       fclose(w) ;
@@ -2114,6 +2136,11 @@ void *unpackworker(void *o) {
    ioworkitem *wi = (ioworkitem *)o ;
    wi->pt->unpackblock(wi->mem, wi->longcnt, wi->buf, wi->bytecnt) ;
    free(wi->buf) ;
+   return 0 ;
+}
+void *packworker(void *o) {
+   ioworkitem *wi = (ioworkitem *)o ;
+   wi->pt->packblock(wi->mem, wi->longcnt, wi->buf, wi->bytecnt) ;
    return 0 ;
 }
 ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
