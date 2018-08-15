@@ -10,10 +10,10 @@ What is working so far:
 * Canonical sequence data
 * Tree search using canonical sequences
 * Write pruning tables
+* Read pruning tables
 
 Things to do:
 
-* Read pruning tables
 * Print antipodes on two-bit God's algorithm
 * If table size too large, don't degenerate (i.e., 2a.ksolve)
 * Parse scramble file
@@ -22,7 +22,6 @@ Things to do:
 
 Things to do
 
-* Multithreading
 * Symmetry reduction
 
 Things to consider:
