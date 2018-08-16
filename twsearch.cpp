@@ -331,10 +331,15 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
       uchar *p = r.dat + pz.setdefs[i].off ;
       int n = pz.setdefs[i].size ;
       if (p[0] == 0) {
-         for (int j=0; j<n; j++)
-            p[j] = j ; // identity perm
-         if (typ == 's')
-            pz.setdefs[i].psum = n * (n - 1) / 2 ;
+         if (typ == 'S') {
+            for (int j=0; j<n; j++)
+               p[j] = pz.solved.dat[pz.setdefs[i].off+j] ;
+         } else {
+            for (int j=0; j<n; j++)
+               p[j] = j ; // identity perm
+            if (typ == 's')
+               pz.setdefs[i].psum = n * (n - 1) / 2 ;
+         }
       } else {
          vector<int> cnts ;
          int sum = 0 ;
@@ -351,7 +356,10 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
             if (cnts[j] == 0)
                error("! values are not contiguous") ;
          if ((int)cnts.size() != n) {
-            if (typ != 's')
+            if (typ == 'S') {
+               if (!(cnts == pz.setdefs[i].cnts))
+                  error("! scramble position permutation doesn't match solved") ;
+            } else if (typ != 's')
                error("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
@@ -359,7 +367,7 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
                pz.setdefs[i].pbits = ceillog2(cnts.size()) ;
             }
          } else {
-            if (oddperm(p, n))
+            if (typ != 'S' && oddperm(p, n))
                pz.setdefs[i].pparity = 0 ;
          }
       }
@@ -2349,7 +2357,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
 }
-void dotiming(puzdef &pd) {
+void timingtest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
    cout << "Timing moves." << endl << flush ;
@@ -2418,7 +2426,7 @@ void dotiming(puzdef &pd) {
       cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
    }
 }
-void dosolvetest(puzdef &pd) {
+void solvetest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
    prunetable pt(pd, maxmem) ;
@@ -2429,7 +2437,54 @@ void dosolvetest(puzdef &pd) {
       pd.assignpos(p1, p2) ;
    }
 }
-int dogod, docanon, doalgo ;
+void domove(puzdef &pd, setvals p, string mvstring) {
+   stacksetval pt(pd) ;
+   for (int mv=0; mv<(int)pd.moves.size(); mv++)
+      if (mvstring == pd.moves[mv].name) {
+         pd.mul(p, pd.moves[mv].pos, pt) ;
+         pd.assignpos(p, pt) ;
+         return ;
+      }
+   error("! bad move in scramblealg file ", mvstring) ;
+}
+void solveit(puzdef &pd, prunetable &pt, string scramblename, setvals &p) {
+   cout << "Solving " << scramblename << endl << flush ;
+   solve(pd, pt, p) ;
+}
+void processscrambles(FILE *f, puzdef &pd) {
+   string scramblename ;
+   ull checksum = 0 ;
+   stacksetval p1(pd) ;
+   prunetable pt(pd, maxmem) ;
+   while (1) {
+      vector<string> toks = getline(f, checksum) ;
+      if (toks.size() == 0)
+         break ;
+      if (toks[0] == "Scramble") {
+         expect(toks, 2) ;
+         scramblename = strdup(toks[1].c_str()) ; ;
+         setval p = readposition(pd, 'S', f, checksum) ;
+         solveit(pd, pt, scramblename, p) ;
+      } else if (toks[0] == "ScrambleAlg") {
+         expect(toks, 2) ;
+         scramblename = strdup(toks[1].c_str()) ; ;
+         pd.assignpos(p1, pd.solved) ;
+         while (1) {
+            toks = getline(f, checksum) ;
+            if (toks.size() == 0)
+               error("! early end of line while reading ScrambleAlg") ;
+            if (toks[0] == "End")
+               break ;
+            for (int i=0; i<(int)toks.size(); i++)
+               domove(pd, p1, toks[i]) ;
+         }
+         solveit(pd, pt, scramblename, p1) ;
+      } else {
+         error("! unsupported command in scramble file") ;
+      }
+   }
+}
+int dogod, docanon, doalgo, dosolvetest, dotimingtest ;
 int main(int argc, const char **argv) {
    duration() ;
    init_mutex() ;
@@ -2474,6 +2529,12 @@ case 'C':
 case 'A':
          doalgo++ ;
          break ;
+case 'T':
+         dotimingtest++ ;
+         break ;
+case 'S':
+         dosolvetest++ ;
+         break ;
 case 't':
          numthreads = atol(argv[1]) ;
          if (numthreads > MAXTHREADS)
@@ -2509,4 +2570,14 @@ default:
    }
    if (doalgo)
       findalgos(pd) ;
+   if (dosolvetest)
+      solvetest(pd) ;
+   if (dotimingtest)
+      timingtest(pd) ;
+   if (argc > 2) {
+      f = fopen(argv[2], "r") ;
+      if (f == 0)
+         error("! could not open scramble file ", argv[2]) ;
+      processscrambles(f, pd) ;
+   }
 }
