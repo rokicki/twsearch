@@ -1,6 +1,6 @@
-# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --ksolve pentultimate
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve pentultimate
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# d f 0 
+# d f 0 optimize true
 
 # Rotations: 60
 # Base planes: 12
@@ -14,7 +14,7 @@
 # Cubies: 32
 # Cubie orbit sizes 20,12
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# d f 0 
+# d f 0 optimize true
 Name PuzzleGeometryPuzzle
 
 Set CORNER 20 3

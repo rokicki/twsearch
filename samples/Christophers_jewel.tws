@@ -1,0 +1,105 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve Christopher's jewel
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# o v 0.577350269189626 optimize true
+
+# Rotations: 24
+# Base planes: 8
+# Face vertices: 3
+# Boundary is Q[1,0.5773502691896258,0.5773502691896258,0.5773502691896258]
+# Distances: face 1 edge 1.2247448713915887 vertex 1.7320508075688765
+# Faces is now 6
+# Short edge is 0.8164965809277248
+# Total stickers is now 48
+# Move plane sets: 2,2,2
+# Cubies: 18
+# Cubie orbit sizes 6,12
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# o v 0.577350269189626 optimize true
+Name PuzzleGeometryPuzzle
+
+Set C4RNER_p0 1 4
+Set C4RNER_p1 1 4
+Set C4RNER_p2 1 4
+Set C4RNER_p3 1 4
+Set C4RNER_p4 1 4
+Set C4RNER_p5 1 4
+Set EDGE 12 2
+
+Solved
+C4RNER_p0
+1
+0
+C4RNER_p1
+1
+0
+C4RNER_p2
+1
+0
+C4RNER_p3
+1
+0
+C4RNER_p4
+1
+0
+C4RNER_p5
+1
+0
+EDGE
+1 2 3 4 5 6 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move FRND
+C4RNER_p2
+1
+1
+EDGE
+1 2 9 3 5 4 7 8 6 10 11 12
+0 0 1 1 0 0 0 0 0 0 0 0
+End
+
+Move BULM
+C4RNER_p4
+1
+1
+EDGE
+1 2 3 4 5 6 10 8 9 11 12 7
+0 0 0 0 0 0 0 0 0 0 1 1
+End
+
+Move FDML
+C4RNER_p5
+1
+1
+EDGE
+12 2 1 4 5 6 7 3 9 10 11 8
+1 0 0 0 0 0 0 1 0 0 0 0
+End
+
+Move BNRU
+C4RNER_p1
+1
+1
+EDGE
+1 6 3 4 10 5 7 8 9 2 11 12
+0 0 0 0 0 1 0 0 0 1 0 0
+End
+
+Move BMDN
+C4RNER_p3
+1
+1
+EDGE
+1 2 3 4 9 6 7 11 8 10 5 12
+0 0 0 0 1 0 0 1 1 0 1 0
+End
+
+Move FLUR
+C4RNER_p0
+1
+1
+EDGE
+4 7 3 2 5 6 1 8 9 10 11 12
+1 1 0 1 0 0 1 0 0 0 0 0
+End
+

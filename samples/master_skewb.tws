@@ -1,0 +1,215 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve master skewb
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c v 0.275 optimize true
+
+# Rotations: 24
+# Base planes: 6
+# Face vertices: 4
+# Boundary is Q[1,1,0,0]
+# Distances: face 1 edge 1.414213562373095 vertex 1.732050807568877
+# Faces is now 13
+# Short edge is 0.523686027918558
+# Total stickers is now 78
+# Move plane sets: 2,2,2,2
+# Cubies: 50
+# Cubie orbit sizes 12,12,4,12,4,6
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c v 0.275 optimize true
+Name PuzzleGeometryPuzzle
+
+Set EDGE 12 1
+Set CENTER 12 1
+Set CORNER 4 3
+Set CENTER2 12 1
+Set CORNER2 4 3
+Set CENTER3 6 1
+
+Solved
+EDGE
+1 2 3 4 5 6 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 3 4 2 3 5 5 1 6 6 4
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4
+0 0 0 0
+CENTER2
+1 2 3 4 2 3 5 5 1 6 6 4
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 2 3 4
+0 0 0 0
+CENTER3
+1 2 3 4 5 6
+0 0 0 0 0 0
+End
+
+Move DFR
+EDGE
+1 2 5 4 9 6 7 8 3 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 5 4 9 6 7 8 3 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4
+0 0 1 0
+CENTER2
+6 1 5 4 9 2 7 8 3 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+4 1 3 2
+2 2 0 2
+CENTER3
+3 1 2 4 5 6
+0 0 0 0 0 0
+End
+
+Move ULB
+EDGE
+1 2 3 7 5 6 10 8 9 4 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 3 7 5 6 10 11 9 4 12 8
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+2 4 3 1
+2 2 0 2
+CENTER2
+1 2 3 7 5 6 10 8 9 4 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 2 3 4
+0 0 1 0
+CENTER3
+1 2 3 5 6 4
+0 0 0 0 0 0
+End
+
+Move DLF
+EDGE
+1 2 3 4 5 9 7 8 11 10 6 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+10 2 1 4 5 9 7 8 11 3 6 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+4 2 1 3
+2 0 2 2
+CENTER2
+1 2 3 4 5 9 7 8 11 10 6 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 2 3 4
+0 0 0 1
+CENTER3
+6 2 1 4 5 3
+0 0 0 0 0 0
+End
+
+Move UBR
+EDGE
+1 7 3 4 5 6 12 8 9 10 11 2
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 7 3 4 5 6 12 8 9 10 11 2
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4
+0 1 0 0
+CENTER2
+1 7 3 5 8 6 12 4 9 10 11 2
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+2 3 1 4
+2 2 2 0
+CENTER3
+1 5 3 2 4 6
+0 0 0 0 0 0
+End
+
+Move DRB
+EDGE
+1 3 8 4 5 6 7 2 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 3 8 4 6 7 5 2 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 3 4 2
+0 2 2 2
+CENTER2
+1 3 8 4 5 6 7 2 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 2 3 4
+0 1 0 0
+CENTER3
+1 3 5 4 2 6
+0 0 0 0 0 0
+End
+
+Move UFL
+EDGE
+4 2 3 11 5 6 7 8 9 10 1 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+4 2 3 11 5 6 7 8 9 10 1 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4
+1 0 0 0
+CENTER2
+4 2 3 11 5 6 7 8 12 9 1 10
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+3 2 4 1
+2 0 2 2
+CENTER3
+4 2 3 6 5 1
+0 0 0 0 0 0
+End
+
+Move DBL
+EDGE
+1 2 3 4 5 10 7 6 9 8 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 3 4 5 10 7 6 9 8 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4
+0 0 0 1
+CENTER2
+1 2 11 4 5 10 3 6 9 8 7 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 4 2 3
+0 2 2 2
+CENTER3
+1 2 6 4 3 5
+0 0 0 0 0 0
+End
+
+Move URF
+EDGE
+5 2 3 4 12 6 7 8 9 10 11 1
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+5 4 3 9 12 6 7 8 2 10 11 1
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+3 1 2 4
+2 2 2 0
+CENTER2
+5 2 3 4 12 6 7 8 9 10 11 1
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER2
+1 2 3 4
+1 0 0 0
+CENTER3
+2 4 3 1 5 6
+0 0 0 0 0 0
+End
+

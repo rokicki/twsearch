@@ -1,6 +1,6 @@
-# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --ksolve 3x3x3
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve 3x3x3
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# c f 0.333333333333333 
+# c f 0.333333333333333 optimize true
 
 # Rotations: 24
 # Base planes: 6
@@ -14,7 +14,7 @@
 # Cubies: 26
 # Cubie orbit sizes 6,12,8
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# c f 0.333333333333333 
+# c f 0.333333333333333 optimize true
 Name PuzzleGeometryPuzzle
 
 Set EDGE 12 2

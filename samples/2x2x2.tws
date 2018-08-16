@@ -1,6 +1,6 @@
-# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --ksolve 2x2x2
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve 2x2x2
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# c f 0 
+# c f 0 optimize true
 
 # Rotations: 24
 # Base planes: 6
@@ -14,7 +14,7 @@
 # Cubies: 8
 # Cubie orbit sizes 8
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# c f 0 
+# c f 0 optimize true
 Name PuzzleGeometryPuzzle
 
 Set CORNER 8 3

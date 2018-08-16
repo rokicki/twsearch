@@ -1,0 +1,154 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve master paramorphix
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# t e 0.866025403784437 optimize true
+
+# Rotations: 12
+# Base planes: 4
+# Face vertices: 3
+# Boundary is Q[1,0.5773502691896258,0.5773502691896258,0.5773502691896258]
+# Distances: face 1 edge 1.732050807568877 vertex 2.999999999999999
+# Faces is now 10
+# Short edge is 1.2247448713915825
+# Total stickers is now 40
+# Move plane sets: 2,2,2
+# Splitting core.
+# Cubies: 27
+# Cubie orbit sizes 2,2,4,4,2,4,4,4
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# t e 0.866025403784437 optimize true
+Name PuzzleGeometryPuzzle
+
+Set EDGE_p0 1 2
+Set EDGE_p1 1 2
+Set EDGE2_p0 1 2
+Set EDGE2_p1 1 2
+Set CENTER 4 1
+Set CORNER 4 1
+Set EDGE3_p0 1 2
+Set EDGE3_p1 1 2
+Set CENTER2 4 1
+Set CENTER3 4 1
+
+Solved
+EDGE_p0
+1
+0
+EDGE_p1
+1
+0
+EDGE2_p0
+1
+0
+EDGE2_p1
+1
+0
+CENTER
+1 2 3 4
+0 0 0 0
+CORNER
+1 2 3 4
+0 0 0 0
+EDGE3_p0
+1
+0
+EDGE3_p1
+1
+0
+CENTER2
+1 2 3 4
+0 0 0 0
+CENTER3
+1 2 3 4
+0 0 0 0
+End
+
+Move FD
+CORNER
+1 2 4 3
+0 0 0 0
+EDGE3_p0
+1
+1
+CENTER2
+2 1 3 4
+0 0 0 0
+CENTER3
+2 1 3 4
+0 0 0 0
+End
+
+Move LR
+CORNER
+2 1 3 4
+0 0 0 0
+EDGE3_p1
+1
+1
+CENTER2
+1 2 4 3
+0 0 0 0
+CENTER3
+1 2 4 3
+0 0 0 0
+End
+
+Move FL
+EDGE2_p0
+1
+1
+CENTER
+3 2 1 4
+0 0 0 0
+CORNER
+3 2 1 4
+0 0 0 0
+CENTER3
+3 2 1 4
+0 0 0 0
+End
+
+Move DR
+EDGE2_p1
+1
+1
+CENTER
+1 4 3 2
+0 0 0 0
+CORNER
+1 4 3 2
+0 0 0 0
+CENTER3
+1 4 3 2
+0 0 0 0
+End
+
+Move DL
+EDGE_p1
+1
+1
+CENTER
+1 3 2 4
+0 0 0 0
+CORNER
+1 3 2 4
+0 0 0 0
+CENTER2
+1 3 2 4
+0 0 0 0
+End
+
+Move FR
+EDGE_p0
+1
+1
+CENTER
+4 2 3 1
+0 0 0 0
+CORNER
+4 2 3 1
+0 0 0 0
+CENTER2
+4 2 3 1
+0 0 0 0
+End
+

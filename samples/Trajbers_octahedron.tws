@@ -1,0 +1,127 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve Trajber's octahedron
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# o v 0.433012701892219 optimize true
+
+# Rotations: 24
+# Base planes: 8
+# Face vertices: 3
+# Boundary is Q[1,0.5773502691896258,0.5773502691896258,0.5773502691896258]
+# Distances: face 1 edge 1.2247448713915887 vertex 1.7320508075688765
+# Faces is now 7
+# Short edge is 0.6123724356957934
+# Total stickers is now 56
+# Move plane sets: 2,2,2
+# Cubies: 26
+# Cubie orbit sizes 6,12,8
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# o v 0.433012701892219 optimize true
+Name PuzzleGeometryPuzzle
+
+Set C4RNER_p0 1 4
+Set C4RNER_p1 1 4
+Set C4RNER_p2 1 4
+Set C4RNER_p3 1 4
+Set C4RNER_p4 1 4
+Set C4RNER_p5 1 4
+Set EDGE 12 2
+Set CENTER 8 1
+
+Solved
+C4RNER_p0
+1
+0
+C4RNER_p1
+1
+0
+C4RNER_p2
+1
+0
+C4RNER_p3
+1
+0
+C4RNER_p4
+1
+0
+C4RNER_p5
+1
+0
+EDGE
+1 2 3 4 5 6 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 3 4 5 6 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move FRND
+C4RNER_p2
+1
+1
+EDGE
+1 2 9 3 5 4 7 8 6 10 11 12
+0 0 1 1 0 0 0 0 0 0 0 0
+CENTER
+3 1 4 2 5 6 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move BULM
+C4RNER_p4
+1
+1
+EDGE
+1 2 3 4 5 6 10 8 9 11 12 7
+0 0 0 0 0 0 0 0 0 0 1 1
+CENTER
+1 2 3 4 7 8 6 5
+0 0 0 0 0 0 0 0
+End
+
+Move FDML
+C4RNER_p5
+1
+1
+EDGE
+12 2 1 4 5 6 7 3 9 10 11 8
+1 0 0 0 0 0 0 1 0 0 0 0
+CENTER
+8 2 1 4 5 3 7 6
+0 0 0 0 0 0 0 0
+End
+
+Move BNRU
+C4RNER_p1
+1
+1
+EDGE
+1 6 3 4 10 5 7 8 9 2 11 12
+0 0 0 0 0 1 0 0 0 1 0 0
+CENTER
+1 4 3 7 2 6 5 8
+0 0 0 0 0 0 0 0
+End
+
+Move BMDN
+C4RNER_p3
+1
+1
+EDGE
+1 2 3 4 9 6 7 11 8 10 5 12
+0 0 0 0 1 0 0 1 1 0 1 0
+CENTER
+1 2 6 3 5 7 4 8
+0 0 0 0 0 0 0 0
+End
+
+Move FLUR
+C4RNER_p0
+1
+1
+EDGE
+4 7 3 2 5 6 1 8 9 10 11 12
+1 1 0 1 0 0 1 0 0 0 0 0
+CENTER
+2 5 3 4 8 6 7 1
+0 0 0 0 0 0 0 0
+End
+
