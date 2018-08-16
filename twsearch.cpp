@@ -169,7 +169,7 @@ struct allocsetval : setval {
    }
 } ;
 vector<ll> fact ;
-ll maxmem = 7LL * 1024LL * 1024LL * 1024LL ;
+ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 int quarter = 0 ;
 string curline ;
