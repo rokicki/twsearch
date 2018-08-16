@@ -34,7 +34,7 @@ double duration() {
    return r ;
 }
 const int MAXTHREADS = 64 ;
-int numthreads = 2 ;
+int numthreads = 4 ;
 pthread_mutex_t mmutex ;
 /*
  *   This sets a limit on the scalability of filling, but at the same

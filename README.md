@@ -4,9 +4,9 @@ base of compatibility but do not guarantee it.
 
 Important options (you should specify these):
 
-   -M xxx:  megabytes of memory to use max; should be ~ 1/2 of your RAM and ideally a power of two
+   -M xxx:  megabytes of memory to use max; should be ~ 1/2 of your RAM and ideally a power of two; defaults to 8192 (8GB).
 
-   -t xxx:  number of threads to use
+   -t xxx:  number of threads to use; defaults to 4.
 
 Sample usage:
 
