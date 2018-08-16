@@ -5,6 +5,7 @@ base of compatibility but do not guarantee it.
 Important options (you should specify these):
 
    -M xxx:  megabytes of memory to use max; should be ~ 1/2 of your RAM and ideally a power of two
+
    -t xxx:  number of threads to use
 
 Sample usage:
