@@ -1,0 +1,63 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --ksolve 2x2x2
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c f 0 
+
+# Rotations: 24
+# Base planes: 6
+# Face vertices: 4
+# Boundary is Q[1,1,0,0]
+# Distances: face 1 edge 1.414213562373095 vertex 1.732050807568877
+# Faces is now 4
+# Short edge is 0.9999999999999994
+# Total stickers is now 24
+# Move plane sets: 1,1,1
+# Cubies: 8
+# Cubie orbit sizes 8
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c f 0 
+Name PuzzleGeometryPuzzle
+
+Set CORNER 8 3
+
+Solved
+CORNER
+1 2 3 4 5 6 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move F
+CORNER
+7 1 3 2 5 6 4 8
+2 1 0 2 0 0 1 0
+End
+
+Move B
+CORNER
+1 2 5 4 8 3 7 6
+0 0 1 0 2 2 0 1
+End
+
+Move D
+CORNER
+1 4 3 8 2 6 7 5
+0 0 0 0 0 0 0 0
+End
+
+Move U
+CORNER
+3 2 6 4 5 7 1 8
+0 0 0 0 0 0 0 0
+End
+
+Move L
+CORNER
+1 2 3 7 5 8 6 4
+0 0 0 1 0 1 2 2
+End
+
+Move R
+CORNER
+2 5 1 4 3 6 7 8
+1 2 2 0 1 0 0 0
+End
+
