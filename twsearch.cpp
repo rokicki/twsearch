@@ -18,6 +18,7 @@ typedef unsigned long long ull ;
 typedef unsigned char uchar ;
 typedef unsigned int loosetype ;
 string inputbasename ;
+ull solutionsneeded = 1 ;
 const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 21 ; // start and end of data files
@@ -1727,7 +1728,7 @@ struct prunetable {
           baseval >= hibase ||
           (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
          return ;
-      cout << endl << "Pausing solve; took " << duration() << " so far." << endl ;
+      cout << "Pausing solve; took " << duration() << " so far." << endl ;
       ull longcnt = (size + 31) >> 5 ;
       cout << "Demoting memory values " << flush ;
       for (ull i=0; i<longcnt; i++) {
@@ -2225,13 +2226,12 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
    }
    return r ;
 }
-int globalsolved ;
+ull solutionsfound = 0 ;
 struct solveworker {
    vector<allocsetval> posns ;
    vector<int> movehist ;
    long long lookups ;
    int d ;
-   uchar solved ;
    char padding[256] ; // kill false sharing
    void init(const puzdef &pd, prunetable &pt, int d_, const setval &p) {
       // make the position table big to minimize false sharing.
@@ -2240,7 +2240,6 @@ struct solveworker {
          movehist.push_back(-1) ;
       }
       pd.assignpos(posns[0], p) ;
-      solved = 0 ;
       lookups = 0 ;
       d = d_ ;
    }
@@ -2252,9 +2251,18 @@ struct solveworker {
       if (v > togo)
          return 0 ;
       if (togo == 0) {
-         if (pd.comparepos(posns[sp], pd.solved) == 0)
-            return 1 ;
-         else
+         if (pd.comparepos(posns[sp], pd.solved) == 0) {
+            int r = 1 ;
+            get_global_lock() ;
+            solutionsfound++ ;
+            for (int i=0; i<d; i++)
+               cout << " " << pd.moves[movehist[i]].name ;
+            cout << endl << flush ;
+            if (solutionsfound < solutionsneeded)
+               r = 0 ;
+            release_global_lock() ;
+            return r ;
+         } else
             return 0 ;
       }
       ull mask = canonmask[st] ;
@@ -2298,19 +2306,14 @@ struct solveworker {
          int w = -1 ;
          int finished = 0 ;
          get_global_lock() ;
-         finished = globalsolved ;
+         finished = (solutionsfound >= solutionsneeded) ;
          if (workat < (int)workchunks.size())
             w = workat++ ;
          release_global_lock() ;
          if (finished || w < 0)
             return ;
-         if (solvestart(pd, pt, w) == 1) {
-            solved = 1 ;
-            get_global_lock() ;
-            globalsolved = 1 ;
-            release_global_lock() ;
+         if (solvestart(pd, pt, w) == 1)
             return ;
-         }
       }
    }
 } solveworkers[MAXTHREADS] ;
@@ -2320,11 +2323,12 @@ void *threadworker(void *o) {
    return 0 ;
 }
 void solve(const puzdef &pd, prunetable &pt, const setval p) {
+   solutionsfound = solutionsneeded ;
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
    for (int d=initd; ; d++) {
-      cout << " " << d << flush ;
+      cout << "Depth " << d << endl << flush ;
       if (d - initd > 3)
          makeworkchunks(pd, d) ;
       else
@@ -2332,8 +2336,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, pt, d, p) ;
-      globalsolved = 0 ;
-      int solveloc = -1 ;
+      solutionsfound = 0 ;
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
       for (int i=0; i<wthreads; i++)
@@ -2341,17 +2344,11 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       for (int i=0; i<wthreads; i++) {
          totlookups += solveworkers[i].lookups ;
          pt.addlookups(solveworkers[i].lookups) ;
-         if (solveworkers[i].solved)
-            solveloc = i ;
       }
-      if (solveloc >= 0) {
-         cout << endl ;
+      if (solutionsfound >= solutionsneeded) {
          duration() ;
          double actualtime = start - starttime ;
-         cout << "Solved at " << d << " lookups " << totlookups << " in " << actualtime << " rate " << (totlookups/actualtime) << endl << flush ;
-         for (int i=0; i<d; i++)
-            cout << " " << pd.moves[solveworkers[solveloc].movehist[i]].name ;
-         cout << endl << flush ;
+         cout << "Found " << solutionsfound << " solutions at maximum depth " << d << " lookups " << totlookups << " in " << actualtime << " rate " << (totlookups/actualtime) << endl << flush ;
          return ;
       }
       pt.checkextend(pd) ; // fill table up a bit more if needed
@@ -2501,49 +2498,62 @@ int main(int argc, const char **argv) {
    while (argc > 1 && argv[1][0] == '-') {
       argc-- ;
       argv++ ;
-      switch (argv[0][1]) {
+      if (argv[0][1] == '-') {
+         if (strcmp(argv[0], "--moves") == 0) {
+            error("! move list parsing not yet understood") ;
+         } else {
+            error("! Argument not understood ", argv[0]) ;
+         }
+      } else {
+         switch (argv[0][1]) {
 case 'q':
-         quarter++ ;
-         break ;
+            quarter++ ;
+            break ;
 case 'v':
-         verbose++ ;
-         break ;
+            verbose++ ;
+            break ;
 case 'M':
-         maxmem = 1048576 * atoll(argv[1]) ;
-         argc-- ;
-         argv++ ;
-         break ;
+            maxmem = 1048576 * atoll(argv[1]) ;
+            argc-- ;
+            argv++ ;
+            break ;
 case 'y':
-         symcoordgoal = atoll(argv[1]) ;
-         if (symcoordgoal <= 0)
-            symcoordgoal = 1 ;
-         argc-- ;
-         argv++ ;
-         break ;
+            symcoordgoal = atoll(argv[1]) ;
+            if (symcoordgoal <= 0)
+               symcoordgoal = 1 ;
+            argc-- ;
+            argv++ ;
+            break ;
+case 'c':
+            solutionsneeded = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
+            break ;
 case 'g':
-         dogod++ ;
-         break ;
+            dogod++ ;
+            break ;
 case 'C':
-         docanon++ ;
-         break ;
+            docanon++ ;
+            break ;
 case 'A':
-         doalgo++ ;
-         break ;
+            doalgo++ ;
+            break ;
 case 'T':
-         dotimingtest++ ;
-         break ;
+            dotimingtest++ ;
+            break ;
 case 'S':
-         dosolvetest++ ;
-         break ;
+            dosolvetest++ ;
+            break ;
 case 't':
-         numthreads = atol(argv[1]) ;
-         if (numthreads > MAXTHREADS)
-            error("Numthreads cannot be more than ", to_string(MAXTHREADS)) ;
-         argc-- ;
-         argv++ ;
-         break ;
+            numthreads = atol(argv[1]) ;
+            if (numthreads > MAXTHREADS)
+               error("Numthreads cannot be more than ", to_string(MAXTHREADS)) ;
+            argc-- ;
+            argv++ ;
+            break ;
 default:
-         error("! did not argument ", argv[0]) ;
+            error("! did not argument ", argv[0]) ;
+         }
       }
    }
    if (argc <= 1)
