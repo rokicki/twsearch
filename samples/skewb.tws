@@ -1,0 +1,131 @@
+# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve skewb
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c v 0 optimize true
+
+# Rotations: 24
+# Base planes: 6
+# Face vertices: 4
+# Boundary is Q[1,1,0,0]
+# Distances: face 1 edge 1.414213562373095 vertex 1.732050807568877
+# Faces is now 5
+# Short edge is 0.999999999999999
+# Total stickers is now 30
+# Move plane sets: 1,1,1,1
+# Cubies: 14
+# Cubie orbit sizes 4,4,6
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# c v 0 optimize true
+Name PuzzleGeometryPuzzle
+
+Set CORNER 4 3
+Set CORNER2 4 3
+Set CENTER 6 1
+
+Solved
+CORNER
+1 2 3 4
+0 0 0 0
+CORNER2
+1 2 3 4
+0 0 0 0
+CENTER
+1 2 3 4 5 6
+0 0 0 0 0 0
+End
+
+Move DFR
+CORNER
+1 2 3 4
+0 0 1 0
+CORNER2
+4 1 3 2
+2 2 0 2
+CENTER
+3 1 2 4 5 6
+0 0 0 0 0 0
+End
+
+Move ULB
+CORNER
+2 4 3 1
+2 2 0 2
+CORNER2
+1 2 3 4
+0 0 1 0
+CENTER
+1 2 3 5 6 4
+0 0 0 0 0 0
+End
+
+Move DLF
+CORNER
+4 2 1 3
+2 0 2 2
+CORNER2
+1 2 3 4
+0 0 0 1
+CENTER
+6 2 1 4 5 3
+0 0 0 0 0 0
+End
+
+Move UBR
+CORNER
+1 2 3 4
+0 1 0 0
+CORNER2
+2 3 1 4
+2 2 2 0
+CENTER
+1 5 3 2 4 6
+0 0 0 0 0 0
+End
+
+Move DRB
+CORNER
+1 3 4 2
+0 2 2 2
+CORNER2
+1 2 3 4
+0 1 0 0
+CENTER
+1 3 5 4 2 6
+0 0 0 0 0 0
+End
+
+Move UFL
+CORNER
+1 2 3 4
+1 0 0 0
+CORNER2
+3 2 4 1
+2 0 2 2
+CENTER
+4 2 3 6 5 1
+0 0 0 0 0 0
+End
+
+Move DBL
+CORNER
+1 2 3 4
+0 0 0 1
+CORNER2
+1 4 2 3
+0 2 2 2
+CENTER
+1 2 6 4 3 5
+0 0 0 0 0 0
+End
+
+Move URF
+CORNER
+3 1 2 4
+2 2 2 0
+CORNER2
+1 2 3 4
+1 0 0 0
+CENTER
+2 4 3 1 5 6
+0 0 0 0 0 0
+End
+
