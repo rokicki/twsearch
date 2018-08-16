@@ -2551,10 +2551,15 @@ default:
    FILE *f = fopen(argv[1], "r") ;
    if (f == 0)
       error("! could not open file ", argv[1]) ;
+   int sawdot = 0 ;
    for (int i=0; argv[1][i]; i++) {
       if (argv[1][i] == '.')
-         break ;
-      inputbasename.push_back(argv[1][i]) ;
+         sawdot = 1 ;
+      else if (argv[1][i] == '/' || argv[1][i] == '\\') {
+         sawdot = 0 ;
+         inputbasename.clear() ;
+      } else if (!sawdot)
+         inputbasename.push_back(argv[1][i]) ;
    }
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
