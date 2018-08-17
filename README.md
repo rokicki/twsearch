@@ -14,6 +14,10 @@ Sample usage:
 
    ./twsearch -g 2x2x2.ksolve
 
+   ./twsearch -c 20 --moves 2L,2R,U,F samples/4x4x4.tws flip.tws
+
+   ./twsearch --moves F,R,D,B,L --scramblealg U samples/3x3x3.tws
+
 What is working so far:
 
 * Parsing ksolve file
