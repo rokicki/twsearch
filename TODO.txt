@@ -3,9 +3,10 @@ Things to do with twsearch:
 * Coset solver:
   - Allow spec of subset for pruning (i.e., centers, corners, perms, ori)
   - Encode other portions and store in bitmap
+  - Use this for God's number calculations
   - Think about how to do move-subset-based cosets
 
-* Orienation reduction
+* Orientation reduction
   - Can we infer orientation somehow?
 
 * Low-value pruning improvement
