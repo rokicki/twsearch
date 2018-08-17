@@ -1778,9 +1778,9 @@ struct prunetable {
          int v = t % 36 ;
          t /= 36 ;
          if (v < 10)
-            filename.push_back('0'+t) ;
+            filename.push_back('0'+v) ;
          else
-            filename.push_back('a'+(t-10)) ;
+            filename.push_back('a'+(v-10)) ;
       }
    }
    string makefilename(const puzdef &pd) const {
