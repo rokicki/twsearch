@@ -18,6 +18,8 @@ Sample usage:
 
    ./twsearch --moves F,R,D,B,L --scramblealg U samples/3x3x3.tws
 
+   ./twsearch --moves U,R,F -q -g samples/kilominx.tws
+
 What is working so far:
 
 * Parsing ksolve file

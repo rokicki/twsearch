@@ -2537,14 +2537,12 @@ vector<setvals> parsemovelist_generously(puzdef &pd, const char *scr) {
 }
 void solvecmdline(puzdef &pd, const char *scr) {
    stacksetval p1(pd) ;
+   pd.assignpos(p1, pd.solved) ;
    string noname ;
    prunetable pt(pd, maxmem) ;
    vector<setvals> movelist = parsemovelist_generously(pd, scr) ;
    for (int i=0; i<(int)movelist.size(); i++)
       domove(pd, p1, movelist[i]) ;
- for (int i=0; i<pd.totsize; i++)
-  cout << " " << (int)(p1.dat[i]) ;
- cout << endl ;
    solveit(pd, pt, noname, p1) ;
 }
 void processscrambles(FILE *f, puzdef &pd) {
