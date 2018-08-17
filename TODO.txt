@@ -1,0 +1,34 @@
+Things to do with twsearch:
+
+* Coset solver:
+  - Allow spec of subset for pruning (i.e., centers, corners, perms, ori)
+  - Encode other portions and store in bitmap
+  - Think about how to do move-subset-based cosets
+
+* Orienation reduction
+  - Can we infer orientation somehow?
+
+* Low-value pruning improvement
+  - Divide by 127, or other hack, to preserve 4 bits per cacheline for a
+    lower value, like we do in our big optimal solver
+
+* Ignore pieces
+  - Introduce way to specify certain pieces can be ignored for pruning
+
+* Edge pairing
+  - Is there some way we can support edge pairing?
+
+* Structural pruning
+  - Non-table-based pruning based on (for instance) pairs of pieces and
+    their relationships.
+
+* Multiple pruning tables
+  - Get deep values from a subset of the puzzle (i.e., corners on the 4x4)
+
+* Multiple probes
+  - Support a mechanism for multiple probing into a single table, maybe
+    in conjunction with the move subset discussed above
+
+* Display, etc.
+  - Add some way to render/edit positions, perhaps in conjunction with
+    SVG twizzle support or something.
