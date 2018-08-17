@@ -103,7 +103,7 @@ struct moove {
    moove() : name(0), pos(0), cost(1) {}
    const char *name ;
    setvals pos ;
-   int cost, base ;
+   int cost, base, twist ;
 } ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), identity(0), totsize(0), id(0),
@@ -112,18 +112,23 @@ struct puzdef {
    setdefs_t setdefs ;
    setvals solved ;
    setvals identity ;
-   vector<moove> basemoves, moves ;
+   vector<moove> basemoves, moves, parsemoves ;
    vector<int> basemoveorders ;
    int totsize ;
    setval id ;
    double logstates ;
    unsigned long long llstates ;
    ull checksum ;
+   ull optionssum ;
    int comparepos(const setvals a, const setvals b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
    void assignpos(setvals a, const setvals b) const {
       memcpy(a.dat, b.dat, totsize) ;
+   }
+   void addoptionssum(const char *p) {
+      while (*p)
+         optionssum = 37 * optionssum + *p++ ;
    }
    void mul(const setvals a, const setvals b, setvals c) const {
       const uchar *ap = a.dat ;
@@ -395,6 +400,7 @@ puzdef readdef(FILE *f) {
    puzdef pz ;
    int state = 0 ;
    ull checksum = 0 ;
+   pz.optionssum = 0;
    while (1) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
@@ -445,6 +451,7 @@ puzdef readdef(FILE *f) {
          m.name = strdup(toks[1].c_str()) ;
          m.pos = readposition(pz, 'm', f, checksum) ;
          m.cost = 1 ;
+         m.twist = 1 ;
          m.base = pz.moves.size() ;
          pz.moves.push_back(m) ;
       } else {
@@ -502,6 +509,7 @@ void addmovepowers(puzdef &pd) {
          moove m2 = m ;
          m2.pos = movepowers[j] ;
          m2.cost = abs(tw) ;
+         m2.twist = (tw + order) % order ;
          if (tw != 1) {
             string s2 = m.name ;
             if (tw != -1)
@@ -1760,7 +1768,22 @@ struct prunetable {
    void addlookups(ull lookups) {
       lookupcnt += lookups ;
    }
-   string makefilename() const {
+   // if someone set options that affect the hash, we add a suffix to the
+   // data file name to reflect this.
+   void addsumdat(const puzdef &pd, string &filename) const {
+      filename.push_back('-') ;
+      filename.push_back('o') ;
+      ull t = pd.optionssum ;
+      while (t) {
+         int v = t % 36 ;
+         t /= 36 ;
+         if (v < 10)
+            filename.push_back('0'+t) ;
+         else
+            filename.push_back('a'+(t-10)) ;
+      }
+   }
+   string makefilename(const puzdef &pd) const {
       string filename = "tws-" + inputbasename + "-" ;
       ull bytes = size >> 2 ;
       char suffix = 0 ;
@@ -1783,6 +1806,8 @@ struct prunetable {
       filename += to_string(bytes) ;
       if (suffix)
          filename += suffix ;
+      if (pd.optionssum)
+         addsumdat(pd, filename) ;
       filename += ".dat" ;
       return filename ;
    }
@@ -1978,7 +2003,7 @@ struct prunetable {
             codevals[i] = widthbases[codewidths[i]] ;
             widthbases[codewidths[i]]++ ;
          }
-      string filename = makefilename() ;
+      string filename = makefilename(pd) ;
       cout << "Writing " << filename << " " << flush ;
       FILE *w = fopen(filename.c_str(), "wb") ;
       if (w == 0)
@@ -2011,7 +2036,7 @@ struct prunetable {
          codewidths[i] = 0 ;
          codevals[i] = 0 ;
       }
-      string filename = makefilename() ;
+      string filename = makefilename(pd) ;
       FILE *r = fopen(filename.c_str(), "rb") ;
       if (r == 0)
          return 0 ;
@@ -2348,7 +2373,10 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
       if (solutionsfound >= solutionsneeded) {
          duration() ;
          double actualtime = start - starttime ;
-         cout << "Found " << solutionsfound << " solutions at maximum depth " << d << " lookups " << totlookups << " in " << actualtime << " rate " << (totlookups/actualtime) << endl << flush ;
+         cout << "Found " << solutionsfound << " solution" <<
+                 (solutionsfound != 1 ? "s" : "") << " at maximum depth " <<
+                 d << " lookups " << totlookups << " in " << actualtime <<
+                 " rate " << (totlookups/actualtime) << endl << flush ;
          return ;
       }
       pt.checkextend(pd) ; // fill table up a bit more if needed
@@ -2434,19 +2462,90 @@ void solvetest(puzdef &pd) {
       pd.assignpos(p1, p2) ;
    }
 }
-void domove(puzdef &pd, setvals p, string mvstring) {
+void domove(puzdef &pd, setvals p, setvals pos) {
    stacksetval pt(pd) ;
-   for (int mv=0; mv<(int)pd.moves.size(); mv++)
-      if (mvstring == pd.moves[mv].name) {
-         pd.mul(p, pd.moves[mv].pos, pt) ;
-         pd.assignpos(p, pt) ;
-         return ;
-      }
-   error("! bad move in scramblealg file ", mvstring) ;
+   pd.mul(p, pos, pt) ;
+   pd.assignpos(p, pt) ;
+}
+void domove(puzdef &pd, setvals p, int mv) {
+   domove(pd, p, pd.moves[mv].pos) ;
+}
+setval findmove_generously(const puzdef &pd, const char *mvstring) {
+   for (int i=0; i<pd.moves.size(); i++)
+      if (strcmp(mvstring, pd.moves[i].name) == 0)
+         return pd.moves[i].pos ;
+   for (int i=0; i<pd.parsemoves.size(); i++)
+      if (strcmp(mvstring, pd.parsemoves[i].name) == 0)
+         return pd.parsemoves[i].pos ;
+   error("! bad move name ", mvstring) ;
+   return setval(0) ;
+}
+setval findmove_generously(const puzdef &pd, string s) {
+   return findmove_generously(pd, s.c_str()) ;
+}
+int findmove(const puzdef &pd, const char *mvstring) {
+   for (int i=0; i<pd.moves.size(); i++)
+      if (strcmp(mvstring, pd.moves[i].name) == 0)
+         return i ;
+   error("! bad move name ", mvstring) ;
+   return -1 ;
+}
+int findmove(const puzdef &pd, string mvstring) {
+   return findmove(pd, mvstring.c_str()) ;
+}
+void domove(puzdef &pd, setvals p, string mvstring) {
+   domove(pd, p, findmove(pd, mvstring)) ;
 }
 void solveit(puzdef &pd, prunetable &pt, string scramblename, setvals &p) {
-   cout << "Solving " << scramblename << endl << flush ;
+   if (scramblename.size())
+      cout << "Solving " << scramblename << endl << flush ;
+   else
+      cout << "Solving" << endl << flush ;
    solve(pd, pt, p) ;
+}
+vector<int> parsemovelist(puzdef &pd, const char *scr) {
+   vector<int> movelist ;
+   string move ;
+   for (const char *p=scr; *p; p++) {
+      if (*p <= ' ' || *p == ',') {
+         if (move.size()) {
+            movelist.push_back(findmove(pd, move)) ;
+            move.clear() ;
+         }
+      } else
+         move.push_back(*p) ;
+   }
+   if (move.size())
+      movelist.push_back(findmove(pd, move)) ;
+   return movelist ;
+}
+vector<setvals> parsemovelist_generously(puzdef &pd, const char *scr) {
+   vector<setvals> movelist ;
+   string move ;
+   for (const char *p=scr; *p; p++) {
+      if (*p <= ' ' || *p == ',') {
+         if (move.size()) {
+            movelist.push_back(findmove_generously(pd, move)) ;
+            move.clear() ;
+         }
+      } else
+         move.push_back(*p) ;
+   }
+   if (move.size())
+      movelist.push_back(findmove_generously(pd, move)) ;
+   return movelist ;
+}
+void solvecmdline(puzdef &pd, const char *scr) {
+   stacksetval p1(pd) ;
+   string noname ;
+   prunetable pt(pd, maxmem) ;
+   vector<setvals> movelist = parsemovelist_generously(pd, scr) ;
+   for (int i=0; i<(int)movelist.size(); i++)
+      domove(pd, p1, movelist[i]) ;
+ for (int i=0; i<pd.totsize; i++)
+  cout << " " << (int)(p1.dat[i]) ;
+ cout << endl ;
+   solveit(pd, pt, noname, p1) ;
 }
 void processscrambles(FILE *f, puzdef &pd) {
    string scramblename ;
@@ -2473,7 +2572,7 @@ void processscrambles(FILE *f, puzdef &pd) {
             if (toks[0] == "End")
                break ;
             for (int i=0; i<(int)toks.size(); i++)
-               domove(pd, p1, toks[i]) ;
+               domove(pd, p1, findmove_generously(pd, toks[i])) ;
          }
          solveit(pd, pt, scramblename, p1) ;
       } else {
@@ -2481,7 +2580,70 @@ void processscrambles(FILE *f, puzdef &pd) {
       }
    }
 }
+/*
+ *   Rewrite the movelist in the puzzle definition to restrict moves.
+ *   This is a bit tricky.  The moves in the move list can be base
+ *   moves (like U) or derived moves (like U2 or U').  In all cases
+ *   we include only appropriate multiples.
+ */
+int goodmove(const puzdef &pd, moove mv, int inc, int order) {
+   if (inc == 0)
+      return 0 ;
+   if (order % inc != 0)
+      error("! filtered move has to be simplest possible") ;
+   // there's a faster number theory way to do this, but why.
+   return (mv.twist % inc == 0) ;
+}
+void filtermovelist(puzdef &pd, const char *movelist) {
+   vector<int> moves = parsemovelist(pd, movelist) ;
+   vector<int> lowinc(pd.basemoves.size()) ;
+   for (int i=0; i<moves.size(); i++) {
+      moove &mv = pd.moves[moves[i]] ;
+      if (lowinc[mv.base])
+         error("Move list restriction should only list a base move once.") ;
+      lowinc[mv.base] = mv.twist ;
+   }
+   vector<moove> newbase ;
+   map<int, int> moveremap ;
+   vector<int> newbasemoveorders ;
+   for (int i=0; i<pd.basemoves.size(); i++)
+      if (goodmove(pd, pd.basemoves[i], lowinc[i], pd.basemoveorders[i])) {
+         int newbasenum = newbase.size() ;
+         moove newmv = pd.basemoves[i] ;
+         newmv.base = newbasenum ;
+         moveremap[i] = newbasenum ;
+         newbase.push_back(newmv) ;
+         newbasemoveorders.push_back(pd.basemoveorders[i] / lowinc[i]) ;
+      } else {
+      }
+   vector<moove> newmvs ;
+   for (int i=0; i<pd.moves.size(); i++) {
+      int obase = pd.moves[i].base ;
+      if (goodmove(pd, pd.moves[i], lowinc[obase], pd.basemoveorders[obase])) {
+         moove newmv = pd.moves[i] ;
+         int otwist = newmv.twist ;
+         newmv.twist /= lowinc[pd.moves[i].base] ;
+         if (otwist == lowinc[obase] && lowinc[obase] > 1) {
+            int newbasenum = newbase.size() ;
+            moveremap[obase] = newbasenum ;
+            newmv.base = newbasenum ;
+            newbase.push_back(newmv) ;
+            newbasemoveorders.push_back(pd.basemoveorders[obase] / lowinc[obase]) ;
+         }
+         newmv.base = moveremap[obase] ;
+         newmvs.push_back(newmv) ;
+      }
+   }
+   // allow parsing to pick up old move positions
+   pd.parsemoves = pd.moves ;
+   pd.basemoveorders = newbasemoveorders ;
+   pd.basemoves = newbase ;
+   pd.moves = newmvs ;
+   pd.addoptionssum(movelist) ;
+}
 int dogod, docanon, doalgo, dosolvetest, dotimingtest ;
+const char *scramblealgo = 0 ;
+const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
    duration() ;
    init_mutex() ;
@@ -2500,7 +2662,13 @@ int main(int argc, const char **argv) {
       argv++ ;
       if (argv[0][1] == '-') {
          if (strcmp(argv[0], "--moves") == 0) {
-            error("! move list parsing not yet understood") ;
+            legalmovelist = argv[1] ;
+            argc-- ;
+            argv++ ;
+         } else if (strcmp(argv[0], "--scramblealg") == 0) {
+            scramblealgo = argv[1] ;
+            argc-- ;
+            argv++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -2573,6 +2741,8 @@ default:
    }
    puzdef pd = readdef(f) ;
    addmovepowers(pd) ;
+   if (legalmovelist)
+      filtermovelist(pd, legalmovelist) ;
    calculatesizes(pd) ;
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
@@ -2589,6 +2759,8 @@ default:
       solvetest(pd) ;
    if (dotimingtest)
       timingtest(pd) ;
+   if (scramblealgo)
+      solvecmdline(pd, scramblealgo) ;
    if (argc > 2) {
       f = fopen(argv[2], "r") ;
       if (f == 0)
