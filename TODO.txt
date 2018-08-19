@@ -9,6 +9,9 @@ Things to do with twsearch:
 * Orientation reduction
   - Can we infer orientation somehow?
 
+* Simple algorithm search
+  - Conjugates, commutators, repeated sequences
+
 * Low-value pruning improvement
   - Divide by 127, or other hack, to preserve 4 bits per cacheline for a
     lower value, like we do in our big optimal solver
@@ -33,3 +36,7 @@ Things to do with twsearch:
 * Display, etc.
   - Add some way to render/edit positions, perhaps in conjunction with
     SVG twizzle support or something.
+
+* Cycle-based movement for speed?
+
+* Play with solving piece by piece; see what we can do.
