@@ -2494,10 +2494,10 @@ void domove(puzdef &pd, setvals p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;
 }
 setval findmove_generously(const puzdef &pd, const char *mvstring) {
-   for (int i=0; i<pd.moves.size(); i++)
+   for (int i=0; i<(int)pd.moves.size(); i++)
       if (strcmp(mvstring, pd.moves[i].name) == 0)
          return pd.moves[i].pos ;
-   for (int i=0; i<pd.parsemoves.size(); i++)
+   for (int i=0; i<(int)pd.parsemoves.size(); i++)
       if (strcmp(mvstring, pd.parsemoves[i].name) == 0)
          return pd.parsemoves[i].pos ;
    error("! bad move name ", mvstring) ;
@@ -2507,7 +2507,7 @@ setval findmove_generously(const puzdef &pd, string s) {
    return findmove_generously(pd, s.c_str()) ;
 }
 int findmove(const puzdef &pd, const char *mvstring) {
-   for (int i=0; i<pd.moves.size(); i++)
+   for (int i=0; i<(int)pd.moves.size(); i++)
       if (strcmp(mvstring, pd.moves[i].name) == 0)
          return i ;
    error("! bad move name ", mvstring) ;
@@ -2618,7 +2618,7 @@ int goodmove(const puzdef &pd, moove mv, int inc, int order) {
 void filtermovelist(puzdef &pd, const char *movelist) {
    vector<int> moves = parsemovelist(pd, movelist) ;
    vector<int> lowinc(pd.basemoves.size()) ;
-   for (int i=0; i<moves.size(); i++) {
+   for (int i=0; i<(int)moves.size(); i++) {
       moove &mv = pd.moves[moves[i]] ;
       if (lowinc[mv.base])
          error("Move list restriction should only list a base move once.") ;
@@ -2627,7 +2627,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
    vector<moove> newbase ;
    map<int, int> moveremap ;
    vector<int> newbasemoveorders ;
-   for (int i=0; i<pd.basemoves.size(); i++)
+   for (int i=0; i<(int)pd.basemoves.size(); i++)
       if (goodmove(pd, pd.basemoves[i], lowinc[i], pd.basemoveorders[i])) {
          int newbasenum = newbase.size() ;
          moove newmv = pd.basemoves[i] ;
@@ -2638,7 +2638,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
       } else {
       }
    vector<moove> newmvs ;
-   for (int i=0; i<pd.moves.size(); i++) {
+   for (int i=0; i<(int)pd.moves.size(); i++) {
       int obase = pd.moves[i].base ;
       if (goodmove(pd, pd.moves[i], lowinc[obase], pd.basemoveorders[obase])) {
          moove newmv = pd.moves[i] ;
