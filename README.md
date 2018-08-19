@@ -10,11 +10,11 @@ Important options (you should specify these):
 
 Sample usage:
 
-   ./twsearch samples/3x3x3.ksolve samples/tperm.scr
+   ./twsearch samples/3x3x3.tws samples/tperm.scr
 
    ./twsearch -g samples/2x2x2.tws
 
-   ./twsearch -c 20 --moves 2L,2R,U,F samples/4x4x4.tws flip.tws
+   ./twsearch -c 20 --moves 2L,2R,U,F samples/4x4x4.tws samples/flip.tws
 
    ./twsearch --moves F,R,D,B,L --scramblealg U samples/3x3x3.tws
 
