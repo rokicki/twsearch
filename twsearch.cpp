@@ -2771,6 +2771,12 @@ default:
    addmovepowers(pd) ;
    if (legalmovelist)
       filtermovelist(pd, legalmovelist) ;
+   if (nocorners)
+      pd.addoptionssum("nocorners") ;
+   if (nocenters)
+      pd.addoptionssum("nocenters") ;
+   if (noedges)
+      pd.addoptionssum("noedges") ;
    calculatesizes(pd) ;
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
