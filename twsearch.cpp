@@ -178,6 +178,7 @@ vector<ll> fact ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 int quarter = 0 ;
+int nocorners, noedges, nocenters ;
 string curline ;
 void error(string msg, string extra="") {
    cerr << msg << extra << endl ;
@@ -293,21 +294,36 @@ setvals makeidentity(puzdef &pz) {
    }
    return r ;
 }
+int omitset(string s) {
+   if (s.size() < 2)
+      return 0 ;
+   if (nocorners && tolower(s[0]) == 'c' && tolower(s[1]) == 'o')
+      return 1 ;
+   if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
+      return 1 ;
+   if (noedges && tolower(s[0]) == 'e' && tolower(s[1]) == 'd')
+      return 1 ;
+   return 0 ;
+}
 setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
    setvals r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
    int numseq = 0 ;
+   int ignore = 0 ;
    while (1) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          error("! premature end while reading position") ;
       if (toks[0] == "End") {
-         if (curset >= 0 && numseq == 0)
+         if (curset >= 0 && numseq == 0 && ignore == 0)
             error("! empty set def?") ;
          expect(toks, 1) ;
+         ignore = 0 ;
          break ;
       }
       if (isnumber(toks[0])) {
+         if (ignore)
+            continue ;
          if (curset < 0 || numseq > 1)
             error("! unexpected number sequence") ;
          int n = pz.setdefs[curset].size ;
@@ -320,6 +336,11 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          if (curset >= 0 && numseq == 0)
             error("! empty set def?") ;
          expect(toks, 1) ;
+         ignore = 0 ;
+         if (omitset(toks[0])) {
+            ignore = 1 ;
+            continue ;
+         }
          curset = -1 ;
          for (int i=0; i<(int)pz.setdefs.size(); i++)
             if (toks[0] == pz.setdefs[i].name) {
@@ -419,6 +440,8 @@ puzdef readdef(FILE *f) {
          if (state != 1)
             error("! Set in wrong place") ;
          expect(toks, 4) ;
+         if (omitset(toks[1]))
+            continue ;
          setdef sd ;
          sd.name = strdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
@@ -2663,6 +2686,12 @@ int main(int argc, const char **argv) {
             legalmovelist = argv[1] ;
             argc-- ;
             argv++ ;
+         } else if (strcmp(argv[0], "--nocorners") == 0) {
+            nocorners++ ;
+         } else if (strcmp(argv[0], "--nocenters") == 0) {
+            nocenters++ ;
+         } else if (strcmp(argv[0], "--noedges") == 0) {
+            noedges++ ;
          } else if (strcmp(argv[0], "--scramblealg") == 0) {
             scramblealgo = argv[1] ;
             argc-- ;
