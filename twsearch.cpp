@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <pthread.h>
 #undef CHECK
+#define _CRT_NONSTDC_NO_DEPRECATE
 using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
@@ -889,14 +890,14 @@ ull densepack_ordered(const puzdef &pd, setvals pos) {
    return r ;
 }
 ull newseen ;
-uint *symc ;
+unsigned int *symc ;
 ull *mem ;
 void innerloop(int at, int back, int seek, int newv,
                ull sofar, vector<ull> &muld) {
    sofar *= symcoordsize ;
    for (int i=0; i<nmoves; i++)
       muld[i] *= symcoordsize ;
-   uint *symtab = symc ;
+   unsigned int *symtab = symc ;
    if (back) {
       for (int smoff=0; smoff<symcoordsize; smoff++, symtab += nmoves) {
          ull off = sofar + smoff ;
@@ -1035,12 +1036,12 @@ void dotwobitgod2(puzdef &pd) {
    cout << endl << flush ;
    reverse(parts.begin(), parts.end()) ;
    // consider adding support for shorts here for cache friendliness.
-   symc = (uint *)calloc(symcoordsize * nmoves, sizeof(uint)) ;
+   symc = (unsigned int *)calloc(symcoordsize * nmoves, sizeof(unsigned int)) ;
    if (symc == 0)
       error("! not enough memory") ;
    cout << "Making symcoord lookup table size " << symcoordsize <<
            " x " << nmoves << flush ;
-   uint *ss = symc ;
+   unsigned int *ss = symc ;
    for (ll i=0; i<symcoordsize; i++, ss += nmoves) {
       stacksetval p1(pd) ;
       stacksetval p2(pd) ;
