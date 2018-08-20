@@ -12,7 +12,6 @@
 #include <cstdio>
 #include <pthread.h>
 #undef CHECK
-#define _CRT_NONSTDC_NO_DEPRECATE
 using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
@@ -892,8 +891,7 @@ ull densepack_ordered(const puzdef &pd, setvals pos) {
 ull newseen ;
 unsigned int *symc ;
 ull *mem ;
-void innerloop(int at, int back, int seek, int newv,
-               ull sofar, vector<ull> &muld) {
+void innerloop(int back, int seek, int newv, ull sofar, vector<ull> &muld) {
    sofar *= symcoordsize ;
    for (int i=0; i<nmoves; i++)
       muld[i] *= symcoordsize ;
@@ -940,7 +938,7 @@ void innerloop(int at, int back, int seek, int newv,
 }
 void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar, vector<ull> &muld) {
    if (at + numsym == (int)parts.size()) {
-      innerloop(at, back, seek, newv, sofar, muld) ;
+      innerloop(back, seek, newv, sofar, muld) ;
       return ;
    }
    int sdpair = parts[at].second ;
@@ -1603,7 +1601,7 @@ struct fillworker {
    int d ;
    fillbuf fillbufs[MEMSHARDS] ;
    char pad[256] ;
-   void init(const puzdef &pd, prunetable &pt, int d_) {
+   void init(const puzdef &pd, int d_) {
       while (posns.size() <= 100 || (int)posns.size() <= d_+1)
          posns.push_back(allocsetval(pd, pd.solved)) ;
       pd.assignpos(posns[0], pd.solved) ;
@@ -1744,7 +1742,7 @@ struct prunetable {
       makeworkchunks(pd, d) ;
       int wthreads = setupthreads(pd, *this) ;
       for (int t=0; t<wthreads; t++)
-         fillworkers[t].init(pd, *this, d) ;
+         fillworkers[t].init(pd, d) ;
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, fillthreadworker, &(workerparams[i])) ;
       for (int i=0; i<wthreads; i++)
@@ -1917,7 +1915,7 @@ struct prunetable {
       if (bytecnt != bytectr)
          error("! error when unpacking bytes") ;
    }
-   void writeblock(ull *mem, ull longcnt, FILE *f) {
+   void writeblock(ull *mem, ull longcnt) {
       ull bytecnt = calcblocksize(mem, longcnt) ;
       uchar *buf = (uchar *)malloc(bytecnt) ;
       ioqueue.queuepackwork(mem, longcnt, buf, bytecnt) ;
@@ -2048,7 +2046,7 @@ struct prunetable {
          error("Size must be a multiple of block size") ;
       ioqueue.init(this, w) ;
       for (ll i=0; i<longcnt; i += BLOCKSIZE)
-         writeblock(mem+i, BLOCKSIZE, w) ;
+         writeblock(mem+i, BLOCKSIZE) ;
       ioqueue.finishall() ;
       if (putc(SIGNATURE, w) < 0)
          error("! I/O error") ;
@@ -2282,7 +2280,7 @@ struct solveworker {
    long long lookups ;
    int d ;
    char padding[256] ; // kill false sharing
-   void init(const puzdef &pd, prunetable &pt, int d_, const setval &p) {
+   void init(const puzdef &pd, int d_, const setval &p) {
       // make the position table big to minimize false sharing.
       while (posns.size() <= 100 || (int)posns.size() <= d_+1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
@@ -2384,7 +2382,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
          makeworkchunks(pd, 0) ;
       int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
-         solveworkers[t].init(pd, pt, d, p) ;
+         solveworkers[t].init(pd, d, p) ;
       solutionsfound = 0 ;
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
@@ -2608,7 +2606,7 @@ void processscrambles(FILE *f, puzdef &pd) {
  *   moves (like U) or derived moves (like U2 or U').  In all cases
  *   we include only appropriate multiples.
  */
-int goodmove(const puzdef &pd, moove mv, int inc, int order) {
+int goodmove(const moove &mv, int inc, int order) {
    if (inc == 0)
       return 0 ;
    if (order % inc != 0)
@@ -2629,7 +2627,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
    map<int, int> moveremap ;
    vector<int> newbasemoveorders ;
    for (int i=0; i<(int)pd.basemoves.size(); i++)
-      if (goodmove(pd, pd.basemoves[i], lowinc[i], pd.basemoveorders[i])) {
+      if (goodmove(pd.basemoves[i], lowinc[i], pd.basemoveorders[i])) {
          int newbasenum = newbase.size() ;
          moove newmv = pd.basemoves[i] ;
          newmv.base = newbasenum ;
@@ -2641,7 +2639,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
    vector<moove> newmvs ;
    for (int i=0; i<(int)pd.moves.size(); i++) {
       int obase = pd.moves[i].base ;
-      if (goodmove(pd, pd.moves[i], lowinc[obase], pd.basemoveorders[obase])) {
+      if (goodmove(pd.moves[i], lowinc[obase], pd.basemoveorders[obase])) {
          moove newmv = pd.moves[i] ;
          int otwist = newmv.twist ;
          newmv.twist /= lowinc[pd.moves[i].base] ;
