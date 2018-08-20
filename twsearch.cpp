@@ -34,6 +34,15 @@ double duration() {
    start = now ;
    return r ;
 }
+/*
+ *   strdup is going through some issues: POSIX vs C++, so we just
+ *   implement it ourselves.
+ */
+const char *twstrdup(const char *s) {
+   char *r = (char *)malloc(strlen(s)+1) ;
+   strcpy(r, s) ;
+   return r ;
+}
 const int MAXTHREADS = 64 ;
 int numthreads = 4 ;
 pthread_mutex_t mmutex ;
@@ -431,7 +440,7 @@ puzdef readdef(FILE *f) {
             error("! Name in wrong place") ;
          state++ ;
          expect(toks, 2) ;
-         pz.name = strdup(toks[1].c_str()) ; ;
+         pz.name = twstrdup(toks[1].c_str()) ; ;
       } else if (toks[0] == "Set") {
          if (state == 0) {
             pz.name = "Unnamed" ;
@@ -443,7 +452,7 @@ puzdef readdef(FILE *f) {
          if (omitset(toks[1]))
             continue ;
          setdef sd ;
-         sd.name = strdup(toks[1].c_str()) ;
+         sd.name = twstrdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
@@ -471,7 +480,7 @@ puzdef readdef(FILE *f) {
             error("! Move in wrong place") ;
          expect(toks, 2) ;
          moove m ;
-         m.name = strdup(toks[1].c_str()) ;
+         m.name = twstrdup(toks[1].c_str()) ;
          m.pos = readposition(pz, 'm', f, checksum) ;
          m.cost = 1 ;
          m.twist = 1 ;
@@ -540,7 +549,7 @@ void addmovepowers(puzdef &pd) {
             if (tw < 0)
                s2 += "'" ;
             newnames.push_back(s2) ;
-            m2.name = strdup(s2.c_str()) ;
+            m2.name = twstrdup(s2.c_str()) ;
          }
          newmoves.push_back(m2) ;
       }
@@ -2578,12 +2587,12 @@ void processscrambles(FILE *f, puzdef &pd) {
          break ;
       if (toks[0] == "Scramble") {
          expect(toks, 2) ;
-         scramblename = strdup(toks[1].c_str()) ; ;
+         scramblename = twstrdup(toks[1].c_str()) ; ;
          setval p = readposition(pd, 'S', f, checksum) ;
          solveit(pd, pt, scramblename, p) ;
       } else if (toks[0] == "ScrambleAlg") {
          expect(toks, 2) ;
-         scramblename = strdup(toks[1].c_str()) ; ;
+         scramblename = twstrdup(toks[1].c_str()) ; ;
          pd.assignpos(p1, pd.solved) ;
          while (1) {
             toks = getline(f, checksum) ;
