@@ -11,7 +11,9 @@
 #include <sys/time.h>
 #include <cstdio>
 #include <pthread.h>
+#include <random>
 #undef CHECK
+#define HAVE_FFSLL
 using namespace std ;
 typedef long long ll ;
 typedef unsigned long long ull ;
@@ -42,6 +44,11 @@ const char *twstrdup(const char *s) {
    char *r = (char *)malloc(strlen(s)+1) ;
    strcpy(r, s) ;
    return r ;
+}
+double myrand(int n) {
+   static mt19937 rng ;
+   static double mul = 1.0 / (rng.max() - rng.min() + 1.0) ;
+   return (int)((rng()-rng.min()) * mul * n) ;
 }
 const int MAXTHREADS = 64 ;
 int numthreads = 4 ;
@@ -819,7 +826,13 @@ void dotwobitgod(puzdef &pd) {
             ull checkv = mem[bigi] ;
             checkv = (checkv & 0x5555555555555555LL) &
                      ((checkv >> 1) & 0x5555555555555555LL) ;
+#ifdef HAVE_FFSLL
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
+#else
+            for (int smi=1; checkv; smi++) {
+               if ((checkv >> (smi-1)) & 1)
+                  continue ;
+#endif
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<(int)pd.moves.size(); i++) {
@@ -844,7 +857,13 @@ void dotwobitgod(puzdef &pd) {
             ull checkv = mem[bigi] ^ xorv ;
             checkv = (checkv & 0x5555555555555555LL) &
                      ((checkv >> 1) & 0x5555555555555555LL) ;
+#ifdef HAVE_FFSLL
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
+#else
+            for (int smi=1; checkv; smi++) {
+               if ((checkv >> (smi-1)) & 1)
+                  continue ;
+#endif
                checkv -= 1LL << (smi-1) ;
                denseunpack(pd, (bigi << 5) + (smi >> 1), p1) ;
                for (int i=0; i<(int)pd.moves.size(); i++) {
@@ -2420,9 +2439,9 @@ void timingtest(puzdef &pd) {
    duration() ;
    int cnt = 100000000 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = (int)(pd.moves.size() * drand48()) ;
+      int rmv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
-      rmv = (int)(pd.moves.size() * drand48()) ;
+      rmv = myrand(pd.moves.size()) ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
    }
    double tim = duration() ;
@@ -2432,10 +2451,10 @@ void timingtest(puzdef &pd) {
    cnt = 100000000 ;
    ull sum = 0 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = (int)(pd.moves.size() * drand48()) ;
+      int rmv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
       sum += fasthash(pd.totsize, p2) ;
-      rmv = (int)(pd.moves.size() * drand48()) ;
+      rmv = myrand(pd.moves.size()) ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
       sum += fasthash(pd.totsize, p1) ;
    }
@@ -2447,10 +2466,10 @@ void timingtest(puzdef &pd) {
    cnt = 100000000 ;
    sum = 0 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = (int)(pd.moves.size() * drand48()) ;
+      int rmv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
       sum += pt.lookup(p2) ;
-      rmv = (int)(pd.moves.size() * drand48()) ;
+      rmv = myrand(pd.moves.size()) ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
       sum += pt.lookup(p1) ;
    }
@@ -2467,12 +2486,12 @@ void timingtest(puzdef &pd) {
       cnt = 100000000 ;
       sum = 0 ;
       for (int i=0; i<cnt; i += 2) {
-         int rmv = (int)(pd.moves.size() * drand48()) ;
+         int rmv = myrand(pd.moves.size()) ;
          pd.mul(p1, pd.moves[rmv].pos, p2) ;
          sum += pt.lookuph(tgo[i&mask]) ;
          tgo[i&mask] = fasthash(pd.totsize, p2) ;
          pt.prefetch(tgo[i&mask]) ;
-         rmv = (int)(pd.moves.size() * drand48()) ;
+         rmv = myrand(pd.moves.size()) ;
          pd.mul(p2, pd.moves[rmv].pos, p1) ;
          sum += pt.lookuph(tgo[1+(i&mask)]) ;
          tgo[1+(i&mask)] = fasthash(pd.totsize, p1) ;
@@ -2488,7 +2507,7 @@ void solvetest(puzdef &pd) {
    prunetable pt(pd, maxmem) ;
    while (1) {
       solve(pd, pt, p1) ;
-      int rmv = (int)(pd.moves.size() * drand48()) ;
+      int rmv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
       pd.assignpos(p1, p2) ;
    }
