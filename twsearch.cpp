@@ -23,7 +23,7 @@ string inputbasename ;
 ull solutionsneeded = 1 ;
 const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
-const int SIGNATURE = 21 ; // start and end of data files
+const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
 double walltime() {
    struct timeval tv ;
@@ -1563,6 +1563,9 @@ ull fasthash(int n, const setvals sv) {
    }
    if (n)
       r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 ;
+   // this little hack ensures that at least one of bits 1..7
+   // (numbered from zero) is set.
+   r ^= ((r | (1LL << 43)) & ((r & 0xfe) - 2)) >> 42 ;
    return r ;
 }
 vector<ull> workchunks ;
@@ -1760,6 +1763,7 @@ struct prunetable {
             if (d >= baseval)
                val = d - baseval + 1 ;
             wval = val ;
+            wbval = min(d, 15) ;
             filltable(pd, d) ;
          }
       }
@@ -1784,28 +1788,46 @@ struct prunetable {
    }
    void checkextend(const puzdef &pd) {
       if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
-          baseval >= hibase ||
+          baseval > hibase ||
           (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
          return ;
       cout << "Pausing solve; took " << duration() << " so far." << endl ;
       ull longcnt = (size + 31) >> 5 ;
       cout << "Demoting memory values " << flush ;
-      for (ull i=0; i<longcnt; i++) {
-         ull v = mem[i] ;
+      for (ull i=0; i<longcnt; i += 8) {
          // decrement 1's and 2's; leave 3's alone
-         mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         // watch out for first element; the 0 in the first one is not a mistake
+         ull v = mem[i] ;
+         mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
+         v = mem[i+1] ;
+         mem[i+1] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+2] ;
+         mem[i+2] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+3] ;
+         mem[i+3] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+4] ;
+         mem[i+4] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+5] ;
+         mem[i+5] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+6] ;
+         mem[i+6] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+7] ;
+         mem[i+7] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
       }
       cout << "in " << duration() << endl << flush ;
       baseval++ ;
       wval = 2 ;
+      wbval = baseval+1 ;
       filltable(pd, baseval+1) ;
       writept(pd) ;
    }
    int lookuph(ull h) const {
       h &= hmask ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      /* avoid unpredictable branches with this bit twiddle hack */
-      return (v + baseval - 1) & ((-v) >> 2) ;
+      if (v == 0)
+         return mem[(h >> 5) & ~7] & 15 ;
+      else
+         return v + baseval - 1 ;
    }
    void prefetch(ull h) const {
       __builtin_prefetch(mem+((h & hmask) >> 5)) ;
@@ -1813,8 +1835,10 @@ struct prunetable {
    int lookup(const setval sv) const {
       ull h = fasthash(totsize, sv) & hmask ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      /* avoid unpredictable branches with this bit twiddle hack */
-      return (v + baseval - 1) & ((-v) >> 2) ;
+      if (v == 0)
+         return mem[(h >> 5) & ~7] & 15 ;
+      else
+         return v + baseval - 1 ;
    }
    void addlookups(ull lookups) {
       lookupcnt += lookups ;
@@ -2211,7 +2235,7 @@ struct prunetable {
    int totsize ;
    int shardshift ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
-   int wval ;
+   int wval, wbval ;
    uchar codewidths[512] ;
    ull codevals[512] ;
    short *tabs[7] ;
@@ -2256,6 +2280,8 @@ ull fillworker::fillflush(const prunetable &pt, int shard) {
          ull h = fb.chunks[i] ;
          if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
             pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
+            if ((pt.mem[(h>>5)&-8] & 15) == 15)
+               pt.mem[(h>>5)&-8] -= 15 - pt.wbval ;
             r++ ;
          }
       }
