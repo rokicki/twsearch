@@ -2840,9 +2840,12 @@ default:
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
    if (dogod) {
-      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem &&
-          pd.canpackdense()) {
-         dotwobitgod2(pd) ;
+      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
+         if (pd.canpackdense()) {
+            dotwobitgod2(pd) ;
+         } else { // fits in RAM but can't pack dense; probably use this
+            doarraygod(pd) ;
+         }
       } else {
          doarraygod2(pd) ;
       }
