@@ -1162,6 +1162,7 @@ void calclooseper(const puzdef &pd) {
          bits += sd.obits * n ;
    }
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
+   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
 }
 void loosepack(const puzdef &pd, setvals pos, loosetype *w) {
    uchar *p = pos.dat ;
@@ -1304,8 +1305,6 @@ void doarraygod(const puzdef &pd) {
       error("! not enough memory") ;
    stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p1, pd.solved) ;
-   calclooseper(pd) ;
-   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
    loosepack(pd, p1, mem) ;
    cnts.clear() ;
    cnts.push_back(1) ;
@@ -1480,8 +1479,6 @@ void doarraygod2(const puzdef &pd) {
    loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
       error("! not enough memory") ;
-   calclooseper(pd) ;
-   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
    cnts.clear() ;
    ull tot = 0 ;
    lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
@@ -2840,6 +2837,7 @@ default:
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
    if (dogod) {
+      calclooseper(pd) ;
       if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
          if (pd.canpackdense()) {
             dotwobitgod2(pd) ;
