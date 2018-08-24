@@ -140,6 +140,12 @@ struct puzdef {
    int comparepos(const setvals a, const setvals b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
+   int canpackdense() const {
+      for (int i=0; i<(int)setdefs.size(); i++)
+         if (!setdefs[i].uniq)
+            return 0 ;
+      return 1 ;
+   }
    void assignpos(setvals a, const setvals b) const {
       memcpy(a.dat, b.dat, totsize) ;
    }
@@ -2834,7 +2840,8 @@ default:
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
    if (dogod) {
-      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
+      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem &&
+          pd.canpackdense()) {
          dotwobitgod2(pd) ;
       } else {
          doarraygod2(pd) ;
