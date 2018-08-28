@@ -1616,16 +1616,21 @@ void doarraygod2(const puzdef &pd) {
    }
 }
 map<ll, int> bestsofar ;
+const int HIWR = 4 ;
+ll extendkey(ll k, int nwr, int npwr) {
+   return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
+}
 void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       bigcnt++ ;
       int wr = pd.numwrong(posns[sp], pd.solved) ;
-      if (wr > 3 || wr == 0)
+      if (wr > HIWR || wr == 0)
          return ;
       ll key = 0 ;
       for (int i=0; i<(int)pd.setdefs.size(); i++) {
-         key = key * 10 + pd.numwrong(posns[sp], pd.solved, 1LL << i) +
-                          pd.permwrong(posns[sp], pd.solved, 1LL << i) ;
+         key = extendkey(key,
+                          pd.numwrong(posns[sp], pd.solved, 1LL << i),
+                          pd.permwrong(posns[sp], pd.solved, 1LL << i)) ;
       }
       int mvs = sp ;
       if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
@@ -1670,12 +1675,12 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
          if (o % pp == 0) {
             pd.pow(posns[sp], posns[sp+1], o/pp) ;
             int wr = pd.numwrong(posns[sp+1], pd.id) ;
-            if (wr > 3 || wr == 0)
+            if (wr > HIWR || wr == 0)
                continue ;
             ll key = 0 ;
             for (int i=0; i<(int)pd.setdefs.size(); i++) {
-               key = key * 10 + pd.numwrong(posns[sp+1], pd.id, 1LL << i) +
-                                pd.permwrong(posns[sp+1], pd.id, 1LL << i) ;
+               key = extendkey(key, pd.numwrong(posns[sp+1], pd.id, 1LL << i),
+                                pd.permwrong(posns[sp+1], pd.id, 1LL << i)) ;
             }
             int mvs = o / pp * sp ;
             if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
@@ -1687,7 +1692,7 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
                   cout << " " ;
                cout << pd.moves[movehist[i]].name ;
             }
-            cout << ") (" ;
+            cout << ")" << (mvs / sp) << " (" ;
             const char *spacer = "" ;
             for (int i=1; i<(int)cc.size(); i++) {
                if (cc[i]) {
@@ -1729,12 +1734,12 @@ void recurfindalgo3b(const puzdef &pd, int togo, int sp, int st, int fp) {
       pd.mul(posns[sp+2], posns[fp+1], posns[sp+3]) ;
       pd.mul(posns[sp+3], posns[sp+1], posns[sp+2]) ;
       int wr = pd.numwrong(posns[sp+2], pd.id) ;
-      if (wr > 3 || wr == 0)
+      if (wr > HIWR || wr == 0)
          return ;
       ll key = 0 ;
       for (int i=0; i<(int)pd.setdefs.size(); i++) {
-         key = key * 10 + pd.numwrong(posns[sp+2], pd.id, 1LL << i) +
-                          pd.permwrong(posns[sp+2], pd.id, 1LL << i) ;
+         key = extendkey(key, pd.numwrong(posns[sp+2], pd.id, 1LL << i),
+                          pd.permwrong(posns[sp+2], pd.id, 1LL << i)) ;
       }
       int mvs = 2 * (fp + (sp - (fp + 2))) ;
       if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
