@@ -1592,28 +1592,29 @@ void doarraygod2(const puzdef &pd) {
       reader = levend ;
    }
 }
+map<ll, int> bestsofar ;
 void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       bigcnt++ ;
-      int wr = 0 ;
-      const uchar *p1 = posns[sp].dat ;
-      const uchar *so = pd.solved.dat ;
+      int wr = pd.numwrong(posns[sp], pd.solved) ;
+      if (wr > 3 || wr == 0)
+         return ;
+      ll key = 0 ;
       for (int i=0; i<(int)pd.setdefs.size(); i++) {
-         int n = pd.setdefs[i].size ;
-         for (int j=0; j<n; j++) {
-            if (p1[j] != so[j] || p1[j+n] != so[j+n]) {
-               wr++ ;
-               if (wr > 3)
-                  return ;
-            }
-         }
-         p1 += 2 * n ;
-         so += 2 * n ;
+         key = key * 10 + pd.numwrong(posns[sp], pd.solved, 1LL << i) +
+                          pd.permwrong(posns[sp], pd.solved, 1LL << i) ;
       }
-      cout << wr ;
-      for (int i=0; i<sp; i++)
-         cout << " " << pd.moves[movehist[i]].name ;
-      cout << endl << flush ;
+      int mvs = sp ;
+      if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
+         return ;
+      bestsofar[key] = mvs ;
+      cout << key << " " << mvs << " (" ;
+      for (int i=0; i<sp; i++) {
+         if (i)
+            cout << " " ;
+         cout << pd.moves[movehist[i]].name ;
+      }
+      cout << ")" << endl << flush ;
       return ;
    }
    ull mask = canonmask[st] ;
@@ -1638,7 +1639,6 @@ void findalgos(const puzdef &pd) {
       cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
    }
 }
-map<ll, int> bestsofar ;
 void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       vector<int> cc = pd.cyccnts(posns[sp]) ;
@@ -1646,15 +1646,16 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
       for (int pp=2; pp<=3; pp++) {
          if (o % pp == 0) {
             pd.pow(posns[sp], posns[sp+1], o/pp) ;
-            if (pd.numwrong(posns[sp+1], pd.id) > 3)
+            int wr = pd.numwrong(posns[sp+1], pd.id) ;
+            if (wr > 3 || wr == 0)
                continue ;
             ll key = 0 ;
             for (int i=0; i<(int)pd.setdefs.size(); i++) {
-               key = key * 10 + pd.numwrong(posns[sp+1], pd.id, 1LL << i) ;
-               key = key * 10 + pd.permwrong(posns[sp+1], pd.id, 1LL << i) ;
+               key = key * 10 + pd.numwrong(posns[sp+1], pd.id, 1LL << i) +
+                                pd.permwrong(posns[sp+1], pd.id, 1LL << i) ;
             }
             int mvs = o / pp * sp ;
-            if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
+            if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
                continue ;
             bestsofar[key] = mvs ;
             cout << pp << " " << key << " " << mvs << " (" ;
