@@ -84,6 +84,16 @@ void spawn_thread(int i, THREAD_RETURN_TYPE(THREAD_DECLARATOR *p)(void *),
 void join_thread(int i) {
    pthread_join(p_thread[i], 0) ;
 }
+ll gcd(ll a, ll b) {
+   if (a > b)
+      swap(a, b) ;
+   if (a == 0)
+      return b ;
+   return gcd(b % a, a) ;
+}
+ll lcm(ll a, ll b) {
+   return a / gcd(a,b) * b ;
+}
 uchar *gmoda[256] ;
 struct setdef {
    int size, off ;
@@ -152,6 +162,73 @@ struct puzdef {
    void addoptionssum(const char *p) {
       while (*p)
          optionssum = 37 * optionssum + *p++ ;
+   }
+   int numwrong(const setvals a, const setvals b) const {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      int r = 0 ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++)
+            if (ap[j] != bp[j] || ap[j+n] != bp[j+n])
+               r++ ;
+         ap += 2*n ;
+         bp += 2*n ;
+      }
+      return r ;
+   }
+   int permwrong(const setvals a, const setvals b) const {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      int r = 0 ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++)
+            if (ap[j] != bp[j])
+               r++ ;
+         ap += 2*n ;
+         bp += 2*n ;
+      }
+      return r ;
+   }
+   vector<int> cyccnts(const setvals a, ull sets=-1) const {
+      const uchar *ap = a.dat ;
+      vector<int> r ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         if ((sets >> i) & 1) {
+            ull done = 0 ;
+            for (int j=0; j<n; j++) {
+               if (0 == ((done >> j) & 1)) {
+                  int cnt = 0 ;
+                  int ori = 0 ;
+                  for (int k=j; 0==((done >> k) & 1); k = ap[k]) {
+                     cnt++ ;
+                     ori += ap[k+n] ;
+                     done |= 1LL << k ;
+                  }
+                  ori %= sd.omod ;
+                  if (ori != 0)
+                     cnt *= sd.omod / gcd(ori, sd.omod) ;
+                  if ((int)r.size() <= cnt)
+                     r.resize(cnt+1) ;
+                  r[cnt]++ ;
+               }
+            }
+         }
+         ap += 2*n ;
+      }
+      return r ;
+   }
+   static ll order(const vector<int> cc) {
+      ll r = 1 ;
+      for (int i=2; i<(int)cc.size(); i++)
+         if (cc[i])
+            r = lcm(r, i) ;
+      return r ;
    }
    void mul(const setvals a, const setvals b, setvals c) const {
       const uchar *ap = a.dat ;
@@ -1554,6 +1631,54 @@ void findalgos(const puzdef &pd) {
       cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
    }
 }
+ll hio = 0 ;
+void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
+   if (togo == 0) {
+      vector<int> cc = pd.cyccnts(posns[sp]) ;
+      ll o = puzdef::order(cc) ;
+      if (o <= hio)
+         return ;
+      hio = o ;
+      cout << "(" ;
+      for (int i=0; i<sp; i++) {
+         if (i)
+            cout << " " ;
+         cout << pd.moves[movehist[i]].name ;
+      }
+      cout << ") " << pd.numwrong(posns[sp], pd.identity) << " " <<
+              pd.permwrong(posns[sp], pd.identity) << " (" ;
+      const char *spacer = "" ;
+      for (int i=1; i<(int)cc.size(); i++) {
+         if (cc[i]) {
+            cout << spacer ;
+            spacer = " " ;
+            cout << i << ":" << cc[i] ;
+         }
+      }
+      cout << ") " ;
+      cout << o << endl ;
+      return ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int m=0; m<(int)pd.moves.size(); m++) {
+      const moove &mv = pd.moves[m] ;
+      if ((mask >> mv.base) & 1)
+         continue ;
+      movehist[sp] = m ;
+      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      recurfindalgo2(pd, togo-1, sp+1, ns[mv.base]) ;
+   }
+}
+void findalgos2(const puzdef &pd) {
+   for (int d=1; ; d++) {
+      while ((int)posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.identity)) ;
+         movehist.push_back(-1) ;
+      }
+      recurfindalgo2(pd, d, 0, 0) ;
+   }
+}
 // we take advantage of the fact that the totsize is always divisible by 2.
 ull fasthash(int n, const setvals sv) {
    ull r = 0 ;
@@ -2788,7 +2913,12 @@ case 'C':
             docanon++ ;
             break ;
 case 'A':
-            doalgo++ ;
+            if (argv[0][2] == 0 || argv[0][2] == '1')
+               doalgo = 1 ;
+            else if (argv[0][2] == '2')
+               doalgo = 2 ;
+            else
+               error("! bad -A value") ;
             break ;
 case 'T':
             dotimingtest++ ;
@@ -2848,8 +2978,10 @@ default:
          doarraygod2(pd) ;
       }
    }
-   if (doalgo)
+   if (doalgo == 1)
       findalgos(pd) ;
+   if (doalgo == 2)
+      findalgos2(pd) ;
    if (dosolvetest)
       solvetest(pd) ;
    if (dotimingtest)
