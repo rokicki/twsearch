@@ -133,12 +133,11 @@ struct moove {
    int cost, base, twist ;
 } ;
 struct puzdef {
-   puzdef() : name(0), setdefs(), solved(0), identity(0), totsize(0), id(0),
+   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
               logstates(0), llstates(0), checksum(0) {}
    const char *name ;
    setdefs_t setdefs ;
    setvals solved ;
-   setvals identity ;
    vector<moove> basemoves, moves, parsemoves ;
    vector<int> basemoveorders ;
    int totsize ;
@@ -163,31 +162,33 @@ struct puzdef {
       while (*p)
          optionssum = 37 * optionssum + *p++ ;
    }
-   int numwrong(const setvals a, const setvals b) const {
+   int numwrong(const setvals a, const setvals b, ull mask=-1) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       int r = 0 ;
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         for (int j=0; j<n; j++)
-            if (ap[j] != bp[j] || ap[j+n] != bp[j+n])
-               r++ ;
+         if ((mask >> i) & 1)
+            for (int j=0; j<n; j++)
+               if (ap[j] != bp[j] || ap[j+n] != bp[j+n])
+                  r++ ;
          ap += 2*n ;
          bp += 2*n ;
       }
       return r ;
    }
-   int permwrong(const setvals a, const setvals b) const {
+   int permwrong(const setvals a, const setvals b, ull mask=-1) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       int r = 0 ;
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         for (int j=0; j<n; j++)
-            if (ap[j] != bp[j])
-               r++ ;
+         if ((mask >> i) & 1)
+            for (int j=0; j<n; j++)
+               if (ap[j] != bp[j])
+                  r++ ;
          ap += 2*n ;
          bp += 2*n ;
       }
@@ -256,6 +257,7 @@ struct puzdef {
          cp += n ;
       }
    }
+   void pow(const setvals a, setvals b, ll cnt) const ;
 } ;
 struct stacksetval : setval {
    stacksetval(const puzdef &pd) : setval(new uchar[pd.totsize]) {
@@ -264,7 +266,7 @@ struct stacksetval : setval {
    stacksetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
-   ~stacksetval() { delete dat ; }
+   ~stacksetval() { delete [] dat ; }
 } ;
 struct allocsetval : setval {
    allocsetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
@@ -274,6 +276,27 @@ struct allocsetval : setval {
       // we drop memory here; need fix
    }
 } ;
+void puzdef::pow(const setvals a, setvals b, ll cnt) const {
+   if (cnt == 0) {
+      assignpos(b, id) ;
+      return ;
+   }
+   if (cnt == 1) {
+      assignpos(b, a) ;
+      return ;
+   }
+   stacksetval s(*this, a), r(*this), t(*this) ;
+   while (cnt > 0) {
+      if (cnt & 1) {
+         mul(r, s, t) ;
+         assignpos(r, t) ;
+      }
+      cnt >>= 1 ;
+      mul(s, s, t) ;
+      assignpos(s, t) ;
+   }
+   assignpos(b, r) ;
+}
 vector<ll> fact ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
@@ -377,21 +400,6 @@ int ceillog2(int v) {
    int r = 0 ;
    while (v > (1 << r))
       r++ ;
-   return r ;
-}
-setvals makeidentity(puzdef &pz) {
-   setvals r((uchar *)calloc(pz.totsize, 1)) ;
-   uchar *p = r.dat ;
-   for (int i=0; i<(int)pz.setdefs.size(); i++) {
-      setdef &sd = pz.setdefs[i] ;
-      int n = sd.size ;
-      for (int j=0; j<n; j++)
-         p[j] = j ;
-      p += n ;
-      for (int j=0; j<n; j++)
-         p[j] = 0 ;
-      p += n ;
-   }
    return r ;
 }
 int omitset(string s) {
@@ -565,7 +573,6 @@ puzdef readdef(FILE *f) {
          state++ ;
          expect(toks, 1) ;
          pz.solved = readposition(pz, 's', f, checksum) ;
-         pz.identity = makeidentity(pz) ;
       } else if (toks[0] == "Move") {
          if (state != 2)
             error("! Move in wrong place") ;
@@ -1631,32 +1638,44 @@ void findalgos(const puzdef &pd) {
       cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
    }
 }
-ll hio = 0 ;
+map<ll, int> bestsofar ;
 void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       vector<int> cc = pd.cyccnts(posns[sp]) ;
       ll o = puzdef::order(cc) ;
-      if (o <= hio)
-         return ;
-      hio = o ;
-      cout << "(" ;
-      for (int i=0; i<sp; i++) {
-         if (i)
-            cout << " " ;
-         cout << pd.moves[movehist[i]].name ;
-      }
-      cout << ") " << pd.numwrong(posns[sp], pd.identity) << " " <<
-              pd.permwrong(posns[sp], pd.identity) << " (" ;
-      const char *spacer = "" ;
-      for (int i=1; i<(int)cc.size(); i++) {
-         if (cc[i]) {
-            cout << spacer ;
-            spacer = " " ;
-            cout << i << ":" << cc[i] ;
+      for (int pp=2; pp<=3; pp++) {
+         if (o % pp == 0) {
+            pd.pow(posns[sp], posns[sp+1], o/pp) ;
+            if (pd.numwrong(posns[sp+1], pd.id) > 3)
+               continue ;
+            ll key = 0 ;
+            for (int i=0; i<(int)pd.setdefs.size(); i++) {
+               key = key * 10 + pd.numwrong(posns[sp+1], pd.id, 1LL << i) ;
+               key = key * 10 + pd.permwrong(posns[sp+1], pd.id, 1LL << i) ;
+            }
+            int mvs = o / pp * sp ;
+            if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
+               continue ;
+            bestsofar[key] = mvs ;
+            cout << pp << " " << key << " " << mvs << " (" ;
+            for (int i=0; i<sp; i++) {
+               if (i)
+                  cout << " " ;
+               cout << pd.moves[movehist[i]].name ;
+            }
+            cout << ") (" ;
+            const char *spacer = "" ;
+            for (int i=1; i<(int)cc.size(); i++) {
+               if (cc[i]) {
+                  cout << spacer ;
+                  spacer = " " ;
+                  cout << i << ":" << cc[i] ;
+               }
+            }
+            cout << ") " ;
+            cout << o << endl ;
          }
       }
-      cout << ") " ;
-      cout << o << endl ;
       return ;
    }
    ull mask = canonmask[st] ;
@@ -1673,7 +1692,7 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
 void findalgos2(const puzdef &pd) {
    for (int d=1; ; d++) {
       while ((int)posns.size() <= d + 1) {
-         posns.push_back(allocsetval(pd, pd.identity)) ;
+         posns.push_back(allocsetval(pd, pd.id)) ;
          movehist.push_back(-1) ;
       }
       recurfindalgo2(pd, d, 0, 0) ;
