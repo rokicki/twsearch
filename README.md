@@ -34,15 +34,14 @@ What is working so far:
 
 Things to do:
 
+* Symmetry reduction
+* Add grip information; derive moves according to SiGN
 * QTM solves/pruning tables
 * Print antipodes on two-bit God's algorithm
 * If table size too large, don't degenerate (i.e., 2a.ksolve)
 * Coset solvers
-* Symmetry reduction
 
 Things to consider:
 
 * Ignore pieces
 * Blocking moves
-* Are we spending too much time in the zeros?  Time to add values
-  lower in the cache lines?  Two bits or four bits?
