@@ -2964,6 +2964,21 @@ void filtermovelist(puzdef &pd, const char *movelist) {
    pd.moves = newmvs ;
    pd.addoptionssum(movelist) ;
 }
+void doline(puzdef &pd, const char *s) {
+   stacksetval p1(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   vector<setvals> movelist = parsemovelist_generously(pd, s) ;
+   vector<int> moveid = parsemovelist(pd, s) ;
+   for (int i=0; i<(int)movelist.size(); i++)
+      domove(pd, p1, movelist[i]) ;
+   // do whatever you want here
+}
+// basic infrastructure for walking a set of sequences
+void processlines(puzdef &pd) {
+   string s ;
+   while (getline(cin, s))
+      doline(pd, s.c_str()) ;
+}
 int dogod, docanon, doalgo, dosolvetest, dotimingtest ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
