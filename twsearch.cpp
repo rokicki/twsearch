@@ -2964,22 +2964,30 @@ void filtermovelist(puzdef &pd, const char *movelist) {
    pd.moves = newmvs ;
    pd.addoptionssum(movelist) ;
 }
-void doline(puzdef &pd, const char *s) {
-   stacksetval p1(pd) ;
-   pd.assignpos(p1, pd.solved) ;
-   vector<setvals> movelist = parsemovelist_generously(pd, s) ;
-   vector<int> moveid = parsemovelist(pd, s) ;
-   for (int i=0; i<(int)movelist.size(); i++)
-      domove(pd, p1, movelist[i]) ;
-   // do whatever you want here
+vector<loosetype> uniqwork ;
+set<vector<loosetype> > uniqseen ;
+void uniqit(puzdef &pd, setval p, const char *s) {
+   uniqwork.resize(looseper) ;
+   loosepack(pd, p, &uniqwork[0]) ;
+   if (uniqseen.find(uniqwork) == uniqseen.end()) {
+      uniqseen.insert(uniqwork) ;
+      cout << s << endl << flush ;
+   }
 }
 // basic infrastructure for walking a set of sequences
-void processlines(puzdef &pd) {
+void processlines(puzdef &pd, void (*f)(puzdef &pd, setval p, const char *s)) {
    string s ;
-   while (getline(cin, s))
-      doline(pd, s.c_str()) ;
+   stacksetval p1(pd) ;
+   while (getline(cin, s)) {
+      pd.assignpos(p1, pd.solved) ;
+      vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
+      vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      for (int i=0; i<(int)movelist.size(); i++)
+         domove(pd, p1, movelist[i]) ;
+      f(pd, p1, s.c_str()) ;
+   }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest ;
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3044,6 +3052,9 @@ case 'c':
 case 'g':
             dogod++ ;
             break ;
+case 'u':
+            douniq++ ;
+            break ;
 case 'C':
             docanon++ ;
             break ;
@@ -3103,8 +3114,8 @@ default:
    calculatesizes(pd) ;
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
+   calclooseper(pd) ;
    if (dogod) {
-      calclooseper(pd) ;
       if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
          if (pd.canpackdense()) {
             dotwobitgod2(pd) ;
@@ -3127,6 +3138,8 @@ default:
       timingtest(pd) ;
    if (scramblealgo)
       solvecmdline(pd, scramblealgo) ;
+   if (douniq)
+      processlines(pd, uniqit) ;
    if (argc > 2) {
       f = fopen(argv[2], "r") ;
       if (f == 0)
