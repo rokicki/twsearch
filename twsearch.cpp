@@ -12,6 +12,7 @@
 #include <cstdio>
 #include <pthread.h>
 #include <random>
+#include <functional>
 #undef CHECK
 #define HAVE_FFSLL
 using namespace std ;
