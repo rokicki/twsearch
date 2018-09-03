@@ -2975,7 +2975,7 @@ void uniqit(puzdef &pd, setval p, const char *s) {
    }
 }
 // basic infrastructure for walking a set of sequences
-void processlines(puzdef &pd, void (*f)(puzdef &pd, setval p, const char *s)) {
+void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
    string s ;
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
@@ -2987,7 +2987,7 @@ void processlines(puzdef &pd, void (*f)(puzdef &pd, setval p, const char *s)) {
       f(pd, p1, s.c_str()) ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq ;
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, dosolvelines ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3045,7 +3045,7 @@ case 'y':
             argv++ ;
             break ;
 case 'c':
-            solutionsneeded = atol(argv[1]) ;
+            solutionsneeded = atoll(argv[1]) ;
             argc-- ;
             argv++ ;
             break ;
@@ -3054,6 +3054,9 @@ case 'g':
             break ;
 case 'u':
             douniq++ ;
+            break ;
+case 's':
+            dosolvelines++ ;
             break ;
 case 'C':
             docanon++ ;
@@ -3140,6 +3143,13 @@ default:
       solvecmdline(pd, scramblealgo) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (dosolvelines) {
+      prunetable pt(pd, maxmem) ;
+      string emptys ;
+      processlines(pd, [&](puzdef &pd, setval p, const char *) {
+                          solveit(pd, pt, emptys, p) ;
+                       }) ;
+   }
    if (argc > 2) {
       f = fopen(argv[2], "r") ;
       if (f == 0)
