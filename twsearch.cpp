@@ -2120,7 +2120,7 @@ struct prunetable {
       cout << "in " << duration() << endl << flush ;
       baseval++ ;
       wval = 2 ;
-      wbval = baseval+1 ;
+      wbval = min(15, baseval+1) ;
       filltable(pd, baseval+1) ;
       writept(pd) ;
    }
