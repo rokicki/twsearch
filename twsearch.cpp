@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <vector>
 #include <map>
+#include <tuple>
 #include <set>
 #include <cstdlib>
 #include <cstring>
@@ -131,7 +132,7 @@ struct moove {
    moove() : name(0), pos(0), cost(1) {}
    const char *name ;
    setvals pos ;
-   int cost, base, twist ;
+   int cost, base, twist, cs ;
 } ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
@@ -142,6 +143,7 @@ struct puzdef {
    vector<moove> basemoves, moves, parsemoves ;
    vector<int> basemoveorders ;
    int totsize ;
+   int ncs ;
    setval id ;
    double logstates ;
    unsigned long long llstates ;
@@ -1452,56 +1454,121 @@ void doarraygod(const puzdef &pd) {
 }
 /*
  *   Do canonicalization calculations by finding commutating moves.
+ *   Now we embed quarter-turn logic in here, which significantly
+ *   complicates this, but simplifies all the search routines.
  */
 vector<ull> canonmask ;
 vector<vector<int> > canonnext ;
 vector<ull> canonseqcnt ;
 vector<ull> canontotcnt ;
-void makecanonstates(const puzdef &pd) {
+void makecanonstates(puzdef &pd) {
    int nbase = pd.basemoves.size() ;
+   if (quarter) { // rewrite base
+      int at = 1 ;
+      for (int i=0; i<(int)pd.moves.size(); i++) {
+         moove &mv = pd.moves[i] ;
+         if (mv.cost > 1)
+            mv.cs = 0 ;
+         else
+            mv.cs = at++ ;
+      }
+      nbase = at ;
+      cout << "For quarter turn, rewrote bases to " << nbase << endl ;
+   } else {
+      for (int i=0; i<(int)pd.moves.size(); i++) {
+         moove &mv = pd.moves[i] ;
+         mv.cs = mv.base ;
+      }
+   }
    if (nbase > 63)
       error("! too many base moves for canonicalization calculation") ;
+   pd.ncs = nbase ;
    vector<ull> commutes(nbase) ;
    stacksetval p1(pd), p2(pd) ;
    for (int i=0; i<nbase; i++)
+      commutes[i] = (1LL << nbase) - 1 ;
+   for (int i=0; i<(int)pd.moves.size(); i++)
       for (int j=0; j<i; j++) {
-         pd.mul(pd.basemoves[i].pos, pd.basemoves[j].pos, p1) ;
-         pd.mul(pd.basemoves[j].pos, pd.basemoves[i].pos, p2) ;
-         if (pd.comparepos(p1, p2) == 0) {
-            commutes[i] |= 1LL << j ;
-            commutes[j] |= 1LL << i ;
+         pd.mul(pd.moves[i].pos, pd.moves[j].pos, p1) ;
+         pd.mul(pd.moves[j].pos, pd.moves[i].pos, p2) ;
+         if (pd.comparepos(p1, p2) != 0) {
+            commutes[pd.moves[i].cs] &= ~(1LL << pd.moves[j].cs) ;
+            commutes[pd.moves[j].cs] &= ~(1LL << pd.moves[i].cs) ;
          }
       }
-   map<ull, int> statemap ;
-   vector<ull> statebits ;
-   statemap[0] = 0 ;
-   statebits.push_back(0) ;
+   using trip = tuple<ull, int, int> ;
+   map<trip, int> statemap ;
+   vector<trip > statebits ;
+   trip firststate = make_tuple(0LL, -1, 0) ;
+   statemap[firststate] = 0 ;
+   statebits.push_back(firststate) ;
    int qg = 0 ;
    int statecount = 1 ;
    while (qg < (int)statebits.size()) {
       vector<int> nextstate(nbase) ;
       for (int i=0; i<nbase; i++)
          nextstate[i] = -1 ;
-      ull stateb = statebits[qg] ;
-      canonmask.push_back(0) ;
+      trip statev = statebits[qg] ;
+      ull stateb = get<0>(statev) ;
+      int prevm = get<1>(statev) ;
+      int prevcnt = get<2>(statev) ;
+      canonmask.push_back(quarter ? 1 : 0) ;
       int fromst = qg++ ;
+      int ms = 0 ;
       for (int m=0; m<nbase; m++) {
-         if (((stateb >> m) & 1) == 0 &&
-             (stateb & commutes[m] & ((1 << m) - 1)) == 0) {
-            ull nstb = (stateb & commutes[m]) | (1LL << m) ;
-            if (statemap.find(nstb) == statemap.end()) {
-               statemap[nstb] = statecount++ ;
-               statebits.push_back(nstb) ;
-            }
-            int nextst = statemap[nstb] ;
-            nextstate[m] = nextst ;
-         } else {
+         if ((stateb & commutes[m] & ((1LL << m) - 1)) != 0) {
             canonmask[fromst] |= 1LL << m ;
+            continue ;
          }
+         if (!quarter && (((stateb >> m) & 1) != 0)) {
+            canonmask[fromst] |= 1LL << m ;
+            continue ;
+         }
+         ull nstb = (stateb & commutes[m]) | (1LL << m) ;
+         int thism = -1 ;
+         int thiscnt = 0 ;
+         if (quarter) {
+            if (m == 0) {
+               canonmask[fromst] |= 1LL << m ;
+               continue ;
+            }
+            while (pd.moves[ms].cs != m)
+               ms++ ;
+            // don't do opposing moves in a row
+            if (prevm >= 0 && ms != prevm &&
+                pd.moves[ms].base == pd.moves[prevm].base) {
+               canonmask[fromst] |= 1LL << m ;
+               continue ;
+            }
+            if (ms == prevm) {
+               if (2*(prevcnt+1)+(pd.moves[ms].twist != 1) >
+                   pd.basemoveorders[pd.moves[ms].base]) {
+                  canonmask[fromst] |= 1LL << m ;
+                  continue ;
+               }
+            }
+            thism = ms ;
+            thiscnt = (ms == prevm ? prevcnt + 1 : 1) ;
+         }
+         trip nsi = make_tuple(nstb, thism, thiscnt) ;
+         if (statemap.find(nsi) == statemap.end()) {
+            statemap[nsi] = statecount++ ;
+            statebits.push_back(nsi) ;
+         }
+         int nextst = statemap[nsi] ;
+         nextstate[m] = nextst ;
       }
       canonnext.push_back(nextstate) ;
    }
    cout << "Found " << statecount << " canonical move states." << endl ;
+ /*
+   for (int i=0; i<(int)canonnext.size(); i++) {
+      cout << i << " " << hex << canonmask[i] << dec ;
+      for (int j=0; j<nbase; j++)
+         cout << " " << canonnext[i][j] ;
+      cout << endl ;
+   }
+ */
 }
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
@@ -1509,16 +1576,11 @@ void showcanon(const puzdef &pd, int show) {
    vector<vector<double> > counts ;
    vector<double> zeros(nstates) ;
    counts.push_back(zeros) ;
-   int lookahead = 1 ;
-   int nbase = pd.basemoves.size() ;
-   if (quarter)
-      for (int i=0; i<nbase; i++)
-         lookahead = max(lookahead, pd.basemoveorders[i] >> 1) ;
    counts[0][0] = 1 ;
    double gsum = 0 ;
    double osum = 1 ;
    for (int d=0; d<=100; d++) {
-      while ((int)counts.size() <= d+lookahead)
+      while ((int)counts.size() <= d+1)
          counts.push_back(zeros) ;
       double sum = 0 ;
       for (int i=0; i<nstates; i++)
@@ -1539,18 +1601,10 @@ void showcanon(const puzdef &pd, int show) {
          break ;
       for (int st=0; st<nstates; st++) {
          ull mask = canonmask[st] ;
-         for (int m=0; m<nbase; m++) {
-            if ((mask >> m) & 1)
+         for (int m=0; m<(int)pd.moves.size(); m++) {
+            if ((mask >> pd.moves[m].cs) & 1)
                continue ;
-            if (quarter) {
-               for (int j=1; j+j<=pd.basemoveorders[m]; j++)
-                  if (j+j==pd.basemoveorders[m])
-                     counts[d+j][canonnext[st][m]] += 1 * counts[d][st] ;
-                  else
-                     counts[d+j][canonnext[st][m]] += 2 * counts[d][st] ;
-            } else
-               counts[d+1][canonnext[st][m]] +=
-                                  (pd.basemoveorders[m]-1) * counts[d][st] ;
+            counts[d+1][canonnext[st][pd.moves[m].cs]] += counts[d][st] ;
          }
       }
    }
@@ -1576,10 +1630,10 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      dorecurgod(pd, togo-1, sp+1, ns[mv.base]) ;
+      dorecurgod(pd, togo-1, sp+1, ns[mv.cs]) ;
    }
 }
 void doarraygod2(const puzdef &pd) {
@@ -1650,11 +1704,11 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       movehist[sp] = m ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      recurfindalgo(pd, togo-1, sp+1, ns[mv.base]) ;
+      recurfindalgo(pd, togo-1, sp+1, ns[mv.cs]) ;
    }
 }
 void findalgos(const puzdef &pd) {
@@ -1712,11 +1766,11 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       movehist[sp] = m ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      recurfindalgo2(pd, togo-1, sp+1, ns[mv.base]) ;
+      recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs]) ;
    }
 }
 void findalgos2(const puzdef &pd) {
@@ -1765,11 +1819,11 @@ void recurfindalgo3b(const puzdef &pd, int togo, int sp, int st, int fp) {
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       movehist[sp] = m ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      recurfindalgo3b(pd, togo-1, sp+1, ns[mv.base], fp) ;
+      recurfindalgo3b(pd, togo-1, sp+1, ns[mv.cs], fp) ;
    }
 }
 void recurfindalgo3a(const puzdef &pd, int togo, int sp, int st, int b) {
@@ -1783,11 +1837,11 @@ void recurfindalgo3a(const puzdef &pd, int togo, int sp, int st, int b) {
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       movehist[sp] = m ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      recurfindalgo3a(pd, togo-1, sp+1, ns[mv.base], b) ;
+      recurfindalgo3a(pd, togo-1, sp+1, ns[mv.cs], b) ;
    }
 }
 void findalgos3(const puzdef &pd) {
@@ -1838,9 +1892,9 @@ void makeworkchunks(const puzdef &pd, int d) {
             ull mask = canonmask[st] ;
             const vector<int> &ns = canonnext[st] ;
             for (int mv=0; mv<nmoves; mv++)
-               if (0 == ((mask >> pd.moves[mv].base) & 1)) {
+               if (0 == ((mask >> pd.moves[mv].cs) & 1)) {
                   wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
-                  ws2.push_back(ns[pd.moves[mv].base]) ;
+                  ws2.push_back(ns[pd.moves[mv].cs]) ;
                }
          }
          swap(wc2, workchunks) ;
@@ -2510,7 +2564,7 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
    while (initmoves > 1) {
       int mv = initmoves % nmoves ;
       pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
-      st = canonnext[st][pd.moves[mv].base] ;
+      st = canonnext[st][pd.moves[mv].cs] ;
       sp++ ;
       togo-- ;
       initmoves /= nmoves ;
@@ -2570,10 +2624,10 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
    const vector<int> &ns = canonnext[st] ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
-      if ((mask >> mv.base) & 1)
+      if ((mask >> mv.cs) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      r += filltable(pd, pt, togo-1, sp+1, ns[mv.base]) ;
+      r += filltable(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
    }
    return r ;
 }
@@ -2620,11 +2674,11 @@ struct solveworker {
       const vector<int> &ns = canonnext[st] ;
       for (int m=0; m<(int)pd.moves.size(); m++) {
          const moove &mv = pd.moves[m] ;
-         if ((mask >> mv.base) & 1)
+         if ((mask >> mv.cs) & 1)
             continue ;
          pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
          movehist[sp] = m ;
-         v = solverecur(pd, pt, togo-1, sp+1, ns[mv.base]) ;
+         v = solverecur(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
          if (v == 1)
             return 1 ;
          if (v == -1) {
@@ -2645,7 +2699,7 @@ struct solveworker {
          int mv = initmoves % nmoves ;
          pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
          movehist[sp] = mv ;
-         st = canonnext[st][pd.moves[mv].base] ;
+         st = canonnext[st][pd.moves[mv].cs] ;
          sp++ ;
          togo-- ;
          initmoves /= nmoves ;
@@ -2951,6 +3005,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
             int newbasenum = newbase.size() ;
             moveremap[obase] = newbasenum ;
             newmv.base = newbasenum ;
+            newmv.cost /= lowinc[obase] ;
             newbase.push_back(newmv) ;
             newbasemoveorders.push_back(pd.basemoveorders[obase] / lowinc[obase]) ;
          }
