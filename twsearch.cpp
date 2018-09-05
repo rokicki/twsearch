@@ -2163,6 +2163,8 @@ struct prunetable {
    }
    string makefilename(const puzdef &pd) const {
       string filename = "tws-" + inputbasename + "-" ;
+      if (quarter)
+         filename += "q-" ;
       ull bytes = size >> 2 ;
       char suffix = 0 ;
       if (bytes >= 1024) {
