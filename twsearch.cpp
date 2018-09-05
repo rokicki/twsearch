@@ -2683,7 +2683,7 @@ struct solveworker {
          v = solverecur(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
          if (v == 1)
             return 1 ;
-         if (v == -1) {
+         if (!quarter && v == -1) {
             // skip similar rotations
             while (m+1 < (int)pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
                m++ ;
