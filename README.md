@@ -31,14 +31,13 @@ What is working so far:
 * Read pruning tables
 * Parse scramble file
 * Solve scramble positions
+* QTM solves/pruning tables
 
 Things to do:
 
 * Symmetry reduction
 * Add grip information; derive moves according to SiGN
-* QTM solves/pruning tables
 * Print antipodes on two-bit God's algorithm
-* If table size too large, don't degenerate (i.e., 2a.ksolve)
 * Coset solvers
 
 Things to consider:
