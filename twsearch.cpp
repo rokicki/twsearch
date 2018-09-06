@@ -327,7 +327,7 @@ vector<ll> fact ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 int quarter = 0 ;
-int nocorners, noedges, nocenters ;
+int nocorners, noedges, nocenters, noori ;
 string curline ;
 void error(string msg, string extra="") {
    cerr << msg << extra << endl ;
@@ -432,7 +432,7 @@ int omitset(string s) {
    if (s.size() < 2)
       return 0 ;
    if (nocorners && tolower(s[0]) == 'c' && 
-       (tolower(s[1]) == 'o' tolower(s[1]) == '4' || tolower(s[1]) == '5'))
+       (tolower(s[1]) == 'o' || tolower(s[1]) == '4' || tolower(s[1]) == '5'))
       return 1 ;
    if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
       return 1 ;
@@ -466,6 +466,9 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
          for (int i=0; i<n; i++)
             p[i] = getnumber(1-numseq, toks[i]) ;
+         if (noori && numseq > 0)
+            for (int i=0; i<n; i++)
+               p[i] = 0 ;
          numseq++ ;
       } else {
          if (curset >= 0 && numseq == 0)
@@ -581,6 +584,8 @@ puzdef readdef(FILE *f) {
          sd.name = twstrdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
+         if (noori)
+            sd.omod = 1 ;
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
@@ -3072,6 +3077,8 @@ int main(int argc, const char **argv) {
             argv++ ;
          } else if (strcmp(argv[0], "--nocorners") == 0) {
             nocorners++ ;
+         } else if (strcmp(argv[0], "--noorientation") == 0) {
+            noori++ ;
          } else if (strcmp(argv[0], "--nocenters") == 0) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noedges") == 0) {
@@ -3173,6 +3180,8 @@ default:
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (noori)
+      pd.addoptionssum("noorientation") ;
    calculatesizes(pd) ;
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
