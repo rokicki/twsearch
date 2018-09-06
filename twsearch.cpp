@@ -431,7 +431,8 @@ int ceillog2(int v) {
 int omitset(string s) {
    if (s.size() < 2)
       return 0 ;
-   if (nocorners && tolower(s[0]) == 'c' && tolower(s[1]) == 'o')
+   if (nocorners && tolower(s[0]) == 'c' && 
+       (tolower(s[1]) == 'o' tolower(s[1]) == '4' || tolower(s[1]) == '5'))
       return 1 ;
    if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
       return 1 ;
