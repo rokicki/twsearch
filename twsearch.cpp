@@ -327,7 +327,7 @@ vector<ll> fact ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose ;
 int quarter = 0 ;
-int nocorners, noedges, nocenters, noori ;
+int nocorners, noedges, nocenters ;
 string curline ;
 void error(string msg, string extra="") {
    cerr << msg << extra << endl ;
@@ -431,8 +431,7 @@ int ceillog2(int v) {
 int omitset(string s) {
    if (s.size() < 2)
       return 0 ;
-   if (nocorners && tolower(s[0]) == 'c' && 
-       (tolower(s[1]) == 'o' || tolower(s[1]) == '4' || tolower(s[1]) == '5'))
+   if (nocorners && tolower(s[0]) == 'c' && tolower(s[1]) == 'o')
       return 1 ;
    if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
       return 1 ;
@@ -466,9 +465,6 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
          for (int i=0; i<n; i++)
             p[i] = getnumber(1-numseq, toks[i]) ;
-         if (noori && numseq > 0)
-            for (int i=0; i<n; i++)
-               p[i] = 0 ;
          numseq++ ;
       } else {
          if (curset >= 0 && numseq == 0)
@@ -584,8 +580,6 @@ puzdef readdef(FILE *f) {
          sd.name = twstrdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
-         if (noori)
-            sd.omod = 1 ;
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
@@ -2126,7 +2120,7 @@ struct prunetable {
       cout << "in " << duration() << endl << flush ;
       baseval++ ;
       wval = 2 ;
-      wbval = min(15, baseval+1) ;
+      wbval = baseval+1 ;
       filltable(pd, baseval+1) ;
       writept(pd) ;
    }
@@ -3038,6 +3032,26 @@ void uniqit(puzdef &pd, setval p, const char *s) {
       cout << s << endl << flush ;
    }
 }
+void orderit(puzdef &pd, setval p, const char *s) {
+   stacksetval p2(pd), p3(pd) ;
+   pd.assignpos(p2, pd.solved) ;
+   pd.mul(p2, p, p3) ;
+   int m = 1 ;
+   while (1) {
+      if (pd.comparepos(p3, pd.solved) == 0) {
+         cout << m << " " << s << endl ;
+         return ;
+      }
+      pd.mul(p3, p, p2) ;
+      m++ ;
+      if (pd.comparepos(p2, pd.solved) == 0) {
+         cout << m << " " << s << endl ;
+         return ;
+      }
+      pd.mul(p2, p, p3) ;
+      m++ ;
+   }
+}
 // basic infrastructure for walking a set of sequences
 void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
    string s ;
@@ -3051,7 +3065,19 @@ void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) 
       f(pd, p1, s.c_str()) ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, dosolvelines ;
+void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
+   string s ;
+   stacksetval p1(pd) ;
+   while (getline(cin, s)) {
+      pd.assignpos(p1, pd.id) ;
+      vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
+      vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      for (int i=0; i<(int)movelist.size(); i++)
+         domove(pd, p1, movelist[i]) ;
+      f(pd, p1, s.c_str()) ;
+   }
+}
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, dosolvelines, doorder ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3077,8 +3103,6 @@ int main(int argc, const char **argv) {
             argv++ ;
          } else if (strcmp(argv[0], "--nocorners") == 0) {
             nocorners++ ;
-         } else if (strcmp(argv[0], "--noorientation") == 0) {
-            noori++ ;
          } else if (strcmp(argv[0], "--nocenters") == 0) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noedges") == 0) {
@@ -3117,6 +3141,9 @@ case 'c':
             break ;
 case 'g':
             dogod++ ;
+            break ;
+case 'o':
+            doorder++ ;
             break ;
 case 'u':
             douniq++ ;
@@ -3180,8 +3207,6 @@ default:
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
-   if (noori)
-      pd.addoptionssum("noorientation") ;
    calculatesizes(pd) ;
    makecanonstates(pd) ;
    showcanon(pd, docanon) ;
@@ -3211,6 +3236,8 @@ default:
       solvecmdline(pd, scramblealgo) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (doorder)
+      processlines2(pd, orderit) ;
    if (dosolvelines) {
       prunetable pt(pd, maxmem) ;
       string emptys ;
