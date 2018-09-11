@@ -2299,6 +2299,9 @@ struct prunetable {
       // only write the table if at least 1 in 100 elements has a value
       if (justread || totpop * 100 < size)
          return ;
+      ll longcnt = (size + 31) >> 5 ;
+      if (longcnt % BLOCKSIZE != 0)
+         return ; // too small
       // this *could* be calculated more efficiently, but the runtime is
       // dominated by scanning the array so we use simple code.
       // We use optimal huffman coding; for tables that fit on real
@@ -2309,7 +2312,6 @@ struct prunetable {
       ll bytecnts[256] ;
       for (int i=0; i<256; i++)
          bytecnts[i] = 0 ;
-      ll longcnt = (size + 31) >> 5 ;
       cout << "Scanning memory for compression information " << flush ;
       for (ll i=0; i<longcnt; i++) {
          ull v = mem[i] ;
