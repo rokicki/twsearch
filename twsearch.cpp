@@ -2026,7 +2026,7 @@ struct ioqueue {
    }
    void finishall() {
       for (int i=0; i<numthreads; i++)
-         if (ioworkitems[nextthread].state != 0)
+         if (ioworkitems[i].state != 0)
             waitthread(i) ;
    }
    int nextthread ;
