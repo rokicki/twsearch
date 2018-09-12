@@ -2025,9 +2025,11 @@ struct ioqueue {
          nextthread = 0 ;
    }
    void finishall() {
-      for (int i=0; i<numthreads; i++)
-         if (ioworkitems[i].state != 0)
-            waitthread(i) ;
+      for (int i=0; i<numthreads; i++) {
+         if (ioworkitems[nextthread].state != 0)
+            waitthread(nextthread) ;
+         nextthread = (nextthread + 1) % numthreads ;
+      }
    }
    int nextthread ;
    struct prunetable *pt ;
