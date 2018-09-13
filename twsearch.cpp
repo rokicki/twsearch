@@ -2299,7 +2299,7 @@ struct prunetable {
    }
    void writept(const puzdef &pd) {
       // only write the table if at least 1 in 100 elements has a value
-      if (justread || totpop * 100 < size)
+      if (justread || fillcnt * 100 < size)
          return ;
       ll longcnt = (size + 31) >> 5 ;
       if (longcnt % BLOCKSIZE != 0)
