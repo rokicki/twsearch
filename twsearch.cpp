@@ -101,7 +101,7 @@ struct setdef {
    int size, off ;
    const char *name ;
    uchar omod ;
-   int pbits, obits, psum ;
+   int pbits, obits, pibits, psum ;
    bool uniq, pparity, oparity ;
    double logstates ;
    unsigned long long llperms, llords, llstates ;
@@ -583,6 +583,7 @@ puzdef readdef(FILE *f) {
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
+         sd.pibits = sd.pbits ;
          sd.obits = ceillog2(sd.omod) ;
          sd.uniq = 1 ;
          sd.off = pz.totsize ;
@@ -1259,22 +1260,27 @@ void dotwobitgod2(puzdef &pd) {
       tot += newseen ;
    }
 }
-int looseper ;
+int looseper, looseiper ;
 void calclooseper(const puzdef &pd) {
-   int bits = 0 ;
+   int bits = 0, ibits = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       bits += sd.pbits * (n-1) ;
-      if (sd.oparity)
+      ibits += sd.pibits * (n-1) ;
+      if (sd.oparity) {
          bits += sd.obits * (n-1) ;
-      else
+         ibits += sd.obits * (n-1) ;
+      } else {
          bits += sd.obits * n ;
+         ibits += sd.obits * n ;
+      }
    }
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
-   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry." << endl ;
+   looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
+   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry; " << (looseiper*sizeof(loosetype)) << " from identity." << endl ;
 }
-void loosepack(const puzdef &pd, setvals pos, loosetype *w) {
+void loosepack(const puzdef &pd, setvals pos, loosetype *w, int fromid=0) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -1282,7 +1288,7 @@ void loosepack(const puzdef &pd, setvals pos, loosetype *w) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       if (n > 1) {
-         int bitsper = sd.pbits ;
+         int bitsper = (fromid ? sd.pibits : sd.pbits) ;
          for (int j=0; j+1<n; j++) {
             if (bitsper + storedbits > 64) {
                *w++ = accum ;
@@ -1570,9 +1576,113 @@ void makecanonstates(puzdef &pd) {
    }
  */
 }
+map<ull,int> statemap ;
+int movebits, ccount ;
+vector<loosetype> ccenc ;
+set<vector<loosetype>> ccseen ;
+vector<allocsetval> posns ;
+vector<int> movehist ;
+vector<int> ccnextstate ;
+int ccstalloc = 0 ;
+int ccnbase = 0 ;
+int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
+   if (togo == 0) {
+      loosepack(pd, posns[sp], &ccenc[0], 1) ;
+      if (ccseen.find(ccenc) == ccseen.end()) {
+         ccseen.insert(ccenc) ;
+         if (sp > ccount) {
+            ull hibit = (1LL << (ccount * movebits)) ;
+            moveset = hibit | (moveset & (hibit - 1)) ;
+         }
+         if (statemap.find(moveset) == statemap.end()) {
+// cout << "Allocating new state for " << hex << moveset << dec << endl ;
+            statemap[moveset] = ccstalloc++ ;
+         }
+         return statemap[moveset] ;
+      } else {
+         return -1 ;
+      }
+   }
+   ull newmask = 1 ;
+   ull oldmask = 1 ;
+   if (statemap.find(moveset) == statemap.end()) {
+ cout << "Moveset is " << hex << moveset << dec << endl ;
+      error("! can't find state number for moveset") ;
+   }
+   int cs = statemap[moveset] ;
+   if (togo > 1) {
+      if ((int)canonmask.size() <= cs) {
+         cout << "Size of canonmask " << canonmask.size() << " cs " << cs << endl ;
+         error("! canonmask not large enough") ;
+      }
+      oldmask = canonmask[cs] ;
+   }
+   for (int i=0; i<(int)pd.moves.size(); i++) {
+      if ((oldmask >> pd.moves[i].cs) & 1)
+         continue ;
+      pd.mul(posns[sp], pd.moves[i].pos, posns[sp+1]) ;
+      int nextst = recurcanonstates2(pd, togo-1,
+                                     (moveset << movebits) + pd.moves[i].cs,
+                                     sp+1) ;
+      if (nextst < 0)
+         newmask |= 1LL << pd.moves[i].cs ;
+      if (togo == 1)
+         ccnextstate[pd.moves[i].cs] = nextst ;
+   }
+   if (togo == 1) {
+/*
+ cout << "Adding values to mask and next; newmask " << hex << newmask << dec << endl ;
+ for (int i=0; i<(int)ccnextstate.size(); i++)
+   cout << " " << ccnextstate[i] ;
+ cout << endl ;
+ */
+      canonmask.push_back(newmask) ;
+      canonnext.push_back(ccnextstate) ;
+   }
+   return 1 ;
+}
+/**
+ *   Another mechanism for canonical states that eliminates sequences
+ *   c d if there's an earlier sequence a b that goes to the same
+ *   state.  May be effective for the 2x2x2x2, or for puzzles where we
+ *   don't reduce by canonical.
+ */
+void makecanonstates2(puzdef &pd) {
+   int at = 1 ;
+   for (int i=0; i<(int)pd.moves.size(); i++) {
+      moove &mv = pd.moves[i] ;
+      if (quarter && mv.cost > 1)
+         mv.cs = 0 ;
+      else
+         mv.cs = at++ ;
+   }
+   ccnbase = at ;
+   statemap[1] = 0 ;
+   ccstalloc = 1 ;
+   if (ccnbase > 63)
+      error("! too many base moves for canonicalization calculation") ;
+   movebits = ceillog2(ccnbase) ;
+   pd.ncs = ccnbase ;
+   ccenc = vector<loosetype>(looseiper) ;
+   while (posns.size() <= 100) {
+      posns.push_back(allocsetval(pd, pd.id)) ;
+      movehist.push_back(-1) ;
+   }
+   pd.assignpos(posns[0], pd.id) ;
+   ccnextstate = vector<int>(ccnbase) ;
+   ccnextstate[0] = -1 ;
+   for (int j=0; j<ccnbase; j++)
+      ccnextstate[j] = -1 ;
+   for (int d=0; d<=ccount+1; d++)
+      recurcanonstates2(pd, d, 1, 0) ;
+   cout << "Canonical states: " << canonmask.size() << endl ;
+   statemap.clear() ;
+   ccseen.clear() ;
+}
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
+   cout << "Canonical state size is " << nstates << endl ;
    vector<vector<double> > counts ;
    vector<double> zeros(nstates) ;
    counts.push_back(zeros) ;
@@ -1614,8 +1724,6 @@ void showcanon(const puzdef &pd, int show) {
  *   packed (but not densely) and sorting, but this time using a recursive
  *   enumeration process rather than using a frontier.
  */
-vector<allocsetval> posns ;
-vector<int> movehist ;
 ll bigcnt = 0 ;
 loosetype *s_1, *s_2, *reader, *levend, *writer, *lim ;
 void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
@@ -3105,6 +3213,10 @@ int main(int argc, const char **argv) {
             legalmovelist = argv[1] ;
             argc-- ;
             argv++ ;
+         } else if (strcmp(argv[0], "--newcanon") == 0) {
+            ccount = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--nocorners") == 0) {
             nocorners++ ;
          } else if (strcmp(argv[0], "--nocenters") == 0) {
@@ -3212,9 +3324,12 @@ default:
    if (noedges)
       pd.addoptionssum("noedges") ;
    calculatesizes(pd) ;
-   makecanonstates(pd) ;
-   showcanon(pd, docanon) ;
    calclooseper(pd) ;
+   if (ccount == 0)
+      makecanonstates(pd) ;
+   else
+      makecanonstates2(pd) ;
+   showcanon(pd, docanon) ;
    if (dogod) {
       if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
          if (pd.canpackdense()) {
