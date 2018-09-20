@@ -1697,7 +1697,6 @@ void makecanonstates2(puzdef &pd) {
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
-   cout << "Canonical state size is " << nstates << endl ;
    vector<vector<double> > counts ;
    vector<double> zeros(nstates) ;
    counts.push_back(zeros) ;
@@ -3344,6 +3343,7 @@ default:
       makecanonstates(pd) ;
    else
       makecanonstates2(pd) ;
+   cout << "Calculated canonical states in " << duration() << endl << flush ;
    showcanon(pd, docanon) ;
    if (dogod) {
       if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
