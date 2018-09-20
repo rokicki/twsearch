@@ -2862,7 +2862,6 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
    for (int d=initd; ; d++) {
-      cout << "Depth " << d << endl << flush ;
       if (d - initd > 3)
          makeworkchunks(pd, d) ;
       else
@@ -2888,6 +2887,7 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
                  " rate " << (totlookups/actualtime) << endl << flush ;
          return ;
       }
+      cout << "Depth " << d << " finished in " << duration() << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
 }
@@ -3344,6 +3344,7 @@ default:
       makecanonstates(pd) ;
    else
       makecanonstates2(pd) ;
+   cout << "Calculated canonical states in " << duration() << endl << flush ;
    showcanon(pd, docanon) ;
    if (dogod) {
       if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
