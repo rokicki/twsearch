@@ -4,6 +4,7 @@
 #include <map>
 #include <tuple>
 #include <set>
+#include <unordered_set>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
@@ -1576,10 +1577,24 @@ void makecanonstates(puzdef &pd) {
    }
  */
 }
+template<typename T>
+struct hashvector {
+   size_t operator()(const T&v) const {
+      size_t r = v.size() ;
+      for (int i=0; i<(int)v.size(); i++)
+         r = r * 65 + v[i] ;
+      return r ;
+   }
+} ;
+template<typename T>
+void freeContainer(T& c) {
+   T empty;
+   swap(c, empty);
+}
 map<ull,int> statemap ;
 int movebits, ccount ;
 vector<loosetype> ccenc ;
-set<vector<loosetype>> ccseen ;
+unordered_set<vector<loosetype>, hashvector<vector<loosetype>>> ccseen ;
 vector<allocsetval> posns ;
 vector<int> movehist ;
 vector<int> ccnextstate ;
@@ -1676,8 +1691,8 @@ void makecanonstates2(puzdef &pd) {
    for (int d=0; d<=ccount+1; d++)
       recurcanonstates2(pd, d, 1, 0) ;
    cout << "Canonical states: " << canonmask.size() << endl ;
-   statemap.clear() ;
-   ccseen.clear() ;
+   freeContainer(statemap) ;
+   freeContainer(ccseen) ;
 }
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
