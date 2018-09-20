@@ -1697,7 +1697,6 @@ void makecanonstates2(puzdef &pd) {
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
-   cout << "Canonical state size is " << nstates << endl ;
    vector<vector<double> > counts ;
    vector<double> zeros(nstates) ;
    counts.push_back(zeros) ;
