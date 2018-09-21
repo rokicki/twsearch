@@ -7,6 +7,7 @@
 #include <unordered_set>
 #include <cstdlib>
 #include <cstring>
+#include <strings.h>
 #include <algorithm>
 #include <string>
 #include <math.h>
