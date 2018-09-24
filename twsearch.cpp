@@ -28,7 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
-int ignoreori ;
+int ignoreori, origroup ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -174,10 +174,20 @@ struct puzdef {
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         if ((mask >> i) & 1)
-            for (int j=0; j<n; j++)
-               if (ap[j] != bp[j] || ap[j+n] != bp[j+n])
-                  r++ ;
+         if ((mask >> i) & 1) {
+            if (origroup == 0) {
+               for (int j=0; j<n; j++)
+                  if (ap[j] != bp[j] || ap[j+n] != bp[j+n])
+                     r++ ;
+            } else {
+               for (int j=0; j<n; j += origroup)
+                  for (int k=0; k<origroup; k++)
+                     if (ap[j+k] != bp[j+k]) {
+                        r++ ;
+                        break ;
+                     }
+            }
+         }
          ap += 2*n ;
          bp += 2*n ;
       }
@@ -190,10 +200,23 @@ struct puzdef {
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         if ((mask >> i) & 1)
-            for (int j=0; j<n; j++)
-               if (ap[j] != bp[j])
-                  r++ ;
+         if ((mask >> i) & 1) {
+            if (origroup == 0) {
+               for (int j=0; j<n; j++)
+                  if (ap[j] != bp[j])
+                     r++ ;
+            } else {
+               for (int j=0; j<n; j += origroup) {
+                  int sa = 0, sb = 0 ;
+                  for (int k=0; k<origroup; k++) {
+                     sa += ap[j+k] ;
+                     sb += bp[j+k] ;
+                  }
+                  if (sa != sb)
+                     r++ ;
+               }
+            }
+         }
          ap += 2*n ;
          bp += 2*n ;
       }
@@ -3241,7 +3264,11 @@ int main(int argc, const char **argv) {
          } else if (strcmp(argv[0], "--nocenters") == 0) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
-            ignoreori++ ;
+            ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--orientationgroup") == 0) {
+            origroup = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--noedges") == 0) {
             noedges++ ;
          } else if (strcmp(argv[0], "--scramblealg") == 0) {
