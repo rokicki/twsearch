@@ -28,6 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
+int ignoreori ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -466,6 +467,9 @@ setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
          for (int i=0; i<n; i++)
             p[i] = getnumber(1-numseq, toks[i]) ;
+         if (numseq == 1 && ignoreori)
+            for (int i=0; i<n; i++)
+               p[i] = 0 ;
          numseq++ ;
       } else {
          if (curset >= 0 && numseq == 0)
@@ -581,6 +585,8 @@ puzdef readdef(FILE *f) {
          sd.name = twstrdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
+         if (ignoreori)
+            sd.omod = 1 ;
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
@@ -3234,6 +3240,8 @@ int main(int argc, const char **argv) {
             nocorners++ ;
          } else if (strcmp(argv[0], "--nocenters") == 0) {
             nocenters++ ;
+         } else if (strcmp(argv[0], "--noorientation") == 0) {
+            ignoreori++ ;
          } else if (strcmp(argv[0], "--noedges") == 0) {
             noedges++ ;
          } else if (strcmp(argv[0], "--scramblealg") == 0) {
