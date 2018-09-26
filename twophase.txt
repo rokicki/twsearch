@@ -1,0 +1,24 @@
+This is an example of doing a 3x3x3 two-phase solve with twsearch.
+This is just experimental and not intended to be production or
+competitive with real two-phase solvers.  In particular by not using
+multiple "axes" it's going to be highly inefficient.
+
+Set up the tws files.  For phase 2 we use the normal 3x3x3 solver.
+For phase 1, we need to have a tws file that reflects the subgroup.
+In this case, we want to preserve all orientations, but remove the
+corner permutations (change all perm numbers to 1) and modify the
+edge permutation so only the middle layer is distinct (so they have
+values of 2 while all others have values of 1).  We cann this 3p1.tws.
+
+Next, generate a random position.  We use a particular seed value to
+get a particular position.
+
+   ./twsearch -v0 -R 101 -r 3p1.tws > r3p1.scr
+   ./twsearch -v0 -R 101 -r samples/3x3x3.tws > r3.scr
+
+To solve, we run two twsearches, each with less memory (128M is fine
+for this, for each), with a grep in the middle to pick out only the
+solution sequences.  The following should be all one line.
+
+   ./twsearch -c 10000000000 -M 128 3p1.tws r3p1.scr | grep '^ ' |
+   ./twsearch -v0 -M 128 -2 --moves U,F2,R2,D,B2,L2 samples/3x3x3.tws r3.scr

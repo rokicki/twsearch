@@ -2917,7 +2917,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p) {
                  " rate " << (totlookups/actualtime) << endl << flush ;
          return d ;
       }
-      cout << "Depth " << d << " finished in " << duration() << endl << flush ;
+      if (verbose)
+         cout << "Depth " << d << " finished in " << duration() << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
    return -1 ;
