@@ -3208,6 +3208,10 @@ void orderit(puzdef &pd, setval p, const char *s) {
 }
 void emitmp(puzdef &pd, setval p, const char *, int fixmoves) {
    uchar *a = p.dat ;
+   if (fixmoves)
+      cout << "Move XXX" << endl ;
+   else
+      cout << "Scramble XXX" << endl ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
@@ -3232,7 +3236,7 @@ void emitmp(puzdef &pd, setval p, const char *, int fixmoves) {
       }
       a += 2 * n ;
    }
-   cout << endl ;
+   cout << "End" << endl ;
 }
 void emitmove(puzdef &pd, setval p, const char *s) {
    emitmp(pd, p, s, 1) ;
@@ -3281,7 +3285,7 @@ int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
-   srand48(time(0)) ;
+   int seed = 0 ;
    duration() ;
    init_mutex() ;
    for (int i=0; i<MEMSHARDS; i++)
@@ -3339,6 +3343,11 @@ case 'v':
             break ;
 case 'r':
             genrand = 1 ;
+            break ;
+case 'R':
+            seed = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
             break ;
 case 'M':
             maxmem = 1048576 * atoll(argv[1]) ;
@@ -3400,6 +3409,10 @@ default:
          }
       }
    }
+   if (seed)
+      srand48(seed) ;
+   else
+      srand48(time(0)) ;
    if (argc <= 1)
       error("! please provide a twsearch file name on the command line") ;
    FILE *f = fopen(argv[1], "r") ;
