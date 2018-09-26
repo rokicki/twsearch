@@ -1839,7 +1839,7 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
                           pd.permwrong(posns[sp], pd.solved, 1LL << i)) ;
       }
       int mvs = sp ;
-      if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
+      if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
          return ;
       bestsofar[key] = mvs ;
       cout << key << " " << mvs << " (" ;
@@ -1889,7 +1889,7 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
                                 pd.permwrong(posns[sp+1], pd.id, 1LL << i)) ;
             }
             int mvs = o / pp * sp ;
-            if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
+            if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
                continue ;
             bestsofar[key] = mvs ;
             cout << pp << " " << key << " " << mvs << " (" ;
@@ -1948,7 +1948,7 @@ void recurfindalgo3b(const puzdef &pd, int togo, int sp, int st, int fp) {
                           pd.permwrong(posns[sp+2], pd.id, 1LL << i)) ;
       }
       int mvs = 2 * (fp + (sp - (fp + 2))) ;
-      if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] <= mvs)
+      if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
          return ;
       bestsofar[key] = mvs ;
       cout << key << " " << mvs << " [" ;
@@ -3206,6 +3206,40 @@ void orderit(puzdef &pd, setval p, const char *s) {
       m++ ;
    }
 }
+void emitmp(puzdef &pd, setval p, const char *, int fixmoves) {
+   uchar *a = p.dat ;
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      cout << "   " << pd.setdefs[i].name << endl ;
+      cout << "   " ;
+      for (int i=0; i<n; i++)
+         cout << " "  << (int)(a[i]+1) ;
+      cout << endl ;
+      if (sd.omod > 1) {
+         cout << "   " ;
+         if (fixmoves) {
+            vector<int> newori(n) ;
+            for (int i=0; i<n; i++)
+               newori[a[i]] = a[i+n] ;
+            for (int i=0; i<n; i++)
+               cout << " "  << newori[i] ;
+         } else {
+            for (int i=0; i<n; i++)
+               cout << " "  << (int)(a[i+n]) ;
+         }
+         cout << endl ;
+      }
+      a += 2 * n ;
+   }
+   cout << endl ;
+}
+void emitmove(puzdef &pd, setval p, const char *s) {
+   emitmp(pd, p, s, 1) ;
+}
+void emitposition(puzdef &pd, setval p, const char *s) {
+   emitmp(pd, p, s, 0) ;
+}
 // basic infrastructure for walking a set of sequences
 void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
    string s ;
@@ -3231,7 +3265,8 @@ void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f)
       f(pd, p1, s.c_str()) ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, dosolvelines, doorder ;
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
+    dosolvelines, doorder, doshowmoves, doshowpositions ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3255,6 +3290,10 @@ int main(int argc, const char **argv) {
             legalmovelist = argv[1] ;
             argc-- ;
             argv++ ;
+         } else if (strcmp(argv[0], "--showmoves") == 0) {
+            doshowmoves++ ;
+         } else if (strcmp(argv[0], "--showpositions") == 0) {
+            doshowpositions++ ;
          } else if (strcmp(argv[0], "--newcanon") == 0) {
             ccount = atol(argv[1]) ;
             argc-- ;
@@ -3406,6 +3445,10 @@ default:
       processlines(pd, uniqit) ;
    if (doorder)
       processlines2(pd, orderit) ;
+   if (doshowmoves)
+      processlines2(pd, emitmove) ;
+   if (doshowpositions)
+      processlines(pd, emitposition) ;
    if (dosolvelines) {
       prunetable pt(pd, maxmem) ;
       string emptys ;
