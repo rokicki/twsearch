@@ -3240,6 +3240,17 @@ void emitmove(puzdef &pd, setval p, const char *s) {
 void emitposition(puzdef &pd, setval p, const char *s) {
    emitmp(pd, p, s, 0) ;
 }
+void showrandompos(puzdef &pd) {
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   for (int i=0; i<500; i++) {
+      int mv = (int)(pd.moves.size()*drand48()) ;
+      pd.mul(p1, pd.moves[mv].pos, p2) ;
+      mv = (int)(pd.moves.size()*drand48()) ;
+      pd.mul(p2, pd.moves[mv].pos, p1) ;
+   }
+   emitposition(pd, p1, 0) ;
+}
 // basic infrastructure for walking a set of sequences
 void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
    string s ;
@@ -3266,10 +3277,11 @@ void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f)
    }
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
-    dosolvelines, doorder, doshowmoves, doshowpositions ;
+    dosolvelines, doorder, doshowmoves, doshowpositions, genrand ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
+   srand48(time(0)) ;
    duration() ;
    init_mutex() ;
    for (int i=0; i<MEMSHARDS; i++)
@@ -3324,6 +3336,9 @@ case 'q':
             break ;
 case 'v':
             verbose++ ;
+            break ;
+case 'r':
+            genrand = 1 ;
             break ;
 case 'M':
             maxmem = 1048576 * atoll(argv[1]) ;
@@ -3404,6 +3419,10 @@ default:
    addmovepowers(pd) ;
    if (legalmovelist)
       filtermovelist(pd, legalmovelist) ;
+   if (genrand) {
+      showrandompos(pd) ;
+      return 0 ;
+   }
    if (nocorners)
       pd.addoptionssum("nocorners") ;
    if (nocenters)
