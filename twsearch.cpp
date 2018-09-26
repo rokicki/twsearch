@@ -28,7 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
-int ignoreori, origroup ;
+int ignoreori, origroup, quiet ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -350,7 +350,7 @@ void puzdef::inv(const setvals a, setvals b) const {
 }
 vector<ll> fact ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
-int verbose ;
+int verbose = 1 ;
 int quarter = 0 ;
 int nocorners, noedges, nocenters ;
 string curline ;
@@ -386,7 +386,7 @@ vector<string> getline(FILE *f, ull &checksum) {
          curline = s ;
          return toks ;
       }
-      if (verbose > 1)
+      if (verbose > 2)
          cout << ">> " << s << endl ;
       if (s[0] == '#')
          continue ;
@@ -711,10 +711,12 @@ void addmovepowers(puzdef &pd) {
    }
    if (newnames.size() > 0) {
       pd.moves = newmoves ;
-      cout << "Created new moves" ;
-      for (int i=0; i<(int)newnames.size(); i++)
-         cout << " " << newnames[i] ;
-      cout << endl << flush ;
+      if (verbose) {
+         cout << "Created new moves" ;
+         for (int i=0; i<(int)newnames.size(); i++)
+            cout << " " << newnames[i] ;
+         cout << endl << flush ;
+      }
    } else {
       pd.moves = pd.basemoves ;
    }
@@ -1412,10 +1414,10 @@ static inline int compare(const void *a_, const void *b_) {
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
                     loosetype *beg, loosetype *end, int temp) {
    size_t numel = (end-beg) / looseper ;
-   if (verbose || temp)
+   if (verbose > 1 || temp)
       cout << "Created " << numel << " elements in " << duration() << endl << flush ;
    qsort(beg, numel, looseper*sizeof(loosetype), compare) ;
-   if (verbose)
+   if (verbose > 1)
       cout << "Sorted " << flush ;
    loosetype *s_0 = beg ;
    loosetype *w = beg ;
@@ -1436,7 +1438,7 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
       }
       beg += looseper ;
    }
-   if (verbose || temp)
+   if (verbose > 1 || temp)
       cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
    return w ;
 }
@@ -2883,12 +2885,13 @@ void *threadworker(void *o) {
    solveworkers[wp->tid].dowork(wp->pd, wp->pt) ;
    return 0 ;
 }
-void solve(const puzdef &pd, prunetable &pt, const setval p) {
+int maxdepth = 1000000000 ;
+int solve(const puzdef &pd, prunetable &pt, const setval p) {
    solutionsfound = solutionsneeded ;
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
-   for (int d=initd; ; d++) {
+   for (int d=initd; d < maxdepth; d++) {
       if (d - initd > 3)
          makeworkchunks(pd, d) ;
       else
@@ -2912,11 +2915,12 @@ void solve(const puzdef &pd, prunetable &pt, const setval p) {
                  (solutionsfound != 1 ? "s" : "") << " at maximum depth " <<
                  d << " lookups " << totlookups << " in " << actualtime <<
                  " rate " << (totlookups/actualtime) << endl << flush ;
-         return ;
+         return d ;
       }
       cout << "Depth " << d << " finished in " << duration() << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
+   return -1 ;
 }
 void timingtest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
@@ -3114,6 +3118,38 @@ void processscrambles(FILE *f, puzdef &pd) {
       }
    }
 }
+void readfirstscramble(FILE *f, puzdef &pd, setval sv) {
+   string scramblename ;
+   ull checksum = 0 ;
+   while (1) {
+      vector<string> toks = getline(f, checksum) ;
+      if (toks.size() == 0)
+         break ;
+      if (toks[0] == "Scramble") {
+         expect(toks, 2) ;
+         scramblename = twstrdup(toks[1].c_str()) ; ;
+         setval p = readposition(pd, 'S', f, checksum) ;
+         pd.assignpos(sv, p) ;
+         return ;
+      } else if (toks[0] == "ScrambleAlg") {
+         expect(toks, 2) ;
+         scramblename = twstrdup(toks[1].c_str()) ; ;
+         pd.assignpos(sv, pd.solved) ;
+         while (1) {
+            toks = getline(f, checksum) ;
+            if (toks.size() == 0)
+               error("! early end of line while reading ScrambleAlg") ;
+            if (toks[0] == "End")
+               break ;
+            for (int i=0; i<(int)toks.size(); i++)
+               domove(pd, sv, findmove_generously(pd, toks[i])) ;
+         }
+         return ;
+      } else {
+         error("! unsupported command in scramble file") ;
+      }
+   }
+}
 /*
  *   Rewrite the movelist in the puzzle definition to restrict moves.
  *   This is a bit tricky.  The moves in the move list can be base
@@ -3256,13 +3292,15 @@ void showrandompos(puzdef &pd) {
    emitposition(pd, p1, 0) ;
 }
 // basic infrastructure for walking a set of sequences
+int globalinputmovecount = 0 ;
 void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
    string s ;
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
       pd.assignpos(p1, pd.solved) ;
       vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
-      vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+//    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      globalinputmovecount = movelist.size() ;
       for (int i=0; i<(int)movelist.size(); i++)
          domove(pd, p1, movelist[i]) ;
       f(pd, p1, s.c_str()) ;
@@ -3274,14 +3312,29 @@ void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f)
    while (getline(cin, s)) {
       pd.assignpos(p1, pd.id) ;
       vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
-      vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+//    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      globalinputmovecount = movelist.size() ;
       for (int i=0; i<(int)movelist.size(); i++)
          domove(pd, p1, movelist[i]) ;
       f(pd, p1, s.c_str()) ;
    }
 }
+int bestsolve = 1000000 ;
+void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
+              const char *p1str) {
+   stacksetval p2(pd) ;
+   pd.mul(scr, p1sol, p2) ;
+   maxdepth = bestsolve - globalinputmovecount - 1 ;
+   int r = solve(pd, pt, p2) ;
+   if (r >= 0) {
+      cout << "Phase one was " << p1str << endl ;
+      bestsolve = r + globalinputmovecount ;
+      cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
+   }
+}
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
-    dosolvelines, doorder, doshowmoves, doshowpositions, genrand ;
+    dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
+    phase2 ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3290,8 +3343,8 @@ int main(int argc, const char **argv) {
    init_mutex() ;
    for (int i=0; i<MEMSHARDS; i++)
       pthread_mutex_init(&(memshards[i].mutex), NULL) ;
-   cout << "This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
-   cout << "-" ;
+   cout << "# This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
+   cout << "#" ;
    for (int i=0; i<argc; i++)
       cout << " " << argv[i] ;
    cout << endl << flush ;
@@ -3340,6 +3393,8 @@ case 'q':
             break ;
 case 'v':
             verbose++ ;
+            if (argv[0][2] != 0)
+               verbose = argv[0][2] - '0' ;
             break ;
 case 'r':
             genrand = 1 ;
@@ -3403,6 +3458,9 @@ case 't':
                error("Numthreads cannot be more than ", to_string(MAXTHREADS)) ;
             argc-- ;
             argv++ ;
+            break ;
+case '2':
+            phase2 = 1 ;
             break ;
 default:
             error("! did not argument ", argv[0]) ;
@@ -3487,6 +3545,19 @@ default:
       processlines(pd, [&](puzdef &pd, setval p, const char *) {
                           solveit(pd, pt, emptys, p) ;
                        }) ;
+   }
+   if (phase2) {
+      if (argc <= 2)
+         error("! need a scramble file for phase 2") ;
+      f = fopen(argv[2], "r") ;
+      if (f == 0)
+         error("! could not open scramble file ", argv[2]) ;
+      stacksetval scr(pd) ;
+      readfirstscramble(f, pd, scr) ;
+      prunetable pt(pd, maxmem) ;
+      processlines2(pd, [&](puzdef &pd, setval p1sol, const char *p1str) {
+                               dophase2(pd, scr, p1sol, pt, p1str); }) ;
+      fclose(f) ;
    }
    if (argc > 2) {
       f = fopen(argv[2], "r") ;
