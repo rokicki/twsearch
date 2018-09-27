@@ -2892,7 +2892,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p) {
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
-   for (int d=initd; d < maxdepth; d++) {
+   for (int d=initd; d <= maxdepth; d++) {
       if (d - initd > 3)
          makeworkchunks(pd, d) ;
       else
