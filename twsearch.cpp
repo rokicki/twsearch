@@ -2922,6 +2922,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p) {
          cout << "Depth " << d << " finished in " << duration() << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
+   cout << "No solution found in " << maxdepth << endl << flush ;
    return -1 ;
 }
 void timingtest(puzdef &pd) {
@@ -3397,6 +3398,11 @@ case 'v':
             verbose++ ;
             if (argv[0][2] != 0)
                verbose = argv[0][2] - '0' ;
+            break ;
+case 'm':
+            maxdepth = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
             break ;
 case 'r':
             genrand = 1 ;
