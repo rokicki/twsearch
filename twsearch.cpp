@@ -3323,11 +3323,15 @@ void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f)
    }
 }
 int bestsolve = 1000000 ;
+int optmaxdepth = 0 ;
 void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
               const char *p1str) {
    stacksetval p2(pd) ;
+   if (optmaxdepth == 0)
+      optmaxdepth = maxdepth ;
    pd.mul(scr, p1sol, p2) ;
-   maxdepth = bestsolve - globalinputmovecount - 1 ;
+   maxdepth = min(optmaxdepth - globalinputmovecount,
+                  bestsolve - globalinputmovecount - 1) ;
    int r = solve(pd, pt, p2) ;
    if (r >= 0) {
       cout << "Phase one was " << p1str << endl ;
