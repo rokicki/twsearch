@@ -1806,6 +1806,7 @@ void doarraygod2(const puzdef &pd) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
       }
+      pd.assignpos(posns[0], pd.solved) ;
       ull newseen = 0 ;
       levend = writer ;
       dorecurgod(pd, d, 0, 0) ;
