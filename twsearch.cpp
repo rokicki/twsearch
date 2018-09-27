@@ -3570,8 +3570,7 @@ default:
       processlines2(pd, [&](puzdef &pd, setval p1sol, const char *p1str) {
                                dophase2(pd, scr, p1sol, pt, p1str); }) ;
       fclose(f) ;
-   }
-   if (argc > 2) {
+   } else if (argc > 2) {
       f = fopen(argv[2], "r") ;
       if (f == 0)
          error("! could not open scramble file ", argv[2]) ;
