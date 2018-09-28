@@ -125,15 +125,15 @@ struct setdef {
    }
 } ;
 struct setval {
+   setval() : dat(0) {}
    setval(uchar *dat_) : dat(dat_) {}
    uchar *dat ;
 } ;
-typedef setval setvals ;
 typedef vector<setdef> setdefs_t ;
 struct moove {
    moove() : name(0), pos(0), cost(1) {}
    const char *name ;
-   setvals pos ;
+   setval pos ;
    int cost, base, twist, cs ;
 } ;
 struct puzdef {
@@ -141,7 +141,7 @@ struct puzdef {
               logstates(0), llstates(0), checksum(0) {}
    const char *name ;
    setdefs_t setdefs ;
-   setvals solved ;
+   setval solved ;
    vector<moove> basemoves, moves, parsemoves ;
    vector<int> basemoveorders ;
    int totsize ;
@@ -151,7 +151,7 @@ struct puzdef {
    unsigned long long llstates ;
    ull checksum ;
    ull optionssum ;
-   int comparepos(const setvals a, const setvals b) const {
+   int comparepos(const setval a, const setval b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
    int canpackdense() const {
@@ -160,14 +160,14 @@ struct puzdef {
             return 0 ;
       return 1 ;
    }
-   void assignpos(setvals a, const setvals b) const {
+   void assignpos(setval a, const setval b) const {
       memcpy(a.dat, b.dat, totsize) ;
    }
    void addoptionssum(const char *p) {
       while (*p)
          optionssum = 37 * optionssum + *p++ ;
    }
-   int numwrong(const setvals a, const setvals b, ull mask=-1) const {
+   int numwrong(const setval a, const setval b, ull mask=-1) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       int r = 0 ;
@@ -193,7 +193,7 @@ struct puzdef {
       }
       return r ;
    }
-   int permwrong(const setvals a, const setvals b, ull mask=-1) const {
+   int permwrong(const setval a, const setval b, ull mask=-1) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       int r = 0 ;
@@ -222,7 +222,7 @@ struct puzdef {
       }
       return r ;
    }
-   vector<int> cyccnts(const setvals a, ull sets=-1) const {
+   vector<int> cyccnts(const setval a, ull sets=-1) const {
       const uchar *ap = a.dat ;
       vector<int> r ;
       for (int i=0; i<(int)setdefs.size(); i++) {
@@ -259,7 +259,7 @@ struct puzdef {
             r = lcm(r, i) ;
       return r ;
    }
-   void mul(const setvals a, const setvals b, setvals c) const {
+   void mul(const setval a, const setval b, setval c) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       uchar *cp = c.dat ;
@@ -285,27 +285,27 @@ struct puzdef {
          cp += n ;
       }
    }
-   void pow(const setvals a, setvals b, ll cnt) const ;
-   void inv(const setvals a, setvals b) const ;
+   void pow(const setval a, setval b, ll cnt) const ;
+   void inv(const setval a, setval b) const ;
 } ;
 struct stacksetval : setval {
    stacksetval(const puzdef &pd) : setval(new uchar[pd.totsize]) {
       memcpy(dat, pd.id.dat, pd.totsize) ;
    }
-   stacksetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
+   stacksetval(const puzdef &pd, const setval iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
    ~stacksetval() { delete [] dat ; }
 } ;
 struct allocsetval : setval {
-   allocsetval(const puzdef &pd, const setvals iv) : setval(new uchar[pd.totsize]) {
+   allocsetval(const puzdef &pd, const setval iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
    ~allocsetval() {
       // we drop memory here; need fix
    }
 } ;
-void puzdef::pow(const setvals a, setvals b, ll cnt) const {
+void puzdef::pow(const setval a, setval b, ll cnt) const {
    if (cnt == 0) {
       assignpos(b, id) ;
       return ;
@@ -326,7 +326,7 @@ void puzdef::pow(const setvals a, setvals b, ll cnt) const {
    }
    assignpos(b, r) ;
 }
-void puzdef::inv(const setvals a, setvals b) const {
+void puzdef::inv(const setval a, setval b) const {
    const uchar *ap = a.dat ;
    uchar *bp = b.dat ;
    for (int i=0; i<(int)setdefs.size(); i++) {
@@ -464,8 +464,8 @@ int omitset(string s) {
       return 1 ;
    return 0 ;
 }
-setvals readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
-   setvals r((uchar *)calloc(pz.totsize, 1)) ;
+setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
+   setval r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
    int numseq = 0 ;
    int ignore = 0 ;
@@ -653,7 +653,7 @@ puzdef readdef(FILE *f) {
       error("! puzzle must have a solved position") ;
    if (pz.moves.size() == 0)
       error("! puzzle must have moves") ;
-   pz.id = setvals((uchar *)calloc(pz.totsize, 1)) ;
+   pz.id = setval((uchar *)calloc(pz.totsize, 1)) ;
    uchar *p = pz.id.dat ;
    for (int i=0; i<(int)pz.setdefs.size(); i++) {
       int n = pz.setdefs[i].size ;
@@ -676,7 +676,7 @@ void addmovepowers(puzdef &pd) {
       moove &m = pd.moves[i] ;
       if (quarter && m.cost > 1)
          continue ;
-      vector<setvals> movepowers ;
+      vector<setval> movepowers ;
       movepowers.push_back(m.pos) ;
       pd.assignpos(p1, m.pos) ;
       pd.assignpos(p2, m.pos) ;
@@ -887,7 +887,7 @@ void indextoords2(uchar *p, ull v, int omod, int n) {
    }
    p[n-1] = (n * omod - s) % omod ;
 }
-ull densepack(const puzdef &pd, setvals pos) {
+ull densepack(const puzdef &pd, setval pos) {
    ull r = 0 ;
    ull m = 1 ;
    uchar *p = pos.dat ;
@@ -915,7 +915,7 @@ ull densepack(const puzdef &pd, setvals pos) {
    }
    return r ;
 }
-void denseunpack(const puzdef &pd, ull v, setvals pos) {
+void denseunpack(const puzdef &pd, ull v, setval pos) {
    uchar *p = pos.dat ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
@@ -1044,7 +1044,7 @@ ll symcoordsize = 0 ;
 vector<pair<ull, int> > parts ;
 int nmoves ;
 vector<int> movemap ;
-ull densepack_ordered(const puzdef &pd, setvals pos) {
+ull densepack_ordered(const puzdef &pd, setval pos) {
    ull r = 0 ;
    for (int ii=0; ii<(int)parts.size(); ii++) {
       int sdpair = parts[ii].second ;
@@ -1312,7 +1312,7 @@ void calclooseper(const puzdef &pd) {
    looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
    cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry; " << (looseiper*sizeof(loosetype)) << " from identity." << endl ;
 }
-void loosepack(const puzdef &pd, setvals pos, loosetype *w, int fromid=0) {
+void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid=0) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -1353,7 +1353,7 @@ void loosepack(const puzdef &pd, setvals pos, loosetype *w, int fromid=0) {
       storedbits -= BITSPERLOOSE ;
    }
 }
-void looseunpack(const puzdef &pd, setvals pos, loosetype *r) {
+void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -2009,7 +2009,7 @@ void findalgos3(const puzdef &pd) {
    }
 }
 // we take advantage of the fact that the totsize is always divisible by 2.
-ull fasthash(int n, const setvals sv) {
+ull fasthash(int n, const setval sv) {
    ull r = 0 ;
    const uchar *p = sv.dat ;
    while (n > 4) {
@@ -3005,12 +3005,12 @@ void solvetest(puzdef &pd) {
       pd.assignpos(p1, p2) ;
    }
 }
-void domove(puzdef &pd, setvals p, setvals pos) {
+void domove(puzdef &pd, setval p, setval pos) {
    stacksetval pt(pd) ;
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
 }
-void domove(puzdef &pd, setvals p, int mv) {
+void domove(puzdef &pd, setval p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;
 }
 setval findmove_generously(const puzdef &pd, const char *mvstring) {
@@ -3036,10 +3036,10 @@ int findmove(const puzdef &pd, const char *mvstring) {
 int findmove(const puzdef &pd, string mvstring) {
    return findmove(pd, mvstring.c_str()) ;
 }
-void domove(puzdef &pd, setvals p, string mvstring) {
+void domove(puzdef &pd, setval p, string mvstring) {
    domove(pd, p, findmove(pd, mvstring)) ;
 }
-void solveit(puzdef &pd, prunetable &pt, string scramblename, setvals &p) {
+void solveit(puzdef &pd, prunetable &pt, string scramblename, setval &p) {
    if (scramblename.size())
       cout << "Solving " << scramblename << endl << flush ;
    else
@@ -3062,8 +3062,8 @@ vector<int> parsemovelist(puzdef &pd, const char *scr) {
       movelist.push_back(findmove(pd, move)) ;
    return movelist ;
 }
-vector<setvals> parsemovelist_generously(puzdef &pd, const char *scr) {
-   vector<setvals> movelist ;
+vector<setval> parsemovelist_generously(puzdef &pd, const char *scr) {
+   vector<setval> movelist ;
    string move ;
    for (const char *p=scr; *p; p++) {
       if (*p <= ' ' || *p == ',') {
@@ -3083,7 +3083,7 @@ void solvecmdline(puzdef &pd, const char *scr) {
    pd.assignpos(p1, pd.solved) ;
    string noname ;
    prunetable pt(pd, maxmem) ;
-   vector<setvals> movelist = parsemovelist_generously(pd, scr) ;
+   vector<setval> movelist = parsemovelist_generously(pd, scr) ;
    for (int i=0; i<(int)movelist.size(); i++)
       domove(pd, p1, movelist[i]) ;
    solveit(pd, pt, noname, p1) ;
@@ -3301,7 +3301,7 @@ void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) 
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
       pd.assignpos(p1, pd.solved) ;
-      vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
+      vector<setval> movelist = parsemovelist_generously(pd, s.c_str()) ;
 //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
       globalinputmovecount = movelist.size() ;
       for (int i=0; i<(int)movelist.size(); i++)
@@ -3314,7 +3314,7 @@ void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f)
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
       pd.assignpos(p1, pd.id) ;
-      vector<setvals> movelist = parsemovelist_generously(pd, s.c_str()) ;
+      vector<setval> movelist = parsemovelist_generously(pd, s.c_str()) ;
 //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
       globalinputmovecount = movelist.size() ;
       for (int i=0; i<(int)movelist.size(); i++)
@@ -3344,6 +3344,110 @@ int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     phase2 ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
+struct generatingset {
+   generatingset(const puzdef &pd) ;
+   const puzdef &pd ;
+   setval e ;
+   vector<vector<setval>> sgs, sgsi, tk ;
+   bool resolve(const setval p_) {
+      stacksetval p(pd), t(pd) ;
+      pd.assignpos(p, p_) ;
+      for (int i=(int)pd.setdefs.size()-1; i>=0; i--) {
+         const setdef &sd = pd.setdefs[i] ;
+         int n = sd.size ;
+         int s = 0 ;
+         for (int j=0; j<n; j++)
+            s += p.dat[sd.off+j] ;
+         if (s * 2 != n * (n - 1))
+            error("! identical pieces during generating set resolve?") ;
+         int off = (sd.off >> 1) ;
+         for (int j=n-1; j>=0; j--) {
+            if (p.dat[sd.off+j] != j || p.dat[sd.off+n+j] != 0) {
+               int v = sd.omod * p.dat[sd.off+j] + p.dat[sd.off+n+j] ;
+               if (!sgs[off+j][v].dat)
+                  return 0 ;
+               pd.mul(sgsi[off+j][v], p, t) ;
+               swap(p.dat, t.dat) ;
+               if (p.dat[sd.off+j] != j || p.dat[sd.off+n+j] != 0)
+                  error("! misresolve") ;
+            }
+         }
+      }
+      return 1 ;
+   }
+   void knutha(int k1, int k2, const setval &p) {
+      int k = k2 + (pd.setdefs[k1].off >> 1) ;
+      tk[k].push_back(allocsetval(pd, p)) ;
+      stacksetval p2(pd) ;
+      for (int i=0; i<(int)sgs[k].size(); i++)
+         if (sgs[k][i].dat) {
+            pd.mul(p, sgs[k][i], p2) ;
+            knuthb(k1, k2, p2) ;
+         }
+   }
+   void knuthb(int k1, int k2, const setval &p) {
+      const setdef &sd = pd.setdefs[k1] ;
+      int k = k2 + (sd.off >> 1) ;
+      int n = sd.size ;
+      int j = p.dat[sd.off+k2] * sd.omod + p.dat[sd.off+n+k2] ;
+      stacksetval p2(pd) ;
+      if (!sgs[k][j].dat) {
+         sgs[k][j] = allocsetval(pd, p) ;
+         sgsi[k][j] = allocsetval(pd, p) ;
+         pd.inv(sgs[k][j], sgsi[k][j]) ;
+         for (int i=0; i<(int)tk[k].size(); i++) {
+            pd.mul(tk[k][i], p, p2) ;
+            knuthb(k1, k2, p2) ;
+         }
+         return ;
+      }
+      pd.mul(sgsi[k][j], p, p2) ;
+      if (p2.dat[sd.off+k2] != k2 || p2.dat[sd.off+n+k2] != 0) {
+         error("! misresolve in knuthb") ;
+      }
+      if (!resolve(p2)) {
+         if (k2 > 0)
+            k2-- ;
+         else {
+            k1-- ;
+            if (k1 < 0)
+               error("! fell off end in knuthb") ;
+            k2 = pd.setdefs[k1].size - 1 ;
+         }
+         knutha(k1, k2, p2) ;
+      }
+   }
+} ;
+generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
+      const setdef &sd = pd.setdefs[i] ;
+      int sz = sd.size * sd.omod ;
+      for (int j=0; j<sd.size; j++) {
+         sgs.push_back(vector<setval>(sz)) ;
+         sgsi.push_back(vector<setval>(sz)) ;
+         tk.push_back(vector<setval>(0)) ;
+         int at = sgs.size() - 1 ;
+         sgs[at][j*sd.omod] = e ;
+         sgsi[at][j*sd.omod] = e ;
+      }
+   }
+   for (int i=0; i<(int)pd.moves.size(); i++) {
+      if (resolve(pd.moves[i].pos))
+         continue ;
+      cout << "Adding move " << pd.moves[i].name << endl ;
+      knutha(pd.setdefs.size()-1, pd.setdefs[pd.setdefs.size()-1].size-1,
+             pd.moves[i].pos) ;
+      double totsize = 1 ;
+      for (int j=0; j<(int)sgs.size(); j++) {
+         int cnt = 0 ;
+         for (int k=0; k<(int)sgs[j].size(); k++)
+            if (sgs[j][k].dat)
+               cnt++ ;
+         totsize *= cnt ;
+      }
+      cout << "Size is now " << totsize << endl ;
+   }
+}
 int main(int argc, const char **argv) {
    int seed = 0 ;
    duration() ;
@@ -3502,16 +3606,16 @@ default:
    addmovepowers(pd) ;
    if (legalmovelist)
       filtermovelist(pd, legalmovelist) ;
-   if (genrand) {
-      showrandompos(pd) ;
-      return 0 ;
-   }
    if (nocorners)
       pd.addoptionssum("nocorners") ;
    if (nocenters)
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (genrand) {
+      showrandompos(pd) ;
+      return 0 ;
+   }
    calculatesizes(pd) ;
    calclooseper(pd) ;
    if (ccount == 0)
