@@ -28,7 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
-int ignoreori, origroup, quiet ;
+int ignoreori, origroup, checkbeforesolve ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -460,6 +460,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
       cout << "Size is now " << totsize << endl ;
    }
 }
+generatingset *gs ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 int verbose = 1 ;
 int quarter = 0 ;
@@ -2993,6 +2994,10 @@ void *threadworker(void *o) {
 int maxdepth = 1000000000 ;
 int solve(const puzdef &pd, prunetable &pt, const setval p) {
    solutionsfound = solutionsneeded ;
+   if (gs && !gs->resolve(p)) {
+      cout << "Ignoring unsolvable position." << endl ;
+      return -1 ;
+   }
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
@@ -3484,6 +3489,8 @@ int main(int argc, const char **argv) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
             ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--checkbeforesolve") == 0) {
+            checkbeforesolve = 1 ;
          } else if (strcmp(argv[0], "--orientationgroup") == 0) {
             origroup = atol(argv[1]) ;
             argc-- ;
@@ -3614,9 +3621,8 @@ default:
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
-   if (doss) {
-      generatingset ss(pd) ;
-   }
+   if (doss || checkbeforesolve)
+      gs = new generatingset(pd) ;
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
