@@ -3339,11 +3339,6 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
       cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
-    dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    phase2 ;
-const char *scramblealgo = 0 ;
-const char *legalmovelist = 0 ;
 struct generatingset {
    generatingset(const puzdef &pd) ;
    const puzdef &pd ;
@@ -3448,6 +3443,11 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
       cout << "Size is now " << totsize << endl ;
    }
 }
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
+    dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
+    phase2, checksolvable ;
+const char *scramblealgo = 0 ;
+const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
    int seed = 0 ;
    duration() ;
