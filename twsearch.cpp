@@ -446,10 +446,9 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
    for (int i=0; i<(int)pd.moves.size(); i++) {
       if (resolve(pd.moves[i].pos))
          continue ;
-      cout << "Adding move " << pd.moves[i].name << endl ;
       knutha(pd.setdefs.size()-1, pd.setdefs[pd.setdefs.size()-1].size-1,
              pd.moves[i].pos) ;
-      double totsize = 1 ;
+      long double totsize = 1 ;
       for (int j=0; j<(int)sgs.size(); j++) {
          int cnt = 0 ;
          for (int k=0; k<(int)sgs[j].size(); k++)
@@ -457,7 +456,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
                cnt++ ;
          totsize *= cnt ;
       }
-      cout << "Size is now " << totsize << endl ;
+      cout << "Adding move " << pd.moves[i].name << " extends size to " << totsize << endl ;
    }
 }
 generatingset *gs ;
