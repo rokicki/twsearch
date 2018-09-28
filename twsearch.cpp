@@ -3445,7 +3445,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    phase2, checksolvable ;
+    phase2, checksolvable, doss ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -3494,6 +3494,8 @@ int main(int argc, const char **argv) {
             scramblealgo = argv[1] ;
             argc-- ;
             argv++ ;
+         } else if (strcmp(argv[0], "--schreiersims") == 0) {
+            doss = 1 ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -3612,6 +3614,9 @@ default:
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (doss) {
+      generatingset ss(pd) ;
+   }
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
