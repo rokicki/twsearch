@@ -3516,6 +3516,7 @@ case 'v':
                verbose = argv[0][2] - '0' ;
             break ;
 case 'm':
+case 'd':
             maxdepth = atol(argv[1]) ;
             argc-- ;
             argv++ ;
