@@ -1,5 +1,18 @@
 Things to do with twsearch:
 
+* Ignore pieces
+  - Introduce way to specify certain pieces can be ignored for pruning
+
+* Twophase integrated (for speed)
+
+* Check:  Are we generating solutions for phase 1 with phase 2 moves at end?
+
+* In phase 2, support solving multiple positions concurrently rather than
+  parallelizing searches that are not deep
+
+* In phase 2, somewhat randomize incoming positions (since nearby ones appear
+  to be related)
+
 * Coset solver:
   - Allow spec of subset for pruning (i.e., centers, corners, perms, ori)
   - Encode other portions and store in bitmap
@@ -8,16 +21,6 @@ Things to do with twsearch:
 
 * Orientation reduction
   - Can we infer orientation somehow?
-
-* Simple algorithm search
-  - Conjugates, commutators, repeated sequences
-
-* Low-value pruning improvement
-  - Divide by 127, or other hack, to preserve 4 bits per cacheline for a
-    lower value, like we do in our big optimal solver
-
-* Ignore pieces
-  - Introduce way to specify certain pieces can be ignored for pruning
 
 * Edge pairing
   - Is there some way we can support edge pairing?
