@@ -28,7 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
-int ignoreori, origroup, checkbeforesolve, noearlysolutions ;
+int ignoreori, origroup, checkbeforesolve, noearlysolutions, phase2 ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -2997,7 +2997,8 @@ int maxdepth = 1000000000 ;
 int solve(const puzdef &pd, prunetable &pt, const setval p) {
    solutionsfound = solutionsneeded ;
    if (gs && !gs->resolve(p)) {
-      cout << "Ignoring unsolvable position." << endl ;
+      if (!phase2)
+         cout << "Ignoring unsolvable position." << endl ;
       return -1 ;
    }
    double starttime = walltime() ;
@@ -3033,7 +3034,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p) {
          cout << "Depth " << d << " finished in " << duration() << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
-   cout << "No solution found in " << maxdepth << endl << flush ;
+   if (!phase2)
+      cout << "No solution found in " << maxdepth << endl << flush ;
    return -1 ;
 }
 void timingtest(puzdef &pd) {
@@ -3452,7 +3454,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    phase2, checksolvable, doss ;
+    checksolvable, doss ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
