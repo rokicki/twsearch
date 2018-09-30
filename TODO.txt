@@ -5,7 +5,7 @@ Things to do with twsearch:
 
 * Twophase integrated (for speed)
 
-* Check:  Are we generating solutions for phase 1 with phase 2 moves at end?
+* Stop generating solutions for phase 1 with phase 2 moves at end!
 
 * In phase 2, support solving multiple positions concurrently rather than
   parallelizing searches that are not deep
