@@ -28,7 +28,7 @@ const int CACHELINESIZE = 64 ;
 const int BITSPERLOOSE = 8*sizeof(loosetype) ;
 const int SIGNATURE = 22 ; // start and end of data files
 static double start ;
-int ignoreori, origroup, checkbeforesolve ;
+int ignoreori, origroup, checkbeforesolve, noearlysolutions ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;
@@ -2918,6 +2918,9 @@ struct solveworker {
          return -1 ;
       if (v > togo)
          return 0 ;
+      if (v == 0 && togo > 0 && pd.comparepos(posns[sp], pd.solved) == 0 &&
+          noearlysolutions)
+         return 0 ;
       if (togo == 0) {
          if (pd.comparepos(posns[sp], pd.solved) == 0) {
             int r = 1 ;
@@ -3488,6 +3491,8 @@ int main(int argc, const char **argv) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
             ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
+            noearlysolutions = 1 ;
          } else if (strcmp(argv[0], "--checkbeforesolve") == 0) {
             checkbeforesolve = 1 ;
          } else if (strcmp(argv[0], "--orientationgroup") == 0) {

@@ -1,7 +1,13 @@
 Things to do with twsearch:
 
+* Speed up pruning table generation when ignore pieces or many identical
+  pieces so canonical sequences are less effective, by reducing number
+  of prefixes.
+
 * Ignore pieces
   - Introduce way to specify certain pieces can be ignored for pruning
+
+* Split into many files for simplicity
 
 * Twophase integrated (for speed)
 
