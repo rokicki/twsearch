@@ -3030,8 +3030,9 @@ int solve(const puzdef &pd, prunetable &pt, const setval p) {
                  " rate " << (totlookups/actualtime) << endl << flush ;
          return d ;
       }
-      if (verbose && !phase2)
-         cout << "Depth " << d << " finished in " << duration() << endl << flush ;
+      double dur = duration() ;
+      if (verbose && dur > 1)
+         cout << "Depth " << d << " finished in " << dur << endl << flush ;
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
    if (!phase2)
