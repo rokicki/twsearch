@@ -443,6 +443,8 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
          sgsi[at][j*sd.omod] = e ;
       }
    }
+   int oldprec = cout.precision() ;
+   cout.precision(20) ;
    for (int i=0; i<(int)pd.moves.size(); i++) {
       if (resolve(pd.moves[i].pos))
          continue ;
@@ -458,6 +460,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
       }
       cout << "Adding move " << pd.moves[i].name << " extends size to " << totsize << endl ;
    }
+   cout.precision(oldprec) ;
 }
 generatingset *gs ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
