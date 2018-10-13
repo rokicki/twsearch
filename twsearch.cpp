@@ -3461,8 +3461,102 @@ int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     checksolvable, doss ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
+void calcsym(const puzdef &pd, int iat, int nmoves, vector<char> &used,
+             vector<int> &mapped, vector<int> &basemovemapped,
+             const setval &ip1, const setval &ip2, vector<vector<int>> &cc,
+             int nmul) {
+// cout << "In calcsym at " << at << endl ;
+   if (iat == nmoves) {
+      cout << "SYM" ;
+      for (int i=0; i<nmoves; i++)
+         cout << " " << pd.moves[i].name << "-" << pd.moves[mapped[i]].name  ;
+      cout << endl ;
+      return ;
+   }
+   int at = iat * nmul % nmoves ;
+   stacksetval p1(pd), p2(pd), p3(pd), p4(pd) ;
+   for (int i=0; i<nmoves; i++) {
+      if (used[i])
+         continue ;
+      if (basemovemapped[pd.moves[at].base] >= 0 &&
+          basemovemapped[pd.moves[at].base] != pd.moves[i].base)
+         continue ;
+      if (cc[at] != cc[i])
+         continue ;
+      pd.assignpos(p1, ip1) ;
+      pd.assignpos(p2, ip2) ;
+      pd.mul(p1, pd.moves[at].pos, p3) ;
+      pd.mul(p2, pd.moves[i].pos, p4) ;
+      if (pd.cyccnts(p3) != pd.cyccnts(p4))
+         continue ;
+      if (iat > 0) {
+         int r = (int)(iat*drand48()) ;
+         r = r * nmul % nmoves ;
+         pd.mul(p3, pd.moves[r].pos, p1) ;
+         pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
+         if (pd.cyccnts(p1) != pd.cyccnts(p2))
+            continue ;
+         r = (int)(iat*drand48()) ;
+         r = r * nmul % nmoves ;
+         pd.mul(p1, pd.moves[r].pos, p3) ;
+         pd.mul(p2, pd.moves[mapped[r]].pos, p4) ;
+         if (pd.cyccnts(p3) != pd.cyccnts(p4))
+            continue ;
+         r = (int)(iat*drand48()) ;
+         r = r * nmul % nmoves ;
+         pd.mul(p3, pd.moves[r].pos, p1) ;
+         pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
+         if (pd.cyccnts(p1) != pd.cyccnts(p2))
+            continue ;
+      }
+      int obmm = basemovemapped[pd.moves[at].base] ;
+      basemovemapped[pd.moves[at].base] = pd.moves[i].base ;
+      mapped[at] = i ;
+      used[i] = 1 ;
+      calcsym(pd, iat+1, nmoves, used, mapped, basemovemapped, p1, p2, cc, nmul) ;
+      used[i] = 0 ;
+      basemovemapped[pd.moves[at].base] = obmm ;
+   }
+}
+int isprime(int p) {
+   if (p < 2)
+      return 0 ;
+   if (p < 4)
+      return 1 ;
+   if ((p & 1) == 0)
+      return 0 ;
+   for (int j=3; ; j+=2) {
+      if (p % j == 0)
+         return 0 ;
+      if (j * j > p)
+         return 1 ;
+   }
+}
+void gensymm(const puzdef &pd) {
+   int nmoves = pd.moves.size() ;
+   int nmul = (int)(0.618 * nmoves) ;
+   if (nmul == 0)
+      nmul = 1 ;
+   while (gcd(nmul, nmoves) != 1)
+      nmul++ ;
+   if (nmul >= nmoves)
+      nmul = 1 ;
+   vector<char> used(nmoves) ;
+   vector<int> mapped(nmoves) ;
+   vector<int> basemovemapped(pd.basemoves.size()) ;
+   for (int i=0; i<(int)basemovemapped.size(); i++)
+      basemovemapped[i] = -1 ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.id) ;
+   pd.assignpos(p2, pd.id) ;
+   vector<vector<int>> cc ;
+   for (int i=0; i<nmoves; i++)
+      cc.push_back(pd.cyccnts(pd.moves[i].pos)) ;
+   calcsym(pd, 0, nmoves, used, mapped, basemovemapped, p1, p2, cc, nmul) ;
+}
 int main(int argc, const char **argv) {
    int seed = 0 ;
+   int forcearray = 0 ;
    duration() ;
    init_mutex() ;
    for (int i=0; i<MEMSHARDS; i++)
@@ -3572,6 +3666,9 @@ case 's':
 case 'C':
             docanon++ ;
             break ;
+case 'F':
+            forcearray++ ;
+            break ;
 case 'A':
             if (argv[0][2] == 0 || argv[0][2] == '1')
                doalgo = 1 ;
@@ -3646,9 +3743,11 @@ default:
       makecanonstates2(pd) ;
    cout << "Calculated canonical states in " << duration() << endl << flush ;
    showcanon(pd, docanon) ;
+// gensymm(pd) ;
    if (dogod) {
-      if (pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem) {
-         if (pd.canpackdense()) {
+      int statesfit = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem ;
+      if (forcearray || statesfit) {
+         if (statesfit && pd.canpackdense()) {
             dotwobitgod2(pd) ;
          } else { // fits in RAM but can't pack dense; probably use this
             doarraygod(pd) ;
