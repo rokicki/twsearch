@@ -16,6 +16,7 @@
 #include <pthread.h>
 #include <random>
 #include <functional>
+#include "city.h"
 #undef CHECK
 using namespace std ;
 typedef long long ll ;
@@ -1718,10 +1719,7 @@ void makecanonstates(puzdef &pd) {
 template<typename T>
 struct hashvector {
    size_t operator()(const T&v) const {
-      size_t r = v.size() ;
-      for (int i=0; i<(int)v.size(); i++)
-         r = r * 65 + v[i] ;
-      return r ;
+      return CityHash64((const char *)&v[0], sizeof(T)*v.size()) ;
    }
 } ;
 template<typename T>
@@ -2117,20 +2115,7 @@ void findalgos3(const puzdef &pd) {
 }
 // we take advantage of the fact that the totsize is always divisible by 2.
 ull fasthash(int n, const setval sv) {
-   ull r = 0 ;
-   const uchar *p = sv.dat ;
-   while (n > 4) {
-      r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 + p[2] * 127
-          + p[3] * 8191 ;
-      n -= 4 ;
-      p += 4 ;
-   }
-   if (n)
-      r = r + (r << 8) + (r >> 3) + p[0] + p[1] * 31 ;
-   // this little hack ensures that at least one of bits 1..7
-   // (numbered from zero) is set.
-   r ^= ((r | (1LL << 43)) & ((r & 0xfe) - 2)) >> 42 ;
-   return r ;
+   return CityHash64((const char *)sv.dat, n) ;
 }
 vector<ull> workchunks ;
 vector<int> workstates ;
@@ -2424,7 +2409,7 @@ struct prunetable {
       }
    }
    string makefilename(const puzdef &pd) const {
-      string filename = "tws-" + inputbasename + "-" ;
+      string filename = "tws2-" + inputbasename + "-" ;
       if (quarter)
          filename += "q-" ;
       ull bytes = size >> 2 ;
