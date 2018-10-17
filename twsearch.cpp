@@ -3508,6 +3508,18 @@ void calcsym(const puzdef &pd, int iat, int nmoves, vector<char> &used,
          pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
          if (pd.cyccnts(p1) != pd.cyccnts(p2))
             continue ;
+         r = (int)(iat*drand48()) ;
+         r = r * nmul % nmoves ;
+         pd.mul(p1, pd.moves[r].pos, p3) ;
+         pd.mul(p2, pd.moves[mapped[r]].pos, p4) ;
+         if (pd.cyccnts(p3) != pd.cyccnts(p4))
+            continue ;
+         r = (int)(iat*drand48()) ;
+         r = r * nmul % nmoves ;
+         pd.mul(p3, pd.moves[r].pos, p1) ;
+         pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
+         if (pd.cyccnts(p1) != pd.cyccnts(p2))
+            continue ;
       }
       int obmm = basemovemapped[pd.moves[at].base] ;
       basemovemapped[pd.moves[at].base] = pd.moves[i].base ;
@@ -3743,7 +3755,7 @@ default:
       makecanonstates2(pd) ;
    cout << "Calculated canonical states in " << duration() << endl << flush ;
    showcanon(pd, docanon) ;
-// gensymm(pd) ;
+//   gensymm(pd) ;
    if (dogod) {
       int statesfit = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem ;
       if (forcearray || statesfit) {
