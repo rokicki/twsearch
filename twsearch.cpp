@@ -2115,7 +2115,11 @@ void findalgos3(const puzdef &pd) {
 }
 // we take advantage of the fact that the totsize is always divisible by 2.
 ull fasthash(int n, const setval sv) {
-   return CityHash64((const char *)sv.dat, n) ;
+   ull r = CityHash64((const char *)sv.dat, n) ;
+   // this little hack ensures that at least one of bits 1..7
+   // (numbered from zero) is set.
+   r ^= ((r | (1LL << 43)) & ((r & 0xfe) - 2)) >> 42 ;
+   return r ;
 }
 vector<ull> workchunks ;
 vector<int> workstates ;
