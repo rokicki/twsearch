@@ -41,6 +41,13 @@ double duration() {
    start = now ;
    return r ;
 }
+string curline ;
+void error(string msg, string extra="") {
+   cerr << msg << extra << endl ;
+   if (curline.size() > 0)
+      cerr << "At: " << curline << endl ;
+   exit(10) ;
+}
 /*
  *   strdup is going through some issues: POSIX vs C++, so we just
  *   implement it ourselves.
@@ -137,9 +144,13 @@ struct moove {
    setval pos ;
    int cost, base, twist, cs ;
 } ;
+struct illegal_t {
+   int pos ;
+   ull mask ;
+} ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
-              logstates(0), llstates(0), checksum(0) {}
+              logstates(0), llstates(0), checksum(0), haveillegal(0) {}
    const char *name ;
    setdefs_t setdefs ;
    setval solved ;
@@ -152,6 +163,8 @@ struct puzdef {
    unsigned long long llstates ;
    ull checksum ;
    ull optionssum ;
+   vector<illegal_t> illegal ;
+   char haveillegal ;
    int comparepos(const setval a, const setval b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
@@ -286,6 +299,40 @@ struct puzdef {
          cp += n ;
       }
    }
+   int legalstate(const setval a) const {
+      if (!haveillegal)
+         return 1 ;
+      for (auto i : illegal) {
+         if ((i.mask >> a.dat[i.pos]) & 1)
+            return 0 ;
+      }
+      return 1 ;
+   }
+   void addillegal(const char *setname, int pos, int val) {
+      if (val > 64)
+         error("! cannot use illegal on sets with more than 64 elements") ;
+      if (val <= 0)
+         error("! value in illegal must be strictly positive.") ;
+      haveillegal = 1 ;
+      int rpos = -1 ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         if (strcmp(sd.name, setname) == 0) {
+            if (pos <= 0 || pos > sd.size)
+               error("! position out of bounds of set") ;
+            rpos = sd.off + pos - 1 ;
+            break ;
+         }
+      }
+      if (rpos < 0)
+         error("! did not find set in Illegal command") ;
+      for (auto &i : illegal)
+         if (i.pos == rpos) {
+            i.mask |= 1LL << val ;
+            return ;
+         }
+      illegal.push_back(illegal_t({rpos, 1ULL << (val-1)})) ;
+   }
    void pow(const setval a, setval b, ll cnt) const ;
    void inv(const setval a, setval b) const ;
 } ;
@@ -350,13 +397,6 @@ void puzdef::inv(const setval a, setval b) const {
    }
 }
 vector<ll> fact ;
-string curline ;
-void error(string msg, string extra="") {
-   cerr << msg << extra << endl ;
-   if (curline.size() > 0)
-      cerr << "At: " << curline << endl ;
-   exit(10) ;
-}
 struct generatingset {
    generatingset(const puzdef &pd) ;
    const puzdef &pd ;
@@ -732,6 +772,13 @@ puzdef readdef(FILE *f) {
             for (int i=0; i<=4*sd.omod; i++)
                gmoda[sd.omod][i] = i % sd.omod ;
          }
+      } else if (toks[0] == "Illegal") {
+         if (state < 2)
+            error("! Illegal must be after solved") ;
+         // set name, position, value, value, value, value ...
+         for (int i=3; i<(int)toks.size(); i++)
+            pz.addillegal(toks[1].c_str(),
+                          getnumber(1, toks[2]), getnumber(1, toks[i])) ;
       } else if (toks[0] == "Solved") {
          if (state != 1)
             error("! Solved in wrong place") ;
@@ -1583,6 +1630,8 @@ void doarraygod(const puzdef &pd) {
             if (quarter && pd.moves[i].cost > 1)
                continue ;
             pd.mul(p1, pd.moves[i].pos, p2) ;
+            if (!pd.legalstate(p2))
+               continue ;
             loosepack(pd, p2, writer) ;
             writer += looseper ;
             if (writer >= lim)
@@ -1900,6 +1949,8 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
       if ((mask >> mv.cs) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      if (!pd.legalstate(posns[sp+1]))
+         continue ;
       dorecurgod(pd, togo-1, sp+1, ns[mv.cs]) ;
    }
 }
@@ -2828,6 +2879,8 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
    while (initmoves > 1) {
       int mv = initmoves % nmoves ;
       pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
+      if (!pd.legalstate(posns[sp+1]))
+         return 0 ;
       st = canonnext[st][pd.moves[mv].cs] ;
       sp++ ;
       togo-- ;
@@ -2891,6 +2944,8 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
       if ((mask >> mv.cs) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+      if (!pd.legalstate(posns[sp+1]))
+         continue ;
       r += filltable(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
    }
    return r ;
@@ -2944,6 +2999,8 @@ struct solveworker {
          if ((mask >> mv.cs) & 1)
             continue ;
          pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+         if (!pd.legalstate(posns[sp+1]))
+            continue ;
          movehist[sp] = m ;
          v = solverecur(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
          if (v == 1)
@@ -2965,6 +3022,8 @@ struct solveworker {
       while (initmoves > 1) {
          int mv = initmoves % nmoves ;
          pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
+         if (!pd.legalstate(posns[sp+1]))
+            return -1 ;
          movehist[sp] = mv ;
          st = canonnext[st][pd.moves[mv].cs] ;
          sp++ ;
@@ -3115,9 +3174,14 @@ void solvetest(puzdef &pd) {
    prunetable pt(pd, maxmem) ;
    while (1) {
       solve(pd, pt, p1) ;
-      int rmv = myrand(pd.moves.size()) ;
-      pd.mul(p1, pd.moves[rmv].pos, p2) ;
-      pd.assignpos(p1, p2) ;
+      while (1) {
+         int rmv = myrand(pd.moves.size()) ;
+         pd.mul(p1, pd.moves[rmv].pos, p2) ;
+         if (pd.legalstate(p2)) {
+            pd.assignpos(p1, p2) ;
+            break ;
+         }
+      }
    }
 }
 void domove(puzdef &pd, setval p, setval pos) {
