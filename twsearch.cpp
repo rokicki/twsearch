@@ -1596,6 +1596,15 @@ void doarraygod(const puzdef &pd) {
       s_2 = s_1 ;
       s_1 = levend ;
       reader = levend ;
+      if (s_2 != mem) {
+         ll drop = s_2 - mem ;
+         memmove(mem, s_2, (writer-s_2)*sizeof(loosetype)) ;
+         s_1 -= drop ;
+         s_2 -= drop ;
+         reader -= drop ;
+         writer -= drop ;
+         levend -= drop ;
+      }
    }
 }
 /*
