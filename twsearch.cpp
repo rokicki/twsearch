@@ -1099,6 +1099,60 @@ void denseunpack(const puzdef &pd, ull v, setval pos) {
 }
 vector<ull> cnts ;
 /*
+ *   Antipod recovery
+ */
+int looseper, looseiper ;
+ll antipodecount = 100 ;
+ll antipodeshave ;
+loosetype *antipodesloose ;
+ull *antipodesdense ;
+void emitposition(const puzdef &pd, setval p, const char *s) ;
+void looseunpack(const puzdef &pd, setval pos, loosetype *r) ;
+void showantipodes(const puzdef &pd, loosetype *beg, loosetype *end) {
+   ll t = (end - beg) / looseper ;
+   if (t > antipodecount)
+      t = antipodecount ;
+   antipodeshave = t ;
+   cout << "Showing " << antipodeshave << " antipodes." << endl ;
+   stacksetval pos(pd) ;
+   for (int i=0; i<antipodeshave; i++) {
+      looseunpack(pd, pos, beg+i*looseper) ;
+      emitposition(pd, pos, nullptr) ;
+   }
+}
+void showantipodesloose(const puzdef &pd) {
+   showantipodes(pd, antipodesloose, antipodesloose+looseper*antipodecount) ;
+}
+void showantipodesdense(const puzdef &pd) {
+   if (antipodesdense == 0)
+      error("! no antipodes?") ;
+   cout << "Showing " << antipodeshave << " antipodes." << endl ;
+   stacksetval pos(pd) ;
+   for (int i=0; i<antipodeshave; i++) {
+      denseunpack(pd, antipodesdense[i], pos) ;
+      emitposition(pd, pos, nullptr) ;
+   }
+}
+void stashantipodesloose(loosetype *beg, loosetype *end) {
+   if (end == beg)
+      return ;
+   if (antipodesloose == 0)
+      antipodesloose =
+               (loosetype *)calloc(antipodecount, looseper*sizeof(loosetype)) ;
+   ll t = (end - beg) / looseper ;
+   if (t > antipodecount)
+      t = antipodecount ;
+   antipodeshave = t ;
+   memcpy(antipodesloose, beg, antipodeshave * looseper * sizeof(loosetype)) ;
+}
+void stashantipodedense(ull val) {
+   if (antipodeshave < antipodecount) {
+      if (antipodesdense == 0)
+         antipodesdense = (ull *)calloc(antipodecount, sizeof(ull)) ;
+      antipodesdense[antipodeshave++] = val ;
+   }
+}
+/*
  *   God's algorithm using two bits per state.
  */
 void dotwobitgod(puzdef &pd) {
@@ -1145,6 +1199,7 @@ void dotwobitgod(puzdef &pd) {
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
+                  stashantipodedense(off) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
                   if (v == seek) {
                      newseen++ ;
@@ -1176,6 +1231,7 @@ void dotwobitgod(puzdef &pd) {
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
+                  stashantipodedense(off) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
                   if (v == 3) {
                      newseen++ ;
@@ -1188,6 +1244,7 @@ void dotwobitgod(puzdef &pd) {
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
+   showantipodesdense(pd) ;
 }
 /*
  *   God's algorithm using two bits per state, but we also try to decompose
@@ -1239,6 +1296,7 @@ void innerloop(int back, int seek, int newv, ull sofar, vector<ull> &muld) {
                int v2 = 3 & (mem[off2 >> 5] >> (2 * (off2 & 31))) ;
                if (v2 == seek) {
                   mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
+                  stashantipodedense(off) ;
                   newseen++ ;
                   break ;
                }
@@ -1261,6 +1319,7 @@ void innerloop(int back, int seek, int newv, ull sofar, vector<ull> &muld) {
                int v2 = 3 & (mem[off2 >> 5] >> (2 * (off2 & 31))) ;
                if (v2 == 3) {
                   mem[off2 >> 5] -= (3LL - newv) << (2 * (off2 & 31)) ;
+                  stashantipodedense(off2) ;
 // cout << "From " << off << " to " << off2 << endl ;
                   newseen++ ;
                }
@@ -1446,8 +1505,8 @@ void dotwobitgod2(puzdef &pd) {
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
+   showantipodesdense(pd) ;
 }
-int looseper, looseiper ;
 void calclooseper(const puzdef &pd) {
    int bits = 0, ibits = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
@@ -1655,6 +1714,10 @@ void doarraygod(const puzdef &pd) {
          levend -= drop ;
       }
    }
+   if (s_2 == writer)
+      showantipodes(pd, s_1, s_2) ;
+   else
+      showantipodes(pd, s_2, writer) ;
 }
 /*
  *   Do canonicalization calculations by finding commutating moves.
@@ -1983,11 +2046,13 @@ void doarraygod2(const puzdef &pd) {
            << duration() << endl << flush ;
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
+      stashantipodesloose(levend, writer) ;
       if (levend != s_2)
          qsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype), compare) ;
       s_1 = levend ;
       reader = levend ;
    }
+   showantipodesloose(pd) ;
 }
 map<ll, int> bestsofar ;
 const int HIWR = 4 ;
@@ -3184,7 +3249,7 @@ void solvetest(puzdef &pd) {
       }
    }
 }
-void domove(puzdef &pd, setval p, setval pos) {
+void domove(const puzdef &pd, setval p, setval pos) {
    stacksetval pt(pd) ;
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
@@ -3218,14 +3283,14 @@ int findmove(const puzdef &pd, string mvstring) {
 void domove(puzdef &pd, setval p, string mvstring) {
    domove(pd, p, findmove(pd, mvstring)) ;
 }
-void solveit(puzdef &pd, prunetable &pt, string scramblename, setval &p) {
+void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p) {
    if (scramblename.size())
       cout << "Solving " << scramblename << endl << flush ;
    else
       cout << "Solving" << endl << flush ;
    solve(pd, pt, p) ;
 }
-vector<int> parsemovelist(puzdef &pd, const char *scr) {
+vector<int> parsemovelist(const puzdef &pd, const char *scr) {
    vector<int> movelist ;
    string move ;
    for (const char *p=scr; *p; p++) {
@@ -3241,7 +3306,7 @@ vector<int> parsemovelist(puzdef &pd, const char *scr) {
       movelist.push_back(findmove(pd, move)) ;
    return movelist ;
 }
-vector<setval> parsemovelist_generously(puzdef &pd, const char *scr) {
+vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
    vector<setval> movelist ;
    string move ;
    for (const char *p=scr; *p; p++) {
@@ -3396,7 +3461,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
 }
 vector<loosetype> uniqwork ;
 set<vector<loosetype> > uniqseen ;
-void uniqit(puzdef &pd, setval p, const char *s) {
+void uniqit(const puzdef &pd, setval p, const char *s) {
    uniqwork.resize(looseper) ;
    loosepack(pd, p, &uniqwork[0]) ;
    if (uniqseen.find(uniqwork) == uniqseen.end()) {
@@ -3404,7 +3469,7 @@ void uniqit(puzdef &pd, setval p, const char *s) {
       cout << s << endl << flush ;
    }
 }
-void orderit(puzdef &pd, setval p, const char *s) {
+void orderit(const puzdef &pd, setval p, const char *s) {
    stacksetval p2(pd), p3(pd) ;
    pd.assignpos(p2, pd.solved) ;
    pd.mul(p2, p, p3) ;
@@ -3424,12 +3489,12 @@ void orderit(puzdef &pd, setval p, const char *s) {
       m++ ;
    }
 }
-void emitmp(puzdef &pd, setval p, const char *, int fixmoves) {
+void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
    uchar *a = p.dat ;
    if (fixmoves)
-      cout << "Move XXX" << endl ;
+      cout << "Move noname" << endl ;
    else
-      cout << "Scramble XXX" << endl ;
+      cout << "Scramble noname" << endl ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
@@ -3456,13 +3521,13 @@ void emitmp(puzdef &pd, setval p, const char *, int fixmoves) {
    }
    cout << "End" << endl ;
 }
-void emitmove(puzdef &pd, setval p, const char *s) {
+void emitmove(const puzdef &pd, setval p, const char *s) {
    emitmp(pd, p, s, 1) ;
 }
-void emitposition(puzdef &pd, setval p, const char *s) {
+void emitposition(const puzdef &pd, setval p, const char *s) {
    emitmp(pd, p, s, 0) ;
 }
-void showrandompos(puzdef &pd) {
+void showrandompos(const puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
    for (int i=0; i<500; i++) {
@@ -3475,7 +3540,7 @@ void showrandompos(puzdef &pd) {
 }
 // basic infrastructure for walking a set of sequences
 int globalinputmovecount = 0 ;
-void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
+void processlines(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) {
    string s ;
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
@@ -3488,7 +3553,7 @@ void processlines(puzdef &pd, function<void(puzdef &, setval, const char *)> f) 
       f(pd, p1, s.c_str()) ;
    }
 }
-void processlines2(puzdef &pd, function<void(puzdef &, setval, const char *)> f) {
+void processlines2(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) {
    string s ;
    stacksetval p1(pd) ;
    while (getline(cin, s)) {
@@ -3819,14 +3884,18 @@ default:
    showcanon(pd, docanon) ;
 //   gensymm(pd) ;
    if (dogod) {
-      int statesfit = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem ;
-      if (forcearray || statesfit) {
-         if (statesfit && pd.canpackdense()) {
-            dotwobitgod2(pd) ;
-         } else { // fits in RAM but can't pack dense; probably use this
-            doarraygod(pd) ;
-         }
+      int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem ;
+      int statesfitsa = forcearray ||
+          (pd.logstates <= 50 &&
+             ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
+      if (statesfit2 && pd.canpackdense()) {
+         cout << "Using twobit arrays." << endl ;
+         dotwobitgod2(pd) ;
+      } else if (statesfitsa) {
+         cout << "Using sorting bfs and arrays." << endl ;
+         doarraygod(pd) ;
       } else {
+         cout << "Using canonical sequences and arrays." << endl ;
          doarraygod2(pd) ;
       }
    }
@@ -3853,7 +3922,7 @@ default:
    if (dosolvelines) {
       prunetable pt(pd, maxmem) ;
       string emptys ;
-      processlines(pd, [&](puzdef &pd, setval p, const char *) {
+      processlines(pd, [&](const puzdef &pd, setval p, const char *) {
                           solveit(pd, pt, emptys, p) ;
                        }) ;
    }
@@ -3866,7 +3935,7 @@ default:
       stacksetval scr(pd) ;
       readfirstscramble(f, pd, scr) ;
       prunetable pt(pd, maxmem) ;
-      processlines2(pd, [&](puzdef &pd, setval p1sol, const char *p1str) {
+      processlines2(pd, [&](const puzdef &pd, setval p1sol, const char *p1str) {
                                dophase2(pd, scr, p1sol, pt, p1str); }) ;
       fclose(f) ;
    } else if (argc > 2) {
