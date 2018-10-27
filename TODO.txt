@@ -1,5 +1,10 @@
 Things to do with twsearch:
 
+* When using illegal (square one) adjust way we balance pruning table
+  generation and search.
+
+* Parallelize -g -F God's number search (both search and sort).
+
 * Switch from drand48()/srand48() to new C++ random number generators.
 
 * Speed up pruning table generation when ignore pieces or many identical
