@@ -1102,7 +1102,7 @@ vector<ull> cnts ;
  *   Antipod recovery
  */
 int looseper, looseiper ;
-ll antipodecount = 100 ;
+ll antipodecount = 20 ;
 ll antipodeshave ;
 loosetype *antipodesloose ;
 ull *antipodesdense ;
@@ -1189,7 +1189,7 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
 #else
             for (int smi=1; checkv; smi++) {
-               if ((checkv >> (smi-1)) & 1)
+               if (0 == ((checkv >> (smi-1)) & 1))
                   continue ;
 #endif
                checkv -= 1LL << (smi-1) ;
@@ -1221,7 +1221,7 @@ void dotwobitgod(puzdef &pd) {
             for (int smi=ffsll(checkv); checkv; smi=ffsll(checkv)) {
 #else
             for (int smi=1; checkv; smi++) {
-               if ((checkv >> (smi-1)) & 1)
+               if (0 == ((checkv >> (smi-1)) & 1))
                   continue ;
 #endif
                checkv -= 1LL << (smi-1) ;
@@ -3807,6 +3807,11 @@ case 'C':
             break ;
 case 'F':
             forcearray++ ;
+            break ;
+case 'a':
+            antipodecount = atoll(argv[1]) ;
+            argc-- ;
+            argv++ ;
             break ;
 case 'A':
             if (argv[0][2] == 0 || argv[0][2] == '1')
