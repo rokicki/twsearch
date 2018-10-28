@@ -1104,6 +1104,7 @@ vector<ull> cnts ;
 int looseper, looseiper ;
 ll antipodecount = 20 ;
 ll antipodeshave ;
+int resetonnewantipode = 0 ;
 loosetype *antipodesloose ;
 ull *antipodesdense ;
 void emitposition(const puzdef &pd, setval p, const char *s) ;
@@ -1119,6 +1120,9 @@ void showantipodes(const puzdef &pd, loosetype *beg, loosetype *end) {
       looseunpack(pd, pos, beg+i*looseper) ;
       emitposition(pd, pos, nullptr) ;
    }
+}
+void resetantipodes() {
+   resetonnewantipode = 1 ;
 }
 void showantipodesloose(const puzdef &pd) {
    showantipodes(pd, antipodesloose, antipodesloose+looseper*antipodecount) ;
@@ -1146,6 +1150,10 @@ void stashantipodesloose(loosetype *beg, loosetype *end) {
    memcpy(antipodesloose, beg, antipodeshave * looseper * sizeof(loosetype)) ;
 }
 void stashantipodedense(ull val) {
+   if (resetonnewantipode) {
+      antipodeshave = 0 ;
+      resetonnewantipode = 0 ;
+   }
    if (antipodeshave < antipodecount) {
       if (antipodesdense == 0)
          antipodesdense = (ull *)calloc(antipodecount, sizeof(ull)) ;
@@ -1170,6 +1178,7 @@ void dotwobitgod(puzdef &pd) {
    cnts.push_back(1) ;
    ull tot = 1 ;
    for (int d = 0; ; d++) {
+      resetantipodes() ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
       if (cnts[d] == 0 || tot == pd.llstates)
