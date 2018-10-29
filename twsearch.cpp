@@ -1499,6 +1499,7 @@ void dotwobitgod2(puzdef &pd) {
    cnts.push_back(1) ;
    ull tot = 1 ;
    for (int d = 0; ; d++) {
+      resetantipodes() ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
       if (cnts[d] == 0 || tot == pd.llstates)
@@ -1723,10 +1724,11 @@ void doarraygod(const puzdef &pd) {
          levend -= drop ;
       }
    }
-   if (s_2 == writer)
-      showantipodes(pd, s_1, s_2) ;
-   else
-      showantipodes(pd, s_2, writer) ;
+   if (s_1 == writer) {
+      showantipodes(pd, s_2, s_1) ;
+   } else {
+      showantipodes(pd, s_1, writer) ;
+   }
 }
 /*
  *   Do canonicalization calculations by finding commutating moves.
@@ -2053,9 +2055,10 @@ void doarraygod2(const puzdef &pd) {
       tot += newseen ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
+      if (cnts[d] > 0)
+         stashantipodesloose(levend, writer) ;
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
-      stashantipodesloose(levend, writer) ;
       if (levend != s_2)
          qsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype), compare) ;
       s_1 = levend ;
