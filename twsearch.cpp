@@ -1208,10 +1208,10 @@ void dotwobitgod(puzdef &pd) {
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
-                  stashantipodedense(off) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
                   if (v == seek) {
                      newseen++ ;
+                     stashantipodedense((bigi << 5) + (smi >> 1)) ;
                      mem[bigi] -= (3LL - newv) << (smi-1) ;
                      break ;
                   }
@@ -1240,10 +1240,10 @@ void dotwobitgod(puzdef &pd) {
                      continue ;
                   pd.mul(p1, pd.moves[i].pos, p2) ;
                   off = densepack(pd, p2) ;
-                  stashantipodedense(off) ;
                   int v = 3 & (mem[off >> 5] >> (2 * (off & 31))) ;
                   if (v == 3) {
                      newseen++ ;
+                     stashantipodedense(off) ;
                      mem[off >> 5] -= (3LL - newv) << (2 * (off & 31)) ;
                   }
                }
@@ -1515,7 +1515,8 @@ void dotwobitgod2(puzdef &pd) {
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
-   showantipodesdense(pd) ;
+   cout << "Not showing antipodes with this fast mode of calculation." << endl ;
+// showantipodesdense(pd) ;
 }
 void calclooseper(const puzdef &pd) {
    int bits = 0, ibits = 0 ;
