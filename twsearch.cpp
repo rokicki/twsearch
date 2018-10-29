@@ -1109,6 +1109,7 @@ loosetype *antipodesloose ;
 ull *antipodesdense ;
 void emitposition(const puzdef &pd, setval p, const char *s) ;
 void looseunpack(const puzdef &pd, setval pos, loosetype *r) ;
+ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) ;
 void showantipodes(const puzdef &pd, loosetype *beg, loosetype *end) {
    ll t = (end - beg) / looseper ;
    if (t > antipodecount)
@@ -1127,13 +1128,16 @@ void resetantipodes() {
 void showantipodesloose(const puzdef &pd) {
    showantipodes(pd, antipodesloose, antipodesloose+looseper*antipodecount) ;
 }
-void showantipodesdense(const puzdef &pd) {
+void showantipodesdense(const puzdef &pd, int ordered) {
    if (antipodesdense == 0)
       error("! no antipodes?") ;
    cout << "Showing " << antipodeshave << " antipodes." << endl ;
    stacksetval pos(pd) ;
    for (int i=0; i<antipodeshave; i++) {
-      denseunpack(pd, antipodesdense[i], pos) ;
+      if (ordered)
+         denseunpack_ordered(pd, antipodesdense[i], pos) ;
+      else
+         denseunpack(pd, antipodesdense[i], pos) ;
       emitposition(pd, pos, nullptr) ;
    }
 }
@@ -1253,7 +1257,7 @@ void dotwobitgod(puzdef &pd) {
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
-   showantipodesdense(pd) ;
+   showantipodesdense(pd, 0) ;
 }
 /*
  *   God's algorithm using two bits per state, but we also try to decompose
@@ -1283,6 +1287,32 @@ ull densepack_ordered(const puzdef &pd, setval pos) {
             r = permtoindex2(p, n) + sd.llperms * r ;
          else
             r = permtoindex(p, n) + sd.llperms * r ;
+      }
+   }
+   return r ;
+}
+ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) {
+   ull r = 0 ;
+   for (int ii=(int)parts.size()-1; ii>=0; ii--) {
+      int sdpair = parts[ii].second ;
+      const setdef &sd = pd.setdefs[sdpair>>1] ;
+      int n = sd.size ;
+      if (sdpair & 1) {
+         uchar *p = pos.dat + sd.off + sd.size ;
+         ull nv = v / sd.llords ;
+         if (sd.oparity)
+            indextoords2(p, v - nv * sd.llords, sd.omod, n) ;
+         else
+            indextoords(p, v - nv * sd.llords, sd.omod, n) ;
+         v = nv ;
+      } else {
+         uchar *p = pos.dat + sd.off ;
+         ull nv = v / sd.llperms ;
+         if (sd.pparity)
+            indextoperm2(p, v - nv * sd.llperms, n) ;
+         else
+            indextoperm(p, v - nv * sd.llperms, n) ;
+         v = nv ;
       }
    }
    return r ;
@@ -1515,8 +1545,7 @@ void dotwobitgod2(puzdef &pd) {
       cnts.push_back(newseen) ;
       tot += newseen ;
    }
-   cout << "Not showing antipodes with this fast mode of calculation." << endl ;
-// showantipodesdense(pd) ;
+   showantipodesdense(pd, 1) ;
 }
 void calclooseper(const puzdef &pd) {
    int bits = 0, ibits = 0 ;
