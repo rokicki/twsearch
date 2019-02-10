@@ -1,10 +1,11 @@
+#include <cstdlib>
+#include <iostream>
+#include <algorithm>
 #include "god.h"
 #include "index.h"
 #include "antipode.h"
 #include "readksolve.h"
 #include "canon.h"
-#include <cstdlib>
-#include <iostream>
 /*
  *   God's algorithm using two bits per state.
  */

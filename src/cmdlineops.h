@@ -1,6 +1,7 @@
 #ifndef CMDLINEOPS_H
 #include <cstdio>
 #include <set>
+#include <functional>
 #include "puzdef.h"
 void solvecmdline(puzdef &pd, const char *scr) ;
 void processscrambles(FILE *f, puzdef &pd) ;
