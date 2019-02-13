@@ -1,5 +1,9 @@
 #ifndef GOD_H
 #include "puzdef.h"
+/*
+ *   This file contains various implementations of God's algorithm,
+ *   depending on the size and complexity of the puzzle.
+ */
 extern vector<ull> cnts ;
 extern ull symcoordgoal ;
 void dotwobitgod(puzdef &pd) ;

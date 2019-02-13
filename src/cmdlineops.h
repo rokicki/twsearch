@@ -3,6 +3,11 @@
 #include <set>
 #include <functional>
 #include "puzdef.h"
+/*
+ *   The twsearch program also includes a number of utility operations,
+ *   such as uniquifying a set of positions.  These routines support
+ *   streaming a sequence of positions through various operations.
+ */
 void solvecmdline(puzdef &pd, const char *scr) ;
 void processscrambles(FILE *f, puzdef &pd) ;
 void readfirstscramble(FILE *f, puzdef &pd, setval sv) ;

@@ -1,5 +1,10 @@
 #ifndef INDEX_H
 #include "puzdef.h"
+/*
+ *   These are all the routines that convert a puzzle state or position
+ *   into a compact encoding.  Some of these are dense and others are
+ *   less dense but faster.
+ */
 extern vector<pair<ull, int> > parts ;
 extern int looseper, looseiper ;
 void calclooseper(const puzdef &pd) ;
