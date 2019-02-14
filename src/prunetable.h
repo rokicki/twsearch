@@ -3,6 +3,19 @@
 #include "threads.h"
 #include "workchunks.h"
 #include "canon.h"
+/*
+ *   This code supports pruning tables for arbitrary puzzles.  Memory
+ *   consumption is a power of two.  Each table entry is two bits.
+ *   There is an in-cache-line sub-table with four bits.  So each
+ *   64-byte cache line has a 4-bit subentry and 510 "regular" entries.
+ *
+ *   For the two-bit entries, 0 means look at the subentry, 1 means the
+ *   value is the current base, 2 means the value is base+1, and 3
+ *   means the value is at least base+2.  The base changes as the
+ *   pruning table is filled more, level by level.
+ *
+ *   The hash table permits collisions (stores the minimum).
+ */
 const int CACHELINESIZE = 64 ;
 const int SIGNATURE = 22 ; // start and end of data files
 extern string inputbasename ;

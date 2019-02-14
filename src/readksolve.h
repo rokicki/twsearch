@@ -1,6 +1,10 @@
 #ifndef READKSOLVE_H
 #include <cstdio>
 #include "puzdef.h"
+/*
+ *   This code manages parsing a tws file (an extension of the ksolve
+ *   format).
+ */
 vector<string> getline(FILE *f, ull &checksum) ;
 void expect(const vector<string> &toks, int cnt) ;
 int getnumber(int minval, const string &s) ;

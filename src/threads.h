@@ -1,5 +1,10 @@
 #ifndef THREADS_H
 #include <pthread.h>
+/*
+ *   Basic threading primitives using pthread.  Right now we statically
+ *   limit the number of threads, but there's really no good reason to
+ *   do this but laziness.
+ */
 void init_mutex() ;
 void get_global_lock() ;
 void release_global_lock() ;

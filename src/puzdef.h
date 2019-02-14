@@ -3,6 +3,16 @@
 #include <math.h>
 #include "util.h"
 using namespace std ;
+/*
+ *   This is the core code, where we store a puzzle definition and
+ *   the values for a puzzle.  The puzzle definition is a sequence
+ *   of sets.  Each set has a permutation and orientation component.
+ *   Values are stored as a sequence of uchars; first comes the
+ *   permutation component and then the orientation component.
+ *
+ *   Right now the code is simple and general; it is likely we can
+ *   gain a fair bit by specializing specific cases.
+ */
 extern double dllstates ;
 extern uchar *gmoda[256] ;
 struct setdef {

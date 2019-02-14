@@ -2,6 +2,10 @@
 #include <string>
 #include <cstring>
 using namespace std ;
+/*
+ *   A bunch of silly utility routines to make our life easier, and a few
+ *   (ughh) globals.
+ */
 typedef long long ll ;
 typedef unsigned long long ull ;
 typedef unsigned char uchar ;

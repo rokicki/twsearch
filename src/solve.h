@@ -4,6 +4,11 @@
 #include "canon.h"
 #include "threads.h"
 #include "generatingset.h"
+/*
+ *   Routines to use iterated depth-first searching to solve a particular
+ *   position (and the required code to distribute the work across
+ *   multiple threads).
+ */
 extern ull solutionsfound, solutionsneeded ;
 extern int noearlysolutions ;
 extern int phase2 ;
