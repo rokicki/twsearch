@@ -1,4 +1,5 @@
 #include "readksolve.h"
+#include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori ;
 vector<string> getline(FILE *f, ull &checksum) {
@@ -277,8 +278,13 @@ puzdef readdef(FILE *f) {
          m.pos = readposition(pz, 'm', f, checksum) ;
          m.cost = 1 ;
          m.twist = 1 ;
-         m.base = pz.moves.size() ;
-         pz.moves.push_back(m) ;
+         if (isrotation(m.name)) {
+            m.base = pz.rotations.size() ;
+            pz.rotations.push_back(m) ;
+         } else {
+            m.base = pz.moves.size() ;
+            pz.moves.push_back(m) ;
+         }
       } else {
          error("! unexpected first token on line ", toks[0]) ;
       }

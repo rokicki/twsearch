@@ -67,3 +67,16 @@ vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
       movelist.push_back(findmove_generously(pd, move)) ;
    return movelist ;
 }
+/*
+ *   A rotation is always a grip (uppercase) followed only by 'p'.  There
+ *   must not be a prefix or additional suffix.
+ */
+int isrotation(const char *mv) {
+   const char *q = mv ;
+   while ('A' <= *q && *q <= 'Z')
+      q++ ;
+   if (*q != 'p' || q[1] != 0 || mv == q)
+      return 0 ;
+   else
+      return 1 ;
+}

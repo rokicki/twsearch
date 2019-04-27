@@ -63,7 +63,7 @@ struct puzdef {
    const char *name ;
    setdefs_t setdefs ;
    setval solved ;
-   vector<moove> basemoves, moves, parsemoves ;
+   vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
    vector<int> basemoveorders ;
    int totsize ;
    int ncs ;

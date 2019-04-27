@@ -6,6 +6,7 @@
 #include "antipode.h"
 #include "readksolve.h"
 #include "canon.h"
+#include "rotations.h"
 /*
  *   God's algorithm using two bits per state.
  */
@@ -507,4 +508,69 @@ void doarraygod2(const puzdef &pd) {
       reader = levend ;
    }
    showantipodesloose(pd) ;
+}
+/*
+ *   God's algorithm using symmetry reduction.
+ */
+void doarraygodsymm(const puzdef &pd) {
+   ull memneeded = maxmem ;
+   loosetype *mem = (loosetype *)malloc(memneeded) ;
+   if (mem == 0)
+      error("! not enough memory") ;
+   stacksetval p1(pd), p2(pd), p3(pd) ;
+   pd.assignpos(p2, pd.solved) ;
+   slowmodm(pd, p2, p1) ;
+   loosepack(pd, p1, mem) ;
+   cnts.clear() ;
+   cnts.push_back(1) ;
+   ull tot = 1 ;
+   loosetype *lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
+   loosetype *reader = mem ;
+   loosetype *writer = mem + looseper ;
+   loosetype *s_1 = mem ;
+   loosetype *s_2 = mem ;
+   for (int d = 0; ; d++) {
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+           << duration() << endl << flush ;
+      if (cnts[d] == 0 || tot == pd.llstates)
+         break ;
+      ull newseen = 0 ;
+      loosetype *levend = writer ;
+      for (loosetype *pr=reader; pr<levend; pr += looseper) {
+         looseunpack(pd, p1, pr) ;
+         for (int i=0; i<(int)pd.moves.size(); i++) {
+            if (quarter && pd.moves[i].cost > 1)
+               continue ;
+            pd.mul(p1, pd.moves[i].pos, p2) ;
+            if (!pd.legalstate(p2))
+               continue ;
+            slowmodm(pd, p2, p3) ;
+            loosepack(pd, p3, writer) ;
+            writer += looseper ;
+            if (writer >= lim)
+               writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+         }
+      }
+      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      newseen = (writer - levend) / looseper ;
+      cnts.push_back(newseen) ;
+      tot += newseen ;
+      s_2 = s_1 ;
+      s_1 = levend ;
+      reader = levend ;
+      if (s_2 != mem) {
+         ll drop = s_2 - mem ;
+         memmove(mem, s_2, (writer-s_2)*sizeof(loosetype)) ;
+         s_1 -= drop ;
+         s_2 -= drop ;
+         reader -= drop ;
+         writer -= drop ;
+         levend -= drop ;
+      }
+   }
+   if (s_1 == writer) {
+      showantipodes(pd, s_2, s_1) ;
+   } else {
+      showantipodes(pd, s_1, writer) ;
+   }
 }

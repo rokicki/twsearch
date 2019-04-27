@@ -24,6 +24,7 @@
 #include "filtermoves.h"
 #include "parsemoves.h"
 #include "cmdlineops.h"
+#include "rotations.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -229,6 +230,8 @@ default:
       showrandompos(pd) ;
       return 0 ;
    }
+   if (pd.rotations.size())
+      calcrotations(pd) ;
    calculatesizes(pd) ;
    calclooseper(pd) ;
    if (ccount == 0)
@@ -247,8 +250,13 @@ default:
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
-         cout << "Using sorting bfs and arrays." << endl ;
-         doarraygod(pd) ;
+         if (pd.rotations.size()) {
+            cout << "Using sorting bfs symm and arrays." << endl ;
+            doarraygodsymm(pd) ;
+         } else {
+            cout << "Using sorting bfs and arrays." << endl ;
+            doarraygod(pd) ;
+         }
       } else {
          cout << "Using canonical sequences and arrays." << endl ;
          doarraygod2(pd) ;
