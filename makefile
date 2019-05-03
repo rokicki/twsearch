@@ -1,6 +1,6 @@
 all: twsearch
 
-CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native
+CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
 FLAGS = -DHAVE_FFSLL -Isrc -Isrc/cityhash/src
 
 CSOURCE = src/antipode.cpp src/calcsymm.cpp src/canon.cpp src/cmdlineops.cpp \

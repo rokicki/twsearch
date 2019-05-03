@@ -120,6 +120,50 @@ struct puzdef {
          cp += n ;
       }
    }
+   // does a multiplication and a comparison at the same time.
+   // c must be initialized already.
+   int mulcmp(const setval a, const setval b, setval c) const {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      uchar *cp = c.dat ;
+      int r = 0 ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++) {
+            int nv = ap[bp[j]] ;
+            if (r > 0)
+               cp[j] = nv ;
+            else if (nv > cp[j])
+               return 1 ;
+            else if (nv < cp[j]) {
+               r = 1 ;
+               cp[j] = nv ;
+            }
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         if (sd.omod > 1) {
+            uchar *moda = gmoda[sd.omod] ;
+            for (int j=0; j<n; j++) {
+               int nv = moda[ap[bp[j-n]]+bp[j]] ;
+               if (r > 0)
+                  cp[j] = nv ;
+               else if (nv > cp[j])
+                  return 1 ;
+               else if (nv < cp[j]) {
+                  r = 1 ;
+                  cp[j] = nv ;
+               }
+            }
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+      }
+      return -r ;
+   }
    int legalstate(const setval a) const {
       if (!haveillegal)
          return 1 ;
