@@ -59,6 +59,8 @@ int slowmodm(const puzdef &pd, const setval p1, setval p2) {
    for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
       pd.mul(pd.rotgroup[m1].pos, p1, s1) ;
       for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
+         if (s1.dat[pd.rotgroup[m2].pos.dat[0]] > s2.dat[0])
+            continue ;
          pd.mul(s1, pd.rotgroup[m2].pos, s2) ;
          int t = pd.comparepos(p2, s2) ;
 //       cout << "Comparing (" << t << ")" ; showpos(pd, s2) ;
