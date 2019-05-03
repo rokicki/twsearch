@@ -120,7 +120,7 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       cout << "   " << pd.setdefs[i].name << endl ;
-      cout << "   " ;
+      cout << "  " ;
       for (int i=0; i<n; i++)
          cout << " "  << (int)(a[i]+1) ;
       cout << endl ;

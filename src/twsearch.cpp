@@ -246,7 +246,7 @@ default:
       int statesfitsa = forcearray ||
           (pd.logstates <= 50 &&
              ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
-      if (statesfit2 && pd.canpackdense()) {
+      if (statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
