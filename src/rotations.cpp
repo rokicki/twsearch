@@ -55,17 +55,21 @@ void showpos(const puzdef &pd, const setval s) {
 int slowmodm(const puzdef &pd, const setval p1, setval p2) {
    int cnt = -1 ;
    stacksetval s1(pd), s2(pd) ;
+   int v0 = 1000 ;
 // cout << "Doing " ; showpos(pd, p1) ;
    for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
       pd.mul(pd.rotgroup[m1].pos, p1, s1) ;
       for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
-         if (s1.dat[pd.rotgroup[m2].pos.dat[0]] > s2.dat[0])
+         if (s1.dat[pd.rotgroup[m2].pos.dat[0]] > v0)
             continue ;
          pd.mul(s1, pd.rotgroup[m2].pos, s2) ;
-         int t = pd.comparepos(p2, s2) ;
+         int t = 1 ;
+         if (cnt > 0)
+            t = pd.comparepos(p2, s2) ;
 //       cout << "Comparing (" << t << ")" ; showpos(pd, s2) ;
          if (cnt < 0 || t > 0) {
             pd.assignpos(p2, s2) ;
+            v0 = s2.dat[0] ;
             cnt = 1 ;
          } else if (t == 0) {
             cnt++ ;
