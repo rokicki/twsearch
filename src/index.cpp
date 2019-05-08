@@ -220,12 +220,19 @@ void calclooseper(const puzdef &pd) {
          ibits += sd.obits * n ;
       }
    }
+   // if we are doing symmetry reductions add a single bit to mark
+   // symmetric states.  After reduction mod m and uniqification, we
+   // will recalculate the symmetries for any symmetric states.
+   basebits = bits ;
+   if (pd.rotations.size() > 0)
+      bits++ ;
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
    looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
-   cout << "Requiring " << looseper*sizeof(loosetype) << " bytes per entry; "
-              << (looseiper*sizeof(loosetype)) << " from identity." << endl ;
+   cout << "Requiring " << bits << " bits " << looseper*sizeof(loosetype)
+        << " bytes per entry; " << (looseiper*sizeof(loosetype))
+        << " from identity." << endl ;
 }
-void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid) {
+void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) {
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -259,6 +266,15 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid) {
          }
       }
       p += n ;
+   }
+   if (pd.rotations.size() > 0 && sym) {
+      if (1 + storedbits > 64) {
+         *w++ = accum ;
+         accum >>= BITSPERLOOSE ;
+         storedbits -= BITSPERLOOSE ;
+      }
+      accum += 1LL << storedbits ;
+      storedbits++ ;
    }
    while (storedbits > 0) {
       *w++ = accum ;

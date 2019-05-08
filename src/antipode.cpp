@@ -1,7 +1,7 @@
 #include "antipode.h"
 #include "index.h"
 #include <iostream>
-int looseper, looseiper ;
+int looseper, looseiper, basebits ;
 ll antipodecount = 20 ;
 ll antipodeshave ;
 int resetonnewantipode = 0 ;

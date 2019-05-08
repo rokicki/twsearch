@@ -10,7 +10,7 @@
 /*
  *   God's algorithm using two bits per state.
  */
-vector<ull> cnts ;
+vector<ull> cnts, scnts ;
 void dotwobitgod(puzdef &pd) {
    ull nlongs = (pd.llstates + 31) >> 5 ;
    ull memneeded = nlongs * 8 ;
@@ -510,6 +510,33 @@ void doarraygod2(const puzdef &pd) {
    showantipodesloose(pd) ;
 }
 /*
+ *   Given a sequence of loosepacked states, calculate the total number
+ *   of states represented by these, unpacking the symmetry.
+ */
+ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
+   int symoff = basebits / (sizeof(loosetype) * 8) ;
+   loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1))) ;
+   int rots = pd.rotgroup.size() ;
+   vector<int> rotmul(rots+1) ;
+   for (int i=1; i*i<=rots; i++)
+      if (rots % i == 0) {
+         rotmul[i] = rots / i ;
+         rotmul[rots/i] = i ;
+      }
+   ull r = cnt * rots ;
+   stacksetval p1(pd), p2(pd) ;
+   for (ull i=0; i<cnt; i++, p+=looseper) {
+      if (p[symoff] & symbit) {
+         looseunpack(pd, p1, p) ;
+         int sym = slowmodm(pd, p1, p2) ;
+         if (rotmul[sym] == 0 || rotmul[sym] > rots)
+            error("! bad symmetry calculation") ;
+         r += rotmul[sym] - rots ;
+      }
+   }
+   return r ;
+}
+/*
  *   God's algorithm using symmetry reduction.
  */
 void doarraygodsymm(const puzdef &pd) {
@@ -519,18 +546,22 @@ void doarraygodsymm(const puzdef &pd) {
       error("! not enough memory") ;
    stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p2, pd.solved) ;
-   slowmodm(pd, p2, p1) ;
-   loosepack(pd, p1, mem) ;
+   int sym = slowmodm(pd, p2, p1) ;
+   loosepack(pd, p1, mem, 0, sym>1) ;
    cnts.clear() ;
    cnts.push_back(1) ;
+   scnts.clear() ;
+   scnts.push_back(1) ;
    ull tot = 1 ;
+   ull stot = 1 ;
    loosetype *lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
    loosetype *reader = mem ;
    loosetype *writer = mem + looseper ;
    loosetype *s_1 = mem ;
    loosetype *s_2 = mem ;
    for (int d = 0; ; d++) {
-      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+      cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot
+           << " scnt " << scnts[d] << " stot " << stot << " in "
            << duration() << endl << flush ;
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
@@ -544,8 +575,8 @@ void doarraygodsymm(const puzdef &pd) {
             pd.mul(p1, pd.moves[i].pos, p2) ;
             if (!pd.legalstate(p2))
                continue ;
-            slowmodm(pd, p2, p3) ;
-            loosepack(pd, p3, writer) ;
+            sym = slowmodm(pd, p2, p3) ;
+            loosepack(pd, p3, writer, 0, sym>1) ;
             writer += looseper ;
             if (writer >= lim)
                writer = sortuniq(s_2, s_1, levend, writer, 1) ;
@@ -555,6 +586,9 @@ void doarraygodsymm(const puzdef &pd) {
       newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
       tot += newseen ;
+      ull newsseen = calcsymseen(pd, levend, newseen) ;
+      scnts.push_back(newsseen) ;
+      stot += newsseen ;
       s_2 = s_1 ;
       s_1 = levend ;
       reader = levend ;
