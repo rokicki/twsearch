@@ -54,6 +54,7 @@ int main(int argc, const char **argv) {
    int seed = 0 ;
    int forcearray = 0 ;
    init_util() ;
+   init_threads() ;
    cout << "# This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
    cout << "#" ;
    for (int i=0; i<argc; i++)
