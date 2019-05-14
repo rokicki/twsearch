@@ -5,6 +5,7 @@
 #include "solve.h"
 #include "readksolve.h"
 #include "index.h"
+#include "rotations.h"
 void solvecmdline(puzdef &pd, const char *scr) {
    stacksetval p1(pd) ;
    pd.assignpos(p1, pd.solved) ;
@@ -89,6 +90,11 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
       uniqseen.insert(uniqwork) ;
       cout << s << endl << flush ;
    }
+}
+void symsit(const puzdef &pd, setval p, const char *s) {
+   stacksetval p2(pd) ;
+   int symval = slowmodm(pd, p, p2) ;
+   cout << s << ": " << symval << endl ;
 }
 void orderit(const puzdef &pd, setval p, const char *s) {
    stacksetval p2(pd), p3(pd) ;

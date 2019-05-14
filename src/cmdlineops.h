@@ -14,6 +14,7 @@ void readfirstscramble(FILE *f, puzdef &pd, setval sv) ;
 extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;
 void uniqit(const puzdef &pd, setval p, const char *s) ;
+void symsit(const puzdef &pd, setval p, const char *s) ;
 void orderit(const puzdef &pd, setval p, const char *s) ;
 void emitmove(const puzdef &pd, setval p, const char *s) ;
 void emitposition(const puzdef &pd, setval p, const char *s) ;

@@ -47,7 +47,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    checksolvable, doss ;
+    checksolvable, doss, dosyms ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -98,6 +98,8 @@ int main(int argc, const char **argv) {
             argv++ ;
          } else if (strcmp(argv[0], "--schreiersims") == 0) {
             doss = 1 ;
+         } else if (strcmp(argv[0], "--showsymmetry") == 0) {
+            dosyms = 1 ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -277,6 +279,8 @@ default:
       solvecmdline(pd, scramblealgo) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (dosyms)
+      processlines(pd, symsit) ;
    if (doorder)
       processlines2(pd, orderit) ;
    if (doshowmoves)
