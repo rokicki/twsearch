@@ -2,7 +2,7 @@
 #include <iostream>
 #include "canon.h"
 #include "findalgo.h"
-map<ll, int> bestsofar ;
+map<ll, ll> bestsofar ;
 const int HIWR = 4 ;
 ll extendkey(ll k, int nwr, int npwr) {
    return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
@@ -70,7 +70,7 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
                key = extendkey(key, pd.numwrong(posns[sp+1], pd.id, 1LL << i),
                                 pd.permwrong(posns[sp+1], pd.id, 1LL << i)) ;
             }
-            int mvs = o / pp * sp ;
+            ll mvs = o / pp * sp ;
             if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
                continue ;
             bestsofar[key] = mvs ;
