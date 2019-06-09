@@ -138,8 +138,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
          return d ;
       }
       double dur = duration() ;
-      if (verbose && dur > 1)
-         cout << "Depth " << d << " finished in " << dur << endl << flush ;
+      if (verbose) {
+         if (verbose > 1 || dur > 1)
+            cout << "Depth " << d << " finished in " << dur << endl << flush ;
+      }
       pt.checkextend(pd) ; // fill table up a bit more if needed
    }
    if (!phase2)
