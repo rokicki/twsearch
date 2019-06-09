@@ -418,7 +418,7 @@ void doarraygod(const puzdef &pd) {
                continue ;
             loosepack(pd, p2, writer) ;
             writer += looseper ;
-            if (writer >= lim)
+            if (writer + looseper >= lim)
                writer = sortuniq(s_2, s_1, levend, writer, 1) ;
          }
       }
@@ -455,7 +455,7 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       loosepack(pd, posns[sp], writer) ;
       writer += looseper ;
-      if (writer >= lim)
+      if (writer + looseper >= lim)
          writer = sortuniq(s_2, s_1, levend, writer, 1) ;
       return ;
    }
@@ -578,7 +578,7 @@ void doarraygodsymm(const puzdef &pd) {
             sym = slowmodm(pd, p2, p3) ;
             loosepack(pd, p3, writer, 0, sym>1) ;
             writer += looseper ;
-            if (writer >= lim)
+            if (writer + looseper >= lim)
                writer = sortuniq(s_2, s_1, levend, writer, 1) ;
          }
       }
