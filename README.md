@@ -35,6 +35,7 @@ What is working so far:
 
 Things to do:
 
+* Add algebraic support for when reading scrambles
 * Symmetry reduction
 * Add grip information; derive moves according to SiGN
 * Print antipodes on two-bit God's algorithm
