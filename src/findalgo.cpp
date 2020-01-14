@@ -158,14 +158,18 @@ void recurfindalgo3a(const puzdef &pd, int togo, int sp, int st, int b) {
    }
 }
 void findalgos1(const puzdef &pd, int d) {
+   posns.clear() ;
+   movehist.clear() ;
    while ((int)posns.size() <= d + 1) {
-      posns.push_back(allocsetval(pd, pd.solved)) ;
+      posns.push_back(allocsetval(pd, pd.id)) ;
       movehist.push_back(-1) ;
    }
    bigcnt = 0 ;
    recurfindalgo(pd, d, 0, 0) ;
 }
 void findalgos2(const puzdef &pd, int d) {
+   posns.clear() ;
+   movehist.clear() ;
    while ((int)posns.size() <= d + 3) {
       posns.push_back(allocsetval(pd, pd.id)) ;
       movehist.push_back(-1) ;
@@ -174,6 +178,8 @@ void findalgos2(const puzdef &pd, int d) {
 }
 void findalgos3(const puzdef &pd, int d) {
    if (d > 1) {
+      posns.clear() ;
+      movehist.clear() ;
       while ((int)posns.size() <= d + 7) {
          posns.push_back(allocsetval(pd, pd.id)) ;
          movehist.push_back(-1) ;
@@ -185,14 +191,24 @@ void findalgos3(const puzdef &pd, int d) {
 void findalgos(const puzdef &pd, int which) {
    for (int d=1; ; d++) {
       cout << "Searching depth " << d << endl << flush ;
+      duration() ;
       if (which < 0 || which == 1) {
          findalgos1(pd, d) ;
+         double t = duration() ;
+         if (t > 1)
+            cout << "Type 1 finished in " << t << endl << flush ;
       }
       if (which < 0 || which == 2) {
          findalgos2(pd, d) ;
+         double t = duration() ;
+         if (t > 1)
+            cout << "Type 2 finished in " << t << endl << flush ;
       }
       if (which < 0 || which == 3) {
          findalgos3(pd, d) ;
+         double t = duration() ;
+         if (t > 1)
+            cout << "Type 3 finished in " << t << endl << flush ;
       }
    }
 }
