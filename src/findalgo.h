@@ -8,8 +8,6 @@
  *   brute force; more intelligence can be added later through the
  *   consideration of support.
  */
-void findalgos(const puzdef &pd) ;
-void findalgos2(const puzdef &pd) ;
-void findalgos3(const puzdef &pd) ;
+void findalgos(const puzdef &pd, int which) ;
 #define FINDALGO_H
 #endif

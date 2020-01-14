@@ -44,17 +44,6 @@ void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
       recurfindalgo(pd, togo-1, sp+1, ns[mv.cs]) ;
    }
 }
-void findalgos(const puzdef &pd) {
-   for (int d=1; ; d++) {
-      while ((int)posns.size() <= d + 1) {
-         posns.push_back(allocsetval(pd, pd.solved)) ;
-         movehist.push_back(-1) ;
-      }
-      bigcnt = 0 ;
-      recurfindalgo(pd, d, 0, 0) ;
-      cout << "At " << d << " big count is " << bigcnt << " in " << duration() << endl ;
-   }
-}
 void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
    if (togo == 0) {
       vector<int> cc = pd.cyccnts(posns[sp]) ;
@@ -74,7 +63,7 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
             if (bestsofar.find(key) != bestsofar.end() && bestsofar[key] < mvs)
                continue ;
             bestsofar[key] = mvs ;
-            cout << pp << " " << key << " " << mvs << " (" ;
+            cout << key << " " << mvs << " (" ;
             for (int i=0; i<sp; i++) {
                if (i)
                   cout << " " ;
@@ -104,15 +93,6 @@ void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
       movehist[sp] = m ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs]) ;
-   }
-}
-void findalgos2(const puzdef &pd) {
-   for (int d=1; ; d++) {
-      while ((int)posns.size() <= d + 3) {
-         posns.push_back(allocsetval(pd, pd.id)) ;
-         movehist.push_back(-1) ;
-      }
-      recurfindalgo2(pd, d, 0, 0) ;
    }
 }
 void recurfindalgo3b(const puzdef &pd, int togo, int sp, int st, int fp) {
@@ -177,13 +157,42 @@ void recurfindalgo3a(const puzdef &pd, int togo, int sp, int st, int b) {
       recurfindalgo3a(pd, togo-1, sp+1, ns[mv.cs], b) ;
    }
 }
-void findalgos3(const puzdef &pd) {
-   for (int d=2; ; d++) {
+void findalgos1(const puzdef &pd, int d) {
+   while ((int)posns.size() <= d + 1) {
+      posns.push_back(allocsetval(pd, pd.solved)) ;
+      movehist.push_back(-1) ;
+   }
+   bigcnt = 0 ;
+   recurfindalgo(pd, d, 0, 0) ;
+}
+void findalgos2(const puzdef &pd, int d) {
+   while ((int)posns.size() <= d + 3) {
+      posns.push_back(allocsetval(pd, pd.id)) ;
+      movehist.push_back(-1) ;
+   }
+   recurfindalgo2(pd, d, 0, 0) ;
+}
+void findalgos3(const puzdef &pd, int d) {
+   if (d > 1) {
       while ((int)posns.size() <= d + 7) {
          posns.push_back(allocsetval(pd, pd.id)) ;
          movehist.push_back(-1) ;
       }
       for (int a=1; a+a<=d; a++)
          recurfindalgo3a(pd, d-a, 0, 0, a) ;
+   }
+}
+void findalgos(const puzdef &pd, int which) {
+   for (int d=1; ; d++) {
+      cout << "Searching depth " << d << endl << flush ;
+      if (which < 0 || which == 1) {
+         findalgos1(pd, d) ;
+      }
+      if (which < 0 || which == 2) {
+         findalgos2(pd, d) ;
+      }
+      if (which < 0 || which == 3) {
+         findalgos3(pd, d) ;
+      }
    }
 }

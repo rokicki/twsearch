@@ -168,14 +168,14 @@ case 'a':
             argv++ ;
             break ;
 case 'A':
-            if (argv[0][2] == 0 || argv[0][2] == '1')
+            if (argv[0][2] == '1')
                doalgo = 1 ;
             else if (argv[0][2] == '2')
                doalgo = 2 ;
             else if (argv[0][2] == '3')
                doalgo = 3 ;
             else
-               error("! bad -A value") ;
+               doalgo = -1 ;
             break ;
 case 'T':
             dotimingtest++ ;
@@ -265,12 +265,8 @@ default:
          doarraygod2(pd) ;
       }
    }
-   if (doalgo == 1)
-      findalgos(pd) ;
-   if (doalgo == 2)
-      findalgos2(pd) ;
-   if (doalgo == 3)
-      findalgos3(pd) ;
+   if (doalgo)
+      findalgos(pd, doalgo) ;
    if (dosolvetest)
       solvetest(pd, gs) ;
    if (dotimingtest)
