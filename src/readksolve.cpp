@@ -64,6 +64,21 @@ int getnumber(int minval, const string &s) {
       error("! value out of range in ", s) ;
    return r ;
 }
+// permits a ? for undefined.
+int getnumberorneg(int minval, const string &s) {
+   if (s == "?")
+      return 255 ;
+   int r = 0 ;
+   for (int i=0; i<(int)s.size(); i++) {
+      if ('0' <= s[i] && s[i] <= '9')
+         r = r * 10 + s[i] - '0' ;
+      else
+         error("! bad character while parsing number in ", s) ;
+   }
+   if (r < minval || r > 255)
+      error("! value out of range in ", s) ;
+   return r ;
+}
 int isnumber(const string &s) {
    return s.size() > 0 && '0' <= s[0] && s[0] <= '9' ;
 }
@@ -112,7 +127,7 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          ignore = 0 ;
          break ;
       }
-      if (isnumber(toks[0])) {
+      if ((typ != 'm' && toks[0] == "?") || isnumber(toks[0])) {
          if (ignore)
             continue ;
          if (curset < 0 || numseq > 1)
@@ -120,8 +135,13 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
          int n = pz.setdefs[curset].size ;
          expect(toks, n) ;
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
-         for (int i=0; i<n; i++)
-            p[i] = getnumber(1-numseq, toks[i]) ;
+         if (typ != 'm') {
+            for (int i=0; i<n; i++)
+               p[i] = getnumberorneg(1-numseq, toks[i]) ;
+         } else {
+            for (int i=0; i<n; i++)
+               p[i] = getnumber(1-numseq, toks[i]) ;
+         }
          if (numseq == 1 && ignoreori)
             for (int i=0; i<n; i++)
                p[i] = 0 ;
@@ -195,7 +215,11 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
       p += n ;
       int s = 0 ;
       for (int j=0; j<n; j++) {
-         if (p[j] >= pz.setdefs[i].omod)
+         if (p[j] == 255 && typ != 'm') {
+            p[j] = 2 * pz.setdefs[i].omod ;
+            pz.setdefs[i].wildo = 1 ;
+            pz.wildo = 1 ;
+         } else if (p[j] >= pz.setdefs[i].omod)
             error("! modulo value too large") ;
          s += p[j] ;
       }
@@ -252,9 +276,11 @@ puzdef readdef(FILE *f) {
          pz.setdefs.push_back(sd) ;
          pz.totsize += 2 * sd.size ;
          if (gmoda[sd.omod] == 0) {
-            gmoda[sd.omod] = (uchar *)calloc(4*sd.omod+1, 1) ;
-            for (int i=0; i<=4*sd.omod; i++)
+            gmoda[sd.omod] = (uchar *)calloc(4*sd.omod, 1) ;
+            for (int i=0; i<2*sd.omod; i++)
                gmoda[sd.omod][i] = i % sd.omod ;
+            for (int i=2*sd.omod; i<4*sd.omod; i++)
+               gmoda[sd.omod][i] = 2*sd.omod ;
          }
       } else if (toks[0] == "Illegal") {
          if (state < 2)
