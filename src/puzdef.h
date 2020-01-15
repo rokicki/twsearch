@@ -14,6 +14,18 @@ using namespace std ;
  *   gain a fair bit by specializing specific cases.
  */
 extern double dllstates ;
+/*
+ *   gmoda is used to calculate orientations for a given count of
+ *   orientations.  Let's say we're working on a case where there
+ *   are o orientations.  The first 2o values are simply mod o.
+ *   To support don't care orientations without impacting branch
+ *   prediction or instruction count, values 2o..4o-1 are simply 2o.
+ *   Setting the orientation *value* then to 2o means that any
+ *   twist leaves it at 2o.  This is a bit of a hack but lets us do
+ *   don't care orientations without changing any of the normal
+ *   straight line code.  Note that this affects indexing, so we
+ *   make the indexing functions check and blow up if needed.
+ */
 extern uchar *gmoda[256] ;
 struct setdef {
    int size, off ;

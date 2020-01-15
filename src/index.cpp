@@ -106,6 +106,8 @@ ull densepack(const puzdef &pd, setval pos) {
    ull r = 0 ;
    ull m = 1 ;
    uchar *p = pos.dat ;
+   if (pd.wildo)
+      error("! can't call densepack if orientation wildcards used.") ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
@@ -132,6 +134,8 @@ ull densepack(const puzdef &pd, setval pos) {
 }
 void denseunpack(const puzdef &pd, ull v, setval pos) {
    uchar *p = pos.dat ;
+   if (pd.wildo)
+      error("! can't call denseunpack if orientation wildcards used.") ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
@@ -158,6 +162,8 @@ void denseunpack(const puzdef &pd, ull v, setval pos) {
    }
 }
 ull densepack_ordered(const puzdef &pd, setval pos) {
+   if (pd.wildo)
+      error("! can't call densepack_ordered if orientation wildcards used.") ;
    ull r = 0 ;
    for (int ii=0; ii<(int)parts.size(); ii++) {
       int sdpair = parts[ii].second ;
@@ -180,6 +186,8 @@ ull densepack_ordered(const puzdef &pd, setval pos) {
    return r ;
 }
 ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) {
+   if (pd.wildo)
+      error("! can't call denseunpack_ordered if orientation wildcards used.") ;
    ull r = 0 ;
    for (int ii=(int)parts.size()-1; ii>=0; ii--) {
       int sdpair = parts[ii].second ;
@@ -233,6 +241,8 @@ void calclooseper(const puzdef &pd) {
         << " from identity." << endl ;
 }
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) {
+   if (pd.wildo)
+      error("! can't call loosepack if orientation wildcards used.") ;
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -283,6 +293,8 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
    }
 }
 void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
+   if (pd.wildo)
+      error("! can't call looseunpack if orientation wildcards used.") ;
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
