@@ -152,6 +152,8 @@ case 'o':
             break ;
 case 'u':
             douniq++ ;
+            if (argv[0][2] >= '0')
+               proclim = atoll(argv[0]+2) ;
             break ;
 case 's':
             dosolvelines++ ;

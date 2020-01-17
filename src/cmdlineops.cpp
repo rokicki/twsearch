@@ -6,6 +6,7 @@
 #include "readksolve.h"
 #include "index.h"
 #include "rotations.h"
+ll proclim = 1'000'000'000'000'000'000LL ;
 void solvecmdline(puzdef &pd, const char *scr) {
    stacksetval p1(pd) ;
    pd.assignpos(p1, pd.solved) ;
@@ -89,6 +90,9 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
    if (uniqseen.find(uniqwork) == uniqseen.end()) {
       uniqseen.insert(uniqwork) ;
       cout << s << endl << flush ;
+      proclim-- ;
+      if (proclim == 0)
+         exit(0) ;
    }
 }
 void symsit(const puzdef &pd, setval p, const char *s) {

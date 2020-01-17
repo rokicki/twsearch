@@ -22,5 +22,6 @@ void showrandompos(const puzdef &pd) ;
 extern int globalinputmovecount ;
 void processlines(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) ;
 void processlines2(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) ;
+extern ll proclim ;
 #define CMDLINEOPS_H
 #endif
