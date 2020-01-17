@@ -216,10 +216,14 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
       int s = 0 ;
       for (int j=0; j<n; j++) {
          if (p[j] == 255 && typ != 'm') {
-            p[j] = 2 * pz.setdefs[i].omod ;
-            pz.setdefs[i].wildo = 1 ;
-            pz.wildo = 1 ;
-            pz.setdefs[i].oparity = 0 ;
+            if (pz.setdefs[i].omod == 1) {
+               p[j] = 0 ;
+            } else {
+               p[j] = 2 * pz.setdefs[i].omod ;
+               pz.setdefs[i].wildo = 1 ;
+               pz.wildo = 1 ;
+               pz.setdefs[i].oparity = 0 ;
+            }
          } else if (p[j] >= pz.setdefs[i].omod)
             error("! modulo value too large") ;
          s += p[j] ;
