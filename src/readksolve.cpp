@@ -219,6 +219,7 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
             p[j] = 2 * pz.setdefs[i].omod ;
             pz.setdefs[i].wildo = 1 ;
             pz.wildo = 1 ;
+            pz.setdefs[i].oparity = 0 ;
          } else if (p[j] >= pz.setdefs[i].omod)
             error("! modulo value too large") ;
          s += p[j] ;
@@ -270,7 +271,10 @@ puzdef readdef(FILE *f) {
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
          sd.pibits = sd.pbits ;
-         sd.obits = ceillog2(sd.omod) ;
+         if (sd.wildo)
+            sd.obits = ceillog2(sd.omod+1) ;
+         else
+            sd.obits = ceillog2(sd.omod) ;
          sd.uniq = 1 ;
          sd.off = pz.totsize ;
          pz.setdefs.push_back(sd) ;

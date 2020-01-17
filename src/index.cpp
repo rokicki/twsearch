@@ -241,8 +241,6 @@ void calclooseper(const puzdef &pd) {
         << " from identity." << endl ;
 }
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) {
-   if (pd.wildo)
-      error("! can't call loosepack if orientation wildcards used.") ;
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -262,7 +260,20 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
          }
       }
       p += n ;
-      if (sd.omod != 1) {
+      if (sd.wildo) {
+         int lim = n ;
+         int bitsper = sd.obits ;
+         for (int j=0; j<lim; j++) {
+            if (bitsper + storedbits > 64) {
+               *w++ = accum ;
+               accum >>= BITSPERLOOSE ;
+               storedbits -= BITSPERLOOSE ;
+            }
+            int v = (p[j] >= sd.omod ? sd.omod : p[j]) ;
+            accum += ((ull)v) << storedbits ;
+            storedbits += bitsper ;
+         }
+      } else if (sd.omod != 1) {
          int lim = (sd.oparity ? n-1 : n) ;
          int bitsper = sd.obits ;
          for (int j=0; j<lim; j++) {
@@ -293,8 +304,6 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
    }
 }
 void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
-   if (pd.wildo)
-      error("! can't call looseunpack if orientation wildcards used.") ;
    uchar *p = pos.dat ;
    ull accum = 0 ;
    int storedbits = 0 ;
@@ -320,7 +329,24 @@ void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
          *p = 0 ;
       }
       p += n ;
-      if (sd.omod != 1) {
+      if (sd.wildo) {
+         int lim = n ;
+         int bitsper = sd.obits ;
+         ull mask = (1 << bitsper) - 1 ;
+         int msum = 0 ;
+         for (int j=0; j<lim; j++) {
+            if (storedbits < bitsper) {
+               accum += ((ull)(*r++)) << storedbits ;
+               storedbits += BITSPERLOOSE ;
+            }
+            p[j] = accum & mask ;
+            if (p[j] >= sd.omod)
+               p[j] = 2*sd.omod ;
+            msum += sd.omod - p[j] ;
+            storedbits -= bitsper ;
+            accum >>= bitsper ;
+         }
+      } else if (sd.omod != 1) {
          int lim = (sd.oparity ? n-1 : n) ;
          int bitsper = sd.obits ;
          ull mask = (1 << bitsper) - 1 ;
