@@ -35,6 +35,8 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
          int r = 1 ;
          get_global_lock() ;
          solutionsfound++ ;
+         if (d == 0) // allow null solution to trigger
+            cout << " " ;
          for (int i=0; i<d; i++)
             cout << " " << pd.moves[movehist[i]].name ;
          cout << endl << flush ;
