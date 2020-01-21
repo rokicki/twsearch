@@ -19,6 +19,7 @@
 const int CACHELINESIZE = 64 ;
 const int SIGNATURE = 22 ; // start and end of data files
 extern string inputbasename ;
+extern int nowrite ;
 ull fasthash(int n, const setval sv) ;
 struct prunetable ;
 struct workerparam {

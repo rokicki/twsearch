@@ -100,6 +100,8 @@ int main(int argc, const char **argv) {
             doss = 1 ;
          } else if (strcmp(argv[0], "--showsymmetry") == 0) {
             dosyms = 1 ;
+         } else if (strcmp(argv[0], "--nowrite") == 0) {
+            nowrite++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }

@@ -5,6 +5,7 @@
 fillworker fillworkers[MAXTHREADS] ;
 struct ioqueue ioqueue ;
 string inputbasename ;
+int nowrite ;
 ull fasthash(int n, const setval sv) {
    ull r = CityHash64((const char *)sv.dat, n) ;
    // this little hack ensures that at least one of bits 1..7
@@ -434,7 +435,7 @@ void prunetable::readblock(ull *mem, ull explongcnt, FILE *f) {
 }
 void prunetable::writept(const puzdef &pd) {
    // only write the table if at least 1 in 100 elements has a value
-   if (justread || fillcnt * 100 < size)
+   if (nowrite || justread || fillcnt * 100 < size)
       return ;
    ll longcnt = (size + 31) >> 5 ;
    if (longcnt % BLOCKSIZE != 0)
