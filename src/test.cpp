@@ -2,6 +2,7 @@
 #include "prunetable.h"
 #include "solve.h"
 #include <iostream>
+int scramblemoves = 1 ;
 void timingtest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
@@ -77,12 +78,14 @@ void solvetest(puzdef &pd, generatingset *gs) {
    prunetable pt(pd, maxmem) ;
    while (1) {
       solve(pd, pt, p1, gs) ;
-      while (1) {
-         int rmv = myrand(pd.moves.size()) ;
-         pd.mul(p1, pd.moves[rmv].pos, p2) ;
-         if (pd.legalstate(p2)) {
-            pd.assignpos(p1, p2) ;
-            break ;
+      for (ll i=0; i<scramblemoves; i++) {
+         while (1) {
+            int rmv = myrand(pd.moves.size()) ;
+            pd.mul(p1, pd.moves[rmv].pos, p2) ;
+            if (pd.legalstate(p2)) {
+               pd.assignpos(p1, p2) ;
+               break ;
+            }
          }
       }
    }

@@ -186,6 +186,8 @@ case 'T':
             break ;
 case 'S':
             dosolvetest++ ;
+            if (argv[0][2])
+               scramblemoves = atol(argv[0]+2) ;
             break ;
 case 't':
             numthreads = atol(argv[1]) ;
