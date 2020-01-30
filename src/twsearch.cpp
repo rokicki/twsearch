@@ -102,6 +102,10 @@ int main(int argc, const char **argv) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
             nowrite++ ;
+         } else if (strcmp(argv[0], "--mindepth") == 0) {
+            optmindepth = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }

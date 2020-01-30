@@ -4,6 +4,7 @@ ull solutionsfound = 0 ;
 ull solutionsneeded = 1 ;
 int noearlysolutions ;
 int phase2 ;
+int optmindepth ;
 solveworker solveworkers[MAXTHREADS] ;
 void *threadworker(void *o) {
    workerparam *wp = (workerparam *)o ;
@@ -114,6 +115,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
    for (int d=initd; d <= maxdepth; d++) {
+      if (d < optmindepth)
+         continue ;
       if (d - initd > 3)
          makeworkchunks(pd, d) ;
       else
