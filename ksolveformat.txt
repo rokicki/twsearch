@@ -1,0 +1,242 @@
+Notes on ksolve input format.
+
+TL;DR:
+
+Active permutations map items to slots.  Multiplication:  p3 = p2[p1[i]]
+Passive permutations map slots to items.  Multiplication:  p3 = p1[p2[i]]
+
+Ksolve move and state representation both use passive permutations
+for the permutation aspect.
+
+Ksolve state representation maps slots to orientation.
+
+Ksolve move representation maps cubies to orientation; these are different.
+
+movetostate      no[i]=o[p[i]]
+statetomove      no[p[i]]=o[i]
+sss      no[i] = (o1[p2[i]]+o2[i])%omod
+sms      no[i] = (o1[p2[i]]+o2[p2[i]])%omod
+mss      no[i] = (o1[p1[p2[i]]]+o2[i])%omod
+mms      no[i] = (o1[p1[p2[i]]]+o2[p2[i]])%omod
+mmm      no[p1[i]] = (o1[p1[i]]+o2[i])%omod
+smm      no[p1[i]] = (o1[i]+o2[i])%omod
+msm      no[p1[p2[i]]] = (o1[p1[p2[i]]]+o2[i])%omod
+ssm      no[p1[p2[i]]] = (o1[p2[i]]+o2[i])%omod
+sinv      no[p[i]] = (omod-o[i])%omod
+minv      no[i] = (omod-o[p[i]])%omod
+
+
+This note discusses the puzzle representation used for ksolve move
+definitions and positions, internal representation, and alternatives.
+We will start by teasing out the semantics of just the permutations,
+and follow this up with the necessary description of the orientations.
+
+Permutations are well understood, with standard notations that are
+well agreed upon.  We will assume the left-to-right application
+order, so (p1 * p2) means apply permutation p1 first, then permutation
+p2.  Further, we permit this to be written as simply p1 p2 (as we
+normally do with puzzle sequence notation).
+
+We will first discuss writing permutations on S_n as a list of n
+objects (without parentheses), and later discuss the cycle notation.
+
+For this discussion we will use the standard convention permuting
+the set of numbers 1..n.  Internally we will probably instead use
+the set of numbers 0..n-1, to match the convention in most programming
+languages of 0-based arrays, and all input and output will be
+appropriately transformed.
+
+A permutation can be written either as a transformation (the active
+form), or as a ordered sequence (the passive form).
+
+In the active form, a permutation written as 2 3 1 4 means that the
+item currently in the first slot is moved to the second position
+(so sigma(1)=2)), and an item in the second position is moved to
+the third position (so sigma(2)=3), and an item in the third position
+is moved to the first position (so sigma(3)=1), and the item in the
+fourth position is left alone.  Another way to interpret this is
+that the item that used to be in the first position is in position
+two, the item that used to be in position two is in position three,
+and the item that used to be in position three is in position one.
+When interpreting such a permutation as a position, the permutation
+maps elements to slots.
+
+In the passive form, a permutation written as 2 3 1 4 means that
+the second item is currently in the first position, the third item
+is currently in the second position, the first item is currently
+in the third position, and the fourth item is in the fourth position.
+To interpret this as a permutation, this says move the element in
+the 2nd slot to the first position, and so on.  When interpreting
+such a permutation as a position, the permutation maps slots to
+elements, and as such is typically used for positions.
+
+These representations are directly isomorphic; if you invert a
+passive permutation, you get the active representation of the
+original permutation, and vice versa.  Inversion can be performed
+by the following code:
+
+   for (i in 1..n) inv[p[i]] = i ;
+
+So it doesn't matter if we use passive or active representations,
+as long as we are clear in what we use.
+
+So what is the difference?  Consider how we multiply two permutations.
+If we are using the active representation and left-to-right application
+order, then sigma_p1(a)=b means piece a moves to position b, and
+then sigma_p2(b)=c means that it moves further to c, so sigma_(p1*p2)(a)
+= sigma_p2(sigma_p1(a)).  Code to multiply two permutations looks
+like this:
+
+   for (i in 1..n) p3[i] = p2[p1[i]]
+
+But if we are using the passive representation, with left-to-right
+application order, then sigma_p1(a)=b means the piece that was in
+b moves to a, and sigma_p2(c)=a means that the piece that was in a
+moves to c, so sigma_(p1*p2)(a) = sigma_p1(sigma_p2(a)), or in code:
+
+   for (i in 1..n) p3[i]=p1[p2[i]]
+
+These are very different multiplication methods; getting multiplication
+correct is fundamental.
+
+In ksolve, according to the documentation, both moves and positions
+are given as active permutations.  This is the standard in mathematics,
+as well.  The quote from the readme is as follows:
+
+"A permutation vector is a list of the numbers from 1 to n in some
+order, such as 231456. This describes where each piece goes - for
+instance, the 2 in the first spot means that piece number 1 is in
+spot 2."
+
+So this says that ksolve is using the element to slot notation,
+which is the active form.  Yet, if you look at the 4x4 centers
+definition file distributed with ksolve, the permutation vector for
+the solved position is given as
+
+    1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 6
+
+and this cannot be an active permutation since it would try to cram
+multiple elements into the same place.  This has to be a passive
+permutation, mapping slot to element, with some identical elements.
+Further, if you use the standard 3x3 def file, which has the solved
+position for corners as 12345678, and the U move as 41235678 (the
+corner orders are given as URF, ULF, ULB, URB, DRF, DLF, DLB, DRB),
+then the U move says that the 4 (URB) in the first (URF) spot means
+that piece 1 (URF) is in slot 4 (URB)".  But this is absolutely not
+what the U move does; the U move puts the piece 4 (URB) in slot 1
+(URF).  So ksolve is clearly using passive format throughout.
+
+If you look at the ksolve code, in the move routine and in the merge
+moves routine (which are both effectively multiplication, but
+actually differ in terms of orientation, which we will be getting
+to), the actual code used is:
+
+   for (i in 1..n) p3[i] = p1[p2[i]]
+
+This matches the passive mode multiplication procedure we derived
+above.
+
+In group theory, with no identical pieces, there is no a-priori
+difference between a move and a position; they are both simply a
+permutation.  One can think of a move as the position obtained after
+making that move from the identity position; similarly, one can
+think of a position as the composite move required to obtain that
+position from the identity.
+
+So far this agrees with the tests I've performed on ksolve as well
+as its code, though it contradicts its documentation.  It's also
+the most logical code; if we need to support identical pieces, our
+positions must be passive, not active, and if our positions are
+passive, it's easiest if our moves are passive as well.  This also
+means that the move descriptions are the same as descriptions of
+positions after the move, assuming the solved state is the identity
+permutation, which makes writing them fairly easy.  Further, the
+permutation vector in the solved state doesn't matter at all, except
+in that it allows the definition of identical pieces.
+
+Let's move on to orientations.
+
+Orientations are just a concise way of specifying larger permutations.
+For instance, on the 3x3x3 cube, there are 54 stickers, 9 on each
+face; if you assume the centers do not move, then there are only
+48.  When describing this as a group to software such as GAP or
+Mathematica, you would describe it as a group generated by elements
+of S_48 or S_54, and be done.  But there are good reasons to separate
+the permutation into orbits (what ksolve calls sets) and further
+to rewrite some of the orbits in terms of smaller permutations and
+orientations rather than a larger permutation.
+
+Each orientation value expands a single permutation element in the
+small permutation to several in the larger permutation element.
+These elements collectively move together, potentially cycling due
+to rotations in three-dimensional space.  So instead of having 24
+stickers moving on eight cubies, we can instead have the eight
+cubies moving, and maintain how far each cubie is rotated against
+some standard configuration.  This standard configuration involves
+marking a single face as the primary face on every cubie, and then
+keeping track of how far clockwise from the marked slot face the
+actual cubie face is.
+
+In passive notation the permutation maps slots to elements, so our
+orientation should also map slots to orientations.  So if the value
+at index a in our permutation is b and in our orientation is c,
+that would seem to mean that piece b is currently in slot a in
+orientation c.  This is a good representation in that it has the
+following property:  orientation can be separated from permutation
+for state exploration purposes, because when multiplying to states
+s1 and s2, the orientation change depends only on s2 (the "move",
+usually) and not on s1.  So we can index the orientation separately
+from the permutation, which enables a lot of nice functionality.
+Other orientation conventions complicate this.
+
+(This is even nicer if you can arrange so the largest number of
+moves do not affect the orientation in the solved state, because
+then a pruning table created from orientation tends to have somewhat
+higher values.)
+
+Ksolve uses this representation for states, but critically, not for
+moves.  For moves, ksolve maps cubie numbers to orientations.  So
+ksolve states and moves are not the same representation of a
+permutation, and this affects (and complicates) the code.
+
+To convert a state to a move:
+
+	m.o[p[i]] = s.o[i]
+
+Note that the permutations are the same.  To convert a move to a state:
+
+	s.o[i] = m.o[p[i]]
+
+So for move 13425,01201 we convert to state 13425,02011.
+For state 13425,02011 we convert to move 13425,01201.
+
+sub movetostate      no[i]=o[p[i]] ;
+sub statetomove      no[p[i]]=o[i] ;
+sub sss      no[i] = (o1[p2[i]]+o2[i])%omod ;
+sub sms      no[i] = (o1[p2[i]]+o2[p2[i]])%omod ;
+sub mss      no[i] = (o1[p1[p2[i]]]+o2[i])%omod ;
+sub mms      no[i] = (o1[p1[p2[i]]]+o2[p2[i]])%omod ;
+sub mmm      no[p1[i]] = (o1[p1[i]]+o2[i])%omod ;
+sub smm      no[p1[i]] = (o1[i]+o2[i])%omod ;
+sub msm      no[p1[p2[i]]] = (o1[p1[p2[i]]]+o2[i])%omod ;
+sub ssm      no[p1[p2[i]]] = (o1[p2[i]]+o2[i])%omod ;
+sub sinv      no[p[i]] = (omod-o[i])%omod ;
+sub minv      no[i] = (omod-o[p[i]])%omod ;
+
+What our current project code does is use move representation
+everywhere; so long as the solved state has default (0) orientation
+everywhere, this works (and our code currently defines combine with
+code like mmm above, and invert with code like minv above).  A
+better approach is to instead use state representation everywhere;
+the changes should be slight (combine needs to use code like sss
+above, and invert code like minv, and we need to change the way we
+display things.)  But in order for this to work we need to convert
+the ksolve moves read in to be in state representation rather than
+ksolve's move representation.
+
+This is currently what both kpuzzle and twsearch do; on reading a
+move, it is converted to the ksolve state representation, in which
+orientations map slots to orientations, and then internally we use
+a consistent representation for moves and states.  Of course with
+identical pieces states always have to be on the left side of any
+multiplication, but this is true for ksolve as well.
