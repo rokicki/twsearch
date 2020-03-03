@@ -10,6 +10,7 @@
 #include "threads.h"
 #include "puzdef.h"
 #include "generatingset.h"
+#include "orderedgs.h"
 #include "readksolve.h"
 #include "index.h"
 #include "antipode.h"
@@ -45,9 +46,21 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
       cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
    }
 }
+void runorderedgs(const puzdef &pd) {
+   vector<int> order ;
+   int v = -1 ;
+   while (cin >> v)
+      order.push_back(v) ;
+   orderedgs *ogs = new orderedgs(pd, order) ;
+   vector<int> r = ogs->getsizes() ;
+   for (int i=0; i<(int)r.size(); i++)
+      cout << " " << r[i] ;
+   cout << endl ;
+   delete ogs ;
+}
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    checksolvable, doss, dosyms ;
+    checksolvable, doss, doorderedgs,dosyms ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
@@ -98,6 +111,8 @@ int main(int argc, const char **argv) {
             argv++ ;
          } else if (strcmp(argv[0], "--schreiersims") == 0) {
             doss = 1 ;
+         } else if (strcmp(argv[0], "--orderedgs") == 0) {
+            doorderedgs = 1 ;
          } else if (strcmp(argv[0], "--showsymmetry") == 0) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
@@ -239,6 +254,8 @@ default:
       pd.addoptionssum("noedges") ;
    if (doss || checkbeforesolve)
       gs = new generatingset(pd) ;
+   if (doorderedgs)
+      runorderedgs(pd) ;
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
