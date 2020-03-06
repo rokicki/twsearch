@@ -1,3 +1,5 @@
+# Filtered to contain only the C++ build.
+
 all: twsearch
 
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
