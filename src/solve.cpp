@@ -125,10 +125,14 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, d, p) ;
       solutionsfound = 0 ;
+#ifdef USE_PTHREADS
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
       for (int i=0; i<wthreads; i++)
          join_thread(i) ;
+#else
+      threadworker((void*)&workerparams[0]) ;
+#endif
       for (int i=0; i<wthreads; i++) {
          totlookups += solveworkers[i].lookups ;
          pt.addlookups(solveworkers[i].lookups) ;

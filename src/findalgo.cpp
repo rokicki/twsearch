@@ -48,24 +48,23 @@ struct algo1worker {
          recurfindalgo(pd, togo-1, sp+1, ns[mv.cs]) ;
       }
    }
-   void findalgos1(const puzdef &pd) {
+   void findalgos1(const puzdef &pd, int d) {
       posns.clear() ;
       movehist.clear() ;
-      for (int d=1; ; d++) {
-         while ((int)posns.size() <= d + 1) {
-            posns.push_back(allocsetval(pd, pd.id)) ;
-            movehist.push_back(-1) ;
-         }
-         bigcnt = 0 ;
-         recurfindalgo(pd, d, 0, 0) ;
+      while ((int)posns.size() <= d + 1) {
+         posns.push_back(allocsetval(pd, pd.id)) ;
+         movehist.push_back(-1) ;
       }
+      bigcnt = 0 ;
+      recurfindalgo(pd, d, 0, 0) ;
    }
    vector<int> movehist ;
    vector<allocsetval> posns ;
 } algo1worker ;
 void *doalgo1work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   algo1worker.findalgos1(*pd) ;
+   for (int d=1; ; d++)
+      algo1worker.findalgos1(*pd, d) ;
    return 0 ;
 }
 struct algo2worker {
@@ -122,23 +121,22 @@ struct algo2worker {
          recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs]) ;
       }
    }
-   void findalgos2(const puzdef &pd) {
+   void findalgos2(const puzdef &pd, int d) {
       posns.clear() ;
       movehist.clear() ;
-      for (int d=1; ; d++) {
-         while ((int)posns.size() <= d + 3) {
-            posns.push_back(allocsetval(pd, pd.id)) ;
-            movehist.push_back(-1) ;
-         }
-         recurfindalgo2(pd, d, 0, 0) ;
+      while ((int)posns.size() <= d + 3) {
+         posns.push_back(allocsetval(pd, pd.id)) ;
+         movehist.push_back(-1) ;
       }
+      recurfindalgo2(pd, d, 0, 0) ;
    }
    vector<int> movehist ;
    vector<allocsetval> posns ;
 } algo2worker ;
 void *doalgo2work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   algo2worker.findalgos2(*pd) ;
+   for (int d=1; ; d++)
+      algo2worker.findalgos2(*pd, d) ;
    return 0 ;
 }
 struct algo3worker {
@@ -206,27 +204,27 @@ struct algo3worker {
          recurfindalgo3a(pd, togo-1, sp+1, ns[mv.cs], b) ;
       }
    }
-   void findalgos3(const puzdef &pd) {
-      for (int d=2; ; d++) {
-         posns.clear() ;
-         movehist.clear() ;
-         while ((int)posns.size() <= d + 7) {
-            posns.push_back(allocsetval(pd, pd.id)) ;
-            movehist.push_back(-1) ;
-         }
-         for (int a=1; a+a<=d; a++)
-            recurfindalgo3a(pd, d-a, 0, 0, a) ;
+   void findalgos3(const puzdef &pd, int d) {
+      posns.clear() ;
+      movehist.clear() ;
+      while ((int)posns.size() <= d + 7) {
+         posns.push_back(allocsetval(pd, pd.id)) ;
+         movehist.push_back(-1) ;
       }
+      for (int a=1; a+a<=d; a++)
+         recurfindalgo3a(pd, d-a, 0, 0, a) ;
    }
    vector<int> movehist ;
    vector<allocsetval> posns ;
 } algo3worker ;
 void *doalgo3work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   algo3worker.findalgos3(*pd) ;
+   for (int d=2; ; d++)
+      algo3worker.findalgos3(*pd, d) ;
    return 0 ;
 }
 void findalgos(const puzdef &pd, int which) {
+#ifdef USE_PTHREADS
    if (which < 0 || which == 1) {
       spawn_thread(0, doalgo1work, (void *)&pd) ;
    }
@@ -242,4 +240,14 @@ void findalgos(const puzdef &pd, int which) {
       join_thread(1) ;
    if (which < 0 || which == 3)
       join_thread(2) ;
+#else
+   for (int d=1; ; d++) {
+      if (which < 0 || which == 1)
+         algo1worker.findalgos1(pd, d) ;
+      if (which < 0 || which == 2)
+         algo2worker.findalgos2(pd, d) ;
+      if (which < 0 || which == 3)
+         algo3worker.findalgos3(pd, d) ;
+   }
+#endif
 }

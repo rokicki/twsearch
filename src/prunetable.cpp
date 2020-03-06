@@ -75,7 +75,9 @@ ull fillworker::fillflush(const prunetable &pt, int shard) {
    ull r = 0 ;
    fillbuf &fb = fillbufs[shard] ;
    if (fb.nchunks > 0) {
+#ifdef USE_PTHREADS
       pthread_mutex_lock(&(memshards[shard].mutex)) ;
+#endif
       for (int i=0; i<fb.nchunks; i++) {
          ull h = fb.chunks[i] ;
          if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
@@ -85,7 +87,9 @@ ull fillworker::fillflush(const prunetable &pt, int shard) {
             r++ ;
          }
       }
+#ifdef USE_PTHREADS
       pthread_mutex_unlock(&(memshards[shard].mutex)) ;
+#endif
       fb.nchunks = 0 ;
    }
    return r ;
@@ -138,7 +142,9 @@ void ioqueue::init(struct prunetable *pt_, FILE *f_) {
    nextthread = 0 ;
 }
 void ioqueue::waitthread(int i) {
+#ifdef USE_PTHREADS
    join_thread(i) ;
+#endif
    if (ioworkitems[i].state == 2) {
       unsigned int bytecnt = ioworkitems[i].bytecnt ;
       unsigned int longcnt = ioworkitems[i].longcnt ;
@@ -167,7 +173,11 @@ void ioqueue::queuepackwork(ull *mem, ull longcnt,
    ioworkitems[nextthread].bytecnt = bytecnt ;
    ioworkitems[nextthread].pt = pt ;
    ioworkitems[nextthread].state = 2 ;
+#ifdef USE_PTHREADS
    spawn_thread(nextthread, packworker, &ioworkitems[nextthread]) ;
+#else
+   packworker(&ioworkitems[nextthread]) ;
+#endif
    nextthread++ ;
    if (nextthread >= numthreads)
       nextthread = 0 ;
@@ -184,7 +194,11 @@ void ioqueue::queueunpackwork(ull *mem, ull longcnt,
    ioworkitems[nextthread].bytecnt = bytecnt ;
    ioworkitems[nextthread].pt = pt ;
    ioworkitems[nextthread].state = 1 ;
+#ifdef USE_PTHREADS
    spawn_thread(nextthread, unpackworker, &ioworkitems[nextthread]) ;
+#else
+   unpackworker(&ioworkitems[nextthread]) ;
+#endif
    nextthread++ ;
    if (nextthread >= numthreads)
       nextthread = 0 ;
@@ -240,10 +254,14 @@ void prunetable::filltable(const puzdef &pd, int d) {
    int wthreads = setupthreads(pd, *this) ;
    for (int t=0; t<wthreads; t++)
       fillworkers[t].init(pd, d) ;
+#ifdef USE_PTHREADS
    for (int i=0; i<wthreads; i++)
       spawn_thread(i, fillthreadworker, &(workerparams[i])) ;
    for (int i=0; i<wthreads; i++)
       join_thread(i) ;
+#else
+   fillthreadworker((void *)&workerparams[0]) ;
+#endif
    fillcnt += canonseqcnt[d] ;
    cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
         << duration() << endl << flush ;

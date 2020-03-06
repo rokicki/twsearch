@@ -1,7 +1,8 @@
 all: twsearch
 
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
-FLAGS = -DHAVE_FFSLL -Isrc -Isrc/cityhash/src
+FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL -Isrc -Isrc/cityhash/src
+LDFLAGS = -lpthread
 
 CSOURCE = src/antipode.cpp src/calcsymm.cpp src/canon.cpp src/cmdlineops.cpp \
    src/filtermoves.cpp src/findalgo.cpp src/generatingset.cpp src/god.cpp \
@@ -19,4 +20,4 @@ HSOURCE = src/antipode.h src/calcsymm.h src/canon.h src/cmdlineops.h \
 CITYSRC = src/cityhash/src/city.cc
 
 twsearch: $(CSOURCE) $(HSOURCE)
-	$(CXX) $(CXXFLAGS) $(FLAGS) -o twsearch $(CSOURCE) $(CITYSRC) -lpthread
+	$(CXX) $(CXXFLAGS) $(FLAGS) -o twsearch $(CSOURCE) $(CITYSRC) $(LDFLAGS)
