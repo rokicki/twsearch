@@ -1,0 +1,197 @@
+# /usr/local/bin/node /Users/rokicki/cubing.js/dist/bin/puzzle-geometry-bin.js --optimize --ksolve master pyraminx
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# t v 0 v 1 v 2 optimize true
+Name PuzzleGeometryPuzzle
+
+Set CORNER 4 3
+Set CORNER2 4 3
+Set EDGE 6 2
+Set EDGE2 12 1
+Set CENTER 4 1
+
+Solved
+CORNER
+1 2 3 4
+0 0 0 0
+CORNER2
+1 2 3 4
+0 0 0 0
+EDGE
+1 2 3 4 5 6
+0 0 0 0 0 0
+EDGE2
+1 2 3 4 5 6 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 2 3 4
+0 0 0 0
+End
+
+Move FRD
+CORNER2
+1 2 3 4
+0 0 1 0
+End
+
+Move 2FRD
+CORNER
+1 2 3 4
+0 0 1 0
+EDGE2
+1 2 11 4 5 6 7 8 3 10 9 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move 2L
+EDGE
+1 2 5 4 6 3
+0 0 0 0 1 1
+EDGE2
+1 2 3 7 5 6 12 8 9 10 11 4
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+2 3 1 4
+0 0 0 0
+End
+
+Move L
+CORNER
+2 4 3 1
+1 2 0 0
+CORNER2
+2 4 3 1
+1 2 0 0
+EDGE
+2 4 3 1 5 6
+0 1 0 1 0 0
+EDGE2
+2 6 3 4 8 1 7 10 9 5 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move FDL
+CORNER2
+1 2 3 4
+0 0 0 1
+End
+
+Move 2FDL
+CORNER
+1 2 3 4
+0 0 0 1
+EDGE2
+1 2 3 10 5 4 7 8 9 6 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move 2R
+EDGE
+3 2 4 1 5 6
+1 0 1 0 0 0
+EDGE2
+3 2 8 4 5 6 7 1 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+3 2 4 1
+0 0 0 0
+End
+
+Move R
+CORNER
+3 1 2 4
+2 0 1 0
+CORNER2
+3 1 2 4
+2 0 1 0
+EDGE
+1 5 3 4 6 2
+0 0 0 0 0 0
+EDGE2
+1 7 3 4 9 6 11 8 12 10 2 5
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move DRL
+CORNER2
+1 2 3 4
+0 1 0 0
+End
+
+Move 2DRL
+CORNER
+1 2 3 4
+0 1 0 0
+EDGE2
+1 12 3 4 5 6 7 2 9 10 11 8
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move 2F
+EDGE
+1 4 3 6 5 2
+0 1 0 0 0 1
+EDGE2
+1 2 3 4 6 11 7 8 9 10 5 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+1 4 2 3
+0 0 0 0
+End
+
+Move F
+CORNER
+4 2 1 3
+0 0 0 0
+CORNER2
+4 2 1 3
+0 0 0 0
+EDGE
+3 2 5 4 1 6
+0 0 0 0 0 0
+EDGE2
+4 2 7 9 5 6 10 8 1 3 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move FLR
+CORNER2
+1 2 3 4
+1 0 0 0
+End
+
+Move 2FLR
+CORNER
+1 2 3 4
+1 0 0 0
+EDGE2
+7 2 3 4 1 6 5 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
+Move 2D
+EDGE
+2 5 3 4 1 6
+1 0 0 0 1 0
+EDGE2
+1 9 3 4 5 6 7 8 10 2 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CENTER
+4 1 3 2
+0 0 0 0
+End
+
+Move D
+CORNER
+1 3 4 2
+0 1 1 1
+CORNER2
+1 3 4 2
+0 1 1 1
+EDGE
+1 2 4 6 5 3
+0 0 1 1 0 0
+EDGE2
+1 2 6 8 5 12 7 11 9 10 4 3
+0 0 0 0 0 0 0 0 0 0 0 0
+End
+
