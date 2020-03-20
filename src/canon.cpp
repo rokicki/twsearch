@@ -11,8 +11,8 @@ vector<ull> canonseqcnt ;
 vector<ull> canontotcnt ;
 template<typename T>
 struct hashvector {
-   size_t operator()(const T&v) const {
-      return CityHash64((const char *)&v[0], sizeof(T)*v.size()) ;
+   size_t operator()(const vector<T>&v) const {
+      return CityHash64((const char *)v.data(), sizeof(T)*v.size()) ;
    }
 } ;
 template<typename T>
@@ -132,13 +132,13 @@ void makecanonstates(puzdef &pd) {
 map<ull,int> statemap ;
 int movebits, ccount ;
 vector<loosetype> ccenc ;
-unordered_set<vector<loosetype>, hashvector<vector<loosetype>>> ccseen ;
+unordered_set<vector<loosetype>, hashvector<loosetype>> ccseen ;
 vector<int> ccnextstate ;
 int ccstalloc = 0 ;
 int ccnbase = 0 ;
 int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
    if (togo == 0) {
-      loosepack(pd, posns[sp], &ccenc[0], 1) ;
+      loosepack(pd, posns[sp], ccenc.data(), 1) ;
       if (ccseen.find(ccenc) == ccseen.end()) {
          ccseen.insert(ccenc) ;
          if (sp > ccount) {
