@@ -199,6 +199,9 @@ void calculatesizes(puzdef &pd) {
          }
          if (left != 0)
             error("! internal error when calculating sizes") ;
+         // llperms might overflow due to divisions above, but FP should be good
+         if (logstates <= 50 && llperms < dllstates)
+            llperms = dllstates ;
       }
       if (sd.omod != 1) {
          int st = 0 ;
