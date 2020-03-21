@@ -3,6 +3,7 @@
 #include "canon.h"
 #include "findalgo.h"
 #include "threads.h"
+#include "solve.h"
 map<ll, ll> bestsofar ;
 const int HIWR = 4 ;
 ll extendkey(ll k, int nwr, int npwr) {
@@ -63,7 +64,7 @@ struct algo1worker {
 } algo1worker ;
 void *doalgo1work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   for (int d=1; ; d++)
+   for (int d=max(1, optmindepth); ; d++)
       algo1worker.findalgos1(*pd, d) ;
    return 0 ;
 }
@@ -135,7 +136,7 @@ struct algo2worker {
 } algo2worker ;
 void *doalgo2work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   for (int d=1; ; d++)
+   for (int d=max(1, optmindepth); ; d++)
       algo2worker.findalgos2(*pd, d) ;
    return 0 ;
 }
@@ -219,7 +220,7 @@ struct algo3worker {
 } algo3worker ;
 void *doalgo3work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   for (int d=2; ; d++)
+   for (int d=max(2, optmindepth); ; d++)
       algo3worker.findalgos3(*pd, d) ;
    return 0 ;
 }
@@ -241,7 +242,7 @@ void findalgos(const puzdef &pd, int which) {
    if (which < 0 || which == 3)
       join_thread(2) ;
 #else
-   for (int d=1; ; d++) {
+   for (int d=max(1, optmindepth); ; d++) {
       if (which < 0 || which == 1)
          algo1worker.findalgos1(pd, d) ;
       if (which < 0 || which == 2)
