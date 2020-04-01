@@ -257,7 +257,7 @@ void showcanon(const puzdef &pd, int show) {
                  << " br " << (sum / osum) << endl << flush ;
       }
       osum = sum ;
-      if (sum == 0 || gsum > 1e18)
+      if (sum == 0 || gsum > 1e24)
          break ;
       for (int st=0; st<nstates; st++) {
          ull mask = canonmask[st] ;
