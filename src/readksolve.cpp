@@ -103,7 +103,7 @@ int oddperm(uchar *p, int n) {
 int omitset(string s) {
    if (s.size() < 2)
       return 0 ;
-   if (nocorners && tolower(s[0]) == 'c' && tolower(s[1]) == 'o')
+   if (nocorners && tolower(s[0]) == 'c' && s[1] != 0 && tolower(s[2]) == 'r')
       return 1 ;
    if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
       return 1 ;
