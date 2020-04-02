@@ -1,18 +1,4 @@
-# /usr/local/bin/node /Users/rokicki/twizzle/puzzlegeometry/pg.js --optimize --ksolve FTO
-# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
-# o f 0.333333333333333 optimize true
-
-# Rotations: 24
-# Base planes: 8
-# Face vertices: 3
-# Boundary is Q[1,0.5773502691896258,0.5773502691896258,0.5773502691896258]
-# Distances: face 1 edge 1.2247448713915887 vertex 1.7320508075688765
-# Faces is now 9
-# Short edge is 0.8164965809277244
-# Total stickers is now 72
-# Move plane sets: 2,2,2,2
-# Cubies: 42
-# Cubie orbit sizes 12,12,6,12
+# /usr/local/bin/node /Users/rokicki/cubing.js/dist/bin/puzzle-geometry-bin.js --optimize --ksolve FTO
 # PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
 # o f 0.333333333333333 optimize true
 Name PuzzleGeometryPuzzle
@@ -52,7 +38,7 @@ CENTER2
 0 0 0 0 0 0 0 0 0 0 0 0
 End
 
-Move B
+Move BB
 EDGE
 1 2 8 4 5 6 7 11 9 10 3 12
 0 0 0 0 0 0 0 0 0 0 0 0
@@ -112,7 +98,7 @@ CENTER2
 0 0 0 0 0 0 0 0 0 0 0 0
 End
 
-Move N
+Move BR
 EDGE
 1 2 5 4 7 6 3 8 9 10 11 12
 0 0 0 0 0 0 0 0 0 0 0 0
@@ -127,7 +113,7 @@ CENTER2
 0 0 0 0 0 0 0 0 0 0 0 0
 End
 
-Move M
+Move BL
 EDGE
 1 2 3 9 5 6 7 4 8 10 11 12
 0 0 0 0 0 0 0 0 0 0 0 0
