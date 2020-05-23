@@ -1,6 +1,18 @@
 #include "orderedgs.h"
 #include <algorithm>
 #include <iostream>
+void runorderedgs(const puzdef &pd) {
+   vector<int> order ;
+   int v = -1 ;
+   while (cin >> v)
+      order.push_back(v) ;
+   orderedgs *ogs = new orderedgs(pd, order) ;
+   vector<int> r = ogs->getsizes() ;
+   for (int i=0; i<(int)r.size(); i++)
+      cout << " " << r[i] ;
+   cout << endl ;
+   delete ogs ;
+}
 bool orderedgs::resolve(const setval p_) {
    stacksetval p(pd), t(pd) ;
    pd.assignpos(p, p_) ;
@@ -66,6 +78,7 @@ vector<int> orderedgs::getsizes() {
    return r ;
 }
 orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder) : pd(pd_), e(pd.id) {
+   inputlength = norder.size() ;
    vector<int> order = norder ;
    if ((int)order.size() * 2 != pd.totsize) {
       vector<int> sorted = {-1} ;
@@ -119,6 +132,66 @@ orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder) : pd(pd_), e(
          totsize *= cnt ;
       }
       cout << "Adding move " << pd.moves[i].name << " extends size to " << totsize << endl ;
+   }
+   // now add swaps of all identical pieces that are in the same orbit.
+   // we do not yet support ? orientations here, or even really any identical
+   // pieces that are orientable.
+   stacksetval p(pd) ;
+   auto solved = pd.solved ;
+   for (int j=0; j<(int)pd.setdefs.size(); j++) {
+      const setdef &sd = pd.setdefs[j] ;
+      int n = sd.size ;
+      int m = n * sd.omod ;
+      vector<char> seen(m) ;
+      for (int i=0; i<n; i++) {
+         // calculate orbits of this piece, including orientation impact.
+         for (auto &v : seen)
+            v = false ;
+         vector<int> q ;
+         q.push_back(i*sd.omod) ;
+         seen[i*sd.omod] = 1 ;
+         int qg = 0 ;
+// cout << "Building orbit of " << i << endl ;
+         while (qg < (int)q.size()) {
+            int pi = q[qg++] ;
+            int piperm = pi / sd.omod ;
+            int piori = pi % sd.omod ;
+// cout << "See perm " << piperm << " ori " << piori << endl ;
+            for (int ii=0; ii<(int)pd.moves.size(); ii++) {
+               auto &pp = pd.moves[ii].pos ;
+               if (pp.dat[sd.off+piperm] == piperm && pp.dat[sd.off+piperm+n] == 0)
+                  continue ;
+               int npiperm = pp.dat[sd.off+piperm] ;
+               int npiori = (pp.dat[sd.off+piperm+n]+piori) % sd.omod ;
+               int npi = npiperm * sd.omod + npiori ;
+               if (!seen[npi]) {
+                  seen[npi] = true ;
+                  q.push_back(npi) ;
+               }
+            }
+         }
+         for (int k=i+1; k<n; k++) {
+            if (seen[k*sd.omod] &&
+                solved.dat[sd.off+i] == solved.dat[sd.off+k]) {
+               if (sd.omod > 1)
+                  error("! don't support identical orientable pieces yet") ;
+               pd.assignpos(p, pd.id) ;
+               swap(p.dat[sd.off+i], p.dat[sd.off+k]) ;
+               if (resolve(p))
+                  continue ;
+               knutha(order.size()-1, p) ;
+               long double totsize = 1 ;
+               for (int j=0; j<(int)sgs.size(); j++) {
+                  int cnt = 0 ;
+                  for (int k=0; k<(int)sgs[j].size(); k++)
+                     if (sgs[j][k].dat)
+                        cnt++ ;
+                  totsize *= cnt ;
+               }
+               cout << "Adding swap extends size to " << totsize << endl ;
+            }
+         }
+      }
    }
    cout.precision(oldprec) ;
 }

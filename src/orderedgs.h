@@ -12,6 +12,8 @@ struct orderedgs {
    void knutha(int k, const setval &p) ;
    void knuthb(int k, const setval &p) ;
    vector<int> getsizes() ;
+   int inputlength ;
 } ;
+void runorderedgs(const puzdef &pd) ;
 #define ORDEREDGS_H
 #endif

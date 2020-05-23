@@ -46,18 +46,6 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
       cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
    }
 }
-void runorderedgs(const puzdef &pd) {
-   vector<int> order ;
-   int v = -1 ;
-   while (cin >> v)
-      order.push_back(v) ;
-   orderedgs *ogs = new orderedgs(pd, order) ;
-   vector<int> r = ogs->getsizes() ;
-   for (int i=0; i<(int)r.size(); i++)
-      cout << " " << r[i] ;
-   cout << endl ;
-   delete ogs ;
-}
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs,dosyms ;
