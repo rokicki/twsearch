@@ -133,6 +133,7 @@ orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder) : pd(pd_), e(
       }
       cout << "Adding move " << pd.moves[i].name << " extends size to " << totsize << endl ;
    }
+   /*
    // now add swaps of all identical pieces that are in the same orbit.
    // we do not yet support ? orientations here, or even really any identical
    // pieces that are orientable.
@@ -193,5 +194,6 @@ orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder) : pd(pd_), e(
          }
       }
    }
+   */
    cout.precision(oldprec) ;
 }
