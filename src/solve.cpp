@@ -114,6 +114,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    double starttime = walltime() ;
    ull totlookups = 0 ;
    int initd = pt.lookup(p) ;
+   solutionsfound = 0 ;
    for (int d=initd; d <= maxdepth; d++) {
       if (d < optmindepth)
          continue ;
@@ -124,7 +125,6 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, d, p) ;
-      solutionsfound = 0 ;
 #ifdef USE_PTHREADS
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
