@@ -58,7 +58,8 @@ struct ioworkitem {
    unsigned int bytecnt ;
 } ;
 struct ioqueue {
-   void init(struct prunetable *pt_, FILE *f_ = 0) ;
+   void initin(struct prunetable *pt_, istream *f_ = 0) ;
+   void initout(struct prunetable *pt_, ostream *f_ = 0) ;
    void waitthread(int i) ;
    void queuepackwork(ull *mem, ull longcnt,
                         uchar *buf, unsigned int bytecnt) ;
@@ -68,7 +69,8 @@ struct ioqueue {
    int nextthread ;
    struct prunetable *pt ;
    ioworkitem ioworkitems[MAXTHREADS] ;
-   FILE *f ;
+   istream *inf ;
+   ostream *outf ;
 } ;
 extern struct ioqueue ioqueue ;
 struct prunetable {
@@ -105,7 +107,7 @@ struct prunetable {
    void packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) ;
    void unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) ;
    void writeblock(ull *mem, ull longcnt) ;
-   void readblock(ull *mem, ull explongcnt, FILE *f) ;
+   void readblock(ull *mem, ull explongcnt, istream *f) ;
    void writept(const puzdef &pd) ;
    int readpt(const puzdef &pd) ;
    ull size, hmask, popped, totpop ;

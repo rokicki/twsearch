@@ -5,11 +5,11 @@
  *   This code manages parsing a tws file (an extension of the ksolve
  *   format).
  */
-vector<string> getline(FILE *f, ull &checksum) ;
+vector<string> getline(istream *f, ull &checksum) ;
 void expect(const vector<string> &toks, int cnt) ;
 int getnumber(int minval, const string &s) ;
-setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) ;
-puzdef readdef(FILE *f) ;
+setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) ;
+puzdef readdef(istream *f) ;
 void addmovepowers(puzdef &pd) ;
 extern int nocorners, nocenters, noedges, ignoreori ;
 #define READKSOLVE_H

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <cstdlib>
 #include <strings.h>
@@ -54,9 +55,13 @@ const char *legalmovelist = 0 ;
 int main(int argc, const char **argv) {
    int seed = 0 ;
    int forcearray = 0 ;
+// disable saving pruning tables when running under WASM
+#ifdef WASM
+   nowrite = 1 ;
+#endif
    init_util() ;
    init_threads() ;
-   cout << "# This is twsearch 0.1 (C) 2018 Tomas Rokicki." << endl ;
+   cout << "# This is twsearch 0.2 (C) 2020 Tomas Rokicki." << endl ;
    cout << "#" ;
    for (int i=0; i<argc; i++)
       cout << " " << argv[i] ;
@@ -217,8 +222,9 @@ default:
       srand48(time(0)) ;
    if (argc <= 1)
       error("! please provide a twsearch file name on the command line") ;
-   FILE *f = fopen(argv[1], "r") ;
-   if (f == 0)
+   ifstream f ;
+   f.open(argv[1], ifstream::in) ;
+   if (f.fail())
       error("! could not open file ", argv[1]) ;
    int sawdot = 0 ;
    for (int i=0; argv[1][i]; i++) {
@@ -230,7 +236,7 @@ default:
       } else if (!sawdot)
          inputbasename.push_back(argv[1][i]) ;
    }
-   puzdef pd = readdef(f) ;
+   puzdef pd = readdef(&f) ;
    addmovepowers(pd) ;
    if (legalmovelist)
       filtermovelist(pd, legalmovelist) ;
@@ -315,19 +321,22 @@ default:
          for (int i=0; i<(int)movelist.size(); i++)
             domove(pd, scr, movelist[i]) ;
       } else {
-         f = fopen(argv[2], "r") ;
-         if (f == 0)
+         ifstream scrambles ;
+         scrambles.open(argv[2], ifstream::in) ;
+         if (scrambles.fail())
             error("! could not open scramble file ", argv[2]) ;
-         readfirstscramble(f, pd, scr) ;
-         fclose(f) ;
+         readfirstscramble(&scrambles, pd, scr) ;
+         scrambles.close() ;
       }
       prunetable pt(pd, maxmem) ;
       processlines2(pd, [&](const puzdef &pd, setval p1sol, const char *p1str) {
                                dophase2(pd, scr, p1sol, pt, p1str); }) ;
    } else if (argc > 2) {
-      f = fopen(argv[2], "r") ;
-      if (f == 0)
+      ifstream scrambles ;
+      scrambles.open(argv[2], ifstream::in) ;
+      if (scrambles.fail())
          error("! could not open scramble file ", argv[2]) ;
-      processscrambles(f, pd) ;
+      processscrambles(&scrambles, pd) ;
+      scrambles.close() ;
    }
 }

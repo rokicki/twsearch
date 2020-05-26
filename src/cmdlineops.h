@@ -9,8 +9,8 @@
  *   streaming a sequence of positions through various operations.
  */
 void solvecmdline(puzdef &pd, const char *scr) ;
-void processscrambles(FILE *f, puzdef &pd) ;
-void readfirstscramble(FILE *f, puzdef &pd, setval sv) ;
+void processscrambles(istream *f, puzdef &pd) ;
+void readfirstscramble(istream *f, puzdef &pd, setval sv) ;
 extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;
 void uniqit(const puzdef &pd, setval p, const char *s) ;

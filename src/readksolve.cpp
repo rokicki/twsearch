@@ -2,13 +2,13 @@
 #include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori ;
-vector<string> getline(FILE *f, ull &checksum) {
+vector<string> getline(istream *f, ull &checksum) {
    string s ;
    int c ;
    while (1) {
       s.clear() ;
       while (1) {
-         c = getc(f) ;
+         c = f->get();
          if (c != EOF)
             checksum = 31 * checksum + c ;
          if (c == EOF || c == 10 || c == 13) {
@@ -111,7 +111,7 @@ int omitset(string s) {
       return 1 ;
    return 0 ;
 }
-setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
+setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
    setval r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
    int numseq = 0 ;
@@ -240,7 +240,7 @@ setval readposition(puzdef &pz, char typ, FILE *f, ull &checksum) {
    }
    return r ;
 }
-puzdef readdef(FILE *f) {
+puzdef readdef(istream *f) {
    puzdef pz ;
    int state = 0 ;
    ull checksum = 0 ;

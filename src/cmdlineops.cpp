@@ -17,7 +17,7 @@ void solvecmdline(puzdef &pd, const char *scr) {
       domove(pd, p1, movelist[i]) ;
    solveit(pd, pt, noname, p1) ;
 }
-void processscrambles(FILE *f, puzdef &pd) {
+void processscrambles(istream *f, puzdef &pd) {
    string scramblename ;
    ull checksum = 0 ;
    stacksetval p1(pd) ;
@@ -50,7 +50,7 @@ void processscrambles(FILE *f, puzdef &pd) {
       }
    }
 }
-void readfirstscramble(FILE *f, puzdef &pd, setval sv) {
+void readfirstscramble(istream *f, puzdef &pd, setval sv) {
    string scramblename ;
    ull checksum = 0 ;
    while (1) {
