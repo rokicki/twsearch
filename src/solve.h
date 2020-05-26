@@ -13,6 +13,7 @@ extern ull solutionsfound, solutionsneeded ;
 extern int noearlysolutions ;
 extern int phase2 ;
 extern int optmindepth ;
+extern string lastsolution ;
 struct solveworker {
    vector<allocsetval> posns ;
    vector<int> movehist ;

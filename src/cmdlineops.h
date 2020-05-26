@@ -3,6 +3,7 @@
 #include <set>
 #include <functional>
 #include "puzdef.h"
+#include "prunetable.h"
 /*
  *   The twsearch program also includes a number of utility operations,
  *   such as uniquifying a set of positions.  These routines support
@@ -10,6 +11,7 @@
  */
 void solvecmdline(puzdef &pd, const char *scr) ;
 void processscrambles(istream *f, puzdef &pd) ;
+void processscrambles(istream *f, puzdef &pd, prunetable &pt) ;
 void readfirstscramble(istream *f, puzdef &pd, setval sv) ;
 extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;

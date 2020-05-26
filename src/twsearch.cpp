@@ -28,6 +28,7 @@
 #include "parsemoves.h"
 #include "cmdlineops.h"
 #include "rotations.h"
+#include "twsearch.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -71,8 +72,14 @@ void doinit() {
    }
 }
 int forcearray = 0 ;
-using argvtype = const char ** ;
+/*
+ *   Can be called multiple times at the start.
+ */
 void processargs(int &argc, argvtype &argv) {
+   cout << "At start argc is " << argc ;
+   for (int i=0; i<argc; i++)
+      cout << " " << argv[i] ;
+   cout << endl ;
    while (argc > 1 && argv[1][0] == '-') {
       argc-- ;
       argv++ ;

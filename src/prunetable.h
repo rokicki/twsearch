@@ -74,6 +74,7 @@ struct ioqueue {
 } ;
 extern struct ioqueue ioqueue ;
 struct prunetable {
+   prunetable() {}
    prunetable(const puzdef &pd, ull maxmem) ;
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd) ;

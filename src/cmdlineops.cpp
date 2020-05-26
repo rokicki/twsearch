@@ -18,10 +18,13 @@ void solvecmdline(puzdef &pd, const char *scr) {
    solveit(pd, pt, noname, p1) ;
 }
 void processscrambles(istream *f, puzdef &pd) {
+   prunetable pt(pd, maxmem) ;
+   processscrambles(f, pd, pt) ;
+}
+void processscrambles(istream *f, puzdef &pd, prunetable &pt) {
    string scramblename ;
    ull checksum = 0 ;
    stacksetval p1(pd) ;
-   prunetable pt(pd, maxmem) ;
    while (1) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
