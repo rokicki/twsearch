@@ -76,10 +76,6 @@ int forcearray = 0 ;
  *   Can be called multiple times at the start.
  */
 void processargs(int &argc, argvtype &argv) {
-   cout << "At start argc is " << argc ;
-   for (int i=0; i<argc; i++)
-      cout << " " << argv[i] ;
-   cout << endl ;
    while (argc > 1 && argv[1][0] == '-') {
       argc-- ;
       argv++ ;
