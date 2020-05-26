@@ -1,5 +1,6 @@
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include <vector>
 #include <cstdlib>
 #include <strings.h>
@@ -52,20 +53,26 @@ int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
     checksolvable, doss, doorderedgs,dosyms ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
-int main(int argc, const char **argv) {
-   int seed = 0 ;
-   int forcearray = 0 ;
+static int initialized = 0 ;
+int seed = 0 ;
+void doinit() {
+   if (!initialized) {
 // disable saving pruning tables when running under WASM
 #ifdef WASM
-   nowrite = 1 ;
+      nowrite = 1 ;
 #endif
-   init_util() ;
-   init_threads() ;
-   cout << "# This is twsearch 0.2 (C) 2020 Tomas Rokicki." << endl ;
-   cout << "#" ;
-   for (int i=0; i<argc; i++)
-      cout << " " << argv[i] ;
-   cout << endl << flush ;
+      init_util() ;
+      init_threads() ;
+      if (seed)
+         srand48(seed) ;
+      else
+         srand48(time(0)) ;
+      initialized = 1 ;
+   }
+}
+int forcearray = 0 ;
+using argvtype = const char ** ;
+void processargs(int &argc, argvtype &argv) {
    while (argc > 1 && argv[1][0] == '-') {
       argc-- ;
       argv++ ;
@@ -216,10 +223,46 @@ default:
          }
       }
    }
-   if (seed)
-      srand48(seed) ;
+}
+puzdef makepuzdef(istream *f) {
+   doinit() ;
+   puzdef pd = readdef(f) ;
+   addmovepowers(pd) ;
+   if (legalmovelist)
+      filtermovelist(pd, legalmovelist) ;
+   if (nocorners)
+      pd.addoptionssum("nocorners") ;
+   if (nocenters)
+      pd.addoptionssum("nocenters") ;
+   if (noedges)
+      pd.addoptionssum("noedges") ;
+   if (doss || checkbeforesolve)
+      gs = new generatingset(pd) ;
+   if (pd.rotations.size())
+      calcrotations(pd) ;
+   calculatesizes(pd) ;
+   calclooseper(pd) ;
+   if (ccount == 0)
+      makecanonstates(pd) ;
    else
-      srand48(time(0)) ;
+      makecanonstates2(pd) ;
+   cout << "Calculated canonical states in " << duration() << endl << flush ;
+   showcanon(pd, docanon) ;
+//   gensymm(pd) ;
+   return pd ;
+}
+puzdef makepuzdef(string s) {
+   stringstream is(s) ;
+   return makepuzdef(&is) ;
+}
+#ifndef ASLIBRARY
+int main(int argc, const char **argv) {
+   cout << "# This is twsearch 0.2 (C) 2020 Tomas Rokicki." << endl ;
+   cout << "#" ;
+   for (int i=0; i<argc; i++)
+      cout << " " << argv[i] ;
+   cout << endl << flush ;
+   processargs(argc, argv) ;
    if (argc <= 1)
       error("! please provide a twsearch file name on the command line") ;
    ifstream f ;
@@ -236,35 +279,13 @@ default:
       } else if (!sawdot)
          inputbasename.push_back(argv[1][i]) ;
    }
-   puzdef pd = readdef(&f) ;
-   addmovepowers(pd) ;
-   if (legalmovelist)
-      filtermovelist(pd, legalmovelist) ;
-   if (nocorners)
-      pd.addoptionssum("nocorners") ;
-   if (nocenters)
-      pd.addoptionssum("nocenters") ;
-   if (noedges)
-      pd.addoptionssum("noedges") ;
-   if (doss || checkbeforesolve)
-      gs = new generatingset(pd) ;
+   puzdef pd = makepuzdef(&f) ;
    if (doorderedgs)
       runorderedgs(pd) ;
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
    }
-   if (pd.rotations.size())
-      calcrotations(pd) ;
-   calculatesizes(pd) ;
-   calclooseper(pd) ;
-   if (ccount == 0)
-      makecanonstates(pd) ;
-   else
-      makecanonstates2(pd) ;
-   cout << "Calculated canonical states in " << duration() << endl << flush ;
-   showcanon(pd, docanon) ;
-//   gensymm(pd) ;
    if (dogod) {
       int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem ;
       int statesfitsa = forcearray ||
@@ -340,3 +361,4 @@ default:
       scrambles.close() ;
    }
 }
+#endif

@@ -5,7 +5,12 @@
 #include <sys/time.h>
 double start ;
 int verbose = 1 ;
+// for now, WASM limit is 1GB; normal C++ limit is 8GB
+#ifdef WASM
+ll maxmem = 1LL * 1024LL * 1024LL * 1024LL ;
+#else
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
+#endif
 int quarter ;
 double walltime() {
    struct timeval tv ;

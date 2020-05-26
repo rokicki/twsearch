@@ -5,7 +5,7 @@
 #include "city.h"
 fillworker fillworkers[MAXTHREADS] ;
 struct ioqueue ioqueue ;
-string inputbasename ;
+string inputbasename = "unknownpuzzle" ;
 int nowrite ;
 ull fasthash(int n, const setval sv) {
    ull r = CityHash64((const char *)sv.dat, n) ;
