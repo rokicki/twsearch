@@ -273,6 +273,7 @@ int main(int argc, const char **argv) {
    if (f.fail())
       error("! could not open file ", argv[1]) ;
    int sawdot = 0 ;
+   inputbasename.clear() ;
    for (int i=0; argv[1][i]; i++) {
       if (argv[1][i] == '.')
          sawdot = 1 ;
