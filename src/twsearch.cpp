@@ -49,7 +49,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
       cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq,
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs,dosyms ;
 const char *scramblealgo = 0 ;
@@ -178,6 +178,9 @@ case 'u':
             douniq++ ;
             if (argv[0][2] >= '0')
                proclim = atoll(argv[0]+2) ;
+            break ;
+case 'i':
+            doinv++ ;
             break ;
 case 's':
             dosolvelines++ ;
@@ -321,6 +324,8 @@ int main(int argc, const char **argv) {
       solvecmdline(pd, scramblealgo) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (doinv)
+      processlines3(pd, invertit) ;
    if (dosyms)
       processlines(pd, symsit) ;
    if (doorder)

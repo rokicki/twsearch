@@ -98,6 +98,32 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
          exit(0) ;
    }
 }
+void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
+   if (movelist.size() == 0) {
+      cout << " " ;
+   } else {
+      for (int i=0; i<(int)movelist.size(); i++) {
+         cout << " " ;
+         const moove &mv = pd.moves[movelist[movelist.size()-1-i]] ;
+         int b = mv.base ;
+         int o = pd.basemoveorders[b] ;
+         int twist = (o - mv.twist) % o ;
+         cout << pd.basemoves[b].name ;
+         if (twist < 1) {
+            cout << "?" ;
+         } else if (twist == 1) {
+            // nothing
+         } else if (twist + twist <= o) {
+            cout << twist ;
+         } else if (twist + 1 == o) {
+            cout << "'" ;
+         } else {
+            cout << (o - twist) << "'" ;
+         }
+      }
+   }
+   cout << endl ;
+}
 void symsit(const puzdef &pd, setval p, const char *s) {
    stacksetval p2(pd) ;
    int symval = slowmodm(pd, p, p2) ;
@@ -198,5 +224,15 @@ void processlines2(const puzdef &pd, function<void(const puzdef &, setval, const
       for (int i=0; i<(int)movelist.size(); i++)
          domove(pd, p1, movelist[i]) ;
       f(pd, p1, s.c_str()) ;
+   }
+}
+void processlines3(const puzdef &pd, function<void(const puzdef &, vector<int> &moveids, const char *)> f) {
+   string s ;
+   stacksetval p1(pd) ;
+   while (getline(cin, s)) {
+      pd.assignpos(p1, pd.solved) ;
+      vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      globalinputmovecount = moveid.size() ;
+      f(pd, moveid, s.c_str()) ;
    }
 }

@@ -61,6 +61,8 @@ Options:
 
 `-g`    Calculate God's algorithm.
 
+`-i`    Read sequences from stdin and write inverted sequences to stdout.
+
 `-m` *#*  Set the max depth to search.
 
 `-M` *#*  Set the maximum memory size as an integer number of megabytes.

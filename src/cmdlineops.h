@@ -16,6 +16,7 @@ void readfirstscramble(istream *f, puzdef &pd, setval sv) ;
 extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;
 void uniqit(const puzdef &pd, setval p, const char *s) ;
+void invertit(const puzdef &pd, vector<int> &v, const char *s) ;
 void symsit(const puzdef &pd, setval p, const char *s) ;
 void orderit(const puzdef &pd, setval p, const char *s) ;
 void emitmove(const puzdef &pd, setval p, const char *s) ;
@@ -24,6 +25,7 @@ void showrandompos(const puzdef &pd) ;
 extern int globalinputmovecount ;
 void processlines(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) ;
 void processlines2(const puzdef &pd, function<void(const puzdef &, setval, const char *)> f) ;
+void processlines3(const puzdef &pd, function<void(const puzdef &, vector<int> &v, const char *)> f) ;
 extern ll proclim ;
 #define CMDLINEOPS_H
 #endif
