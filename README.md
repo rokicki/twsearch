@@ -128,7 +128,7 @@ Options:
                move "U D" (a clockwise turn of both the up and down faces)
                on the 3x3x3, use the command
 
-                  echo "U D" | ./twsearch
+                  echo "U D" | ./twsearch --showmoves samples/3x3x3.tws
 
 `--showpositions`  Given a set of scrambles on standard input (one per line),
                  writes to standard output the scramble-format for those
