@@ -75,6 +75,8 @@ void makecanonstates(puzdef &pd) {
       int fromst = qg++ ;
       int ms = 0 ;
       for (int m=0; m<nbase; m++) {
+         // if there's a lesser move in the state that commutes with this
+         // move m, we can't move m.
          if ((stateb & commutes[m] & ((1LL << m) - 1)) != 0) {
             canonmask[fromst] |= 1LL << m ;
             continue ;
@@ -84,6 +86,15 @@ void makecanonstates(puzdef &pd) {
             continue ;
          }
          ull nstb = (stateb & commutes[m]) | (1LL << m) ;
+         // if pair of bits are set with the same commutating moves,
+         // we can clear out the higher ones.
+         // this optimization keeps state count from going exponential
+         // for very big cubes.
+         for (int i=0; nstb>>i; i++)
+            if ((nstb >> i) & 1)
+               for (int j=i+1; nstb>>j; j++)
+                  if (((nstb >> j) & 1) && commutes[i] == commutes[j])
+                     nstb &= ~(1LL << j) ;
          int thism = -1 ;
          int thiscnt = 0 ;
          if (quarter) {
