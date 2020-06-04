@@ -282,7 +282,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
 void prunetable::checkextend(const puzdef &pd) {
    if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
        baseval > hibase ||
-       (pd.logstates <= 50 && canonseqcnt[baseval+2] > pd.llstates))
+       (pd.logstates <= 50 && totpop * 2 > pd.llstates))
       return ;
    ull longcnt = (size + 31) >> 5 ;
    cout << "Demoting memory values " << flush ;
