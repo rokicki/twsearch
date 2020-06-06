@@ -351,7 +351,8 @@ static inline int compare(const void *a_, const void *b_) {
    return 0 ;
 }
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
-                    loosetype *beg, loosetype *end, int temp) {
+                    loosetype *beg, loosetype *end, int temp,
+                    loosetype *lim) {
    size_t numel = (end-beg) / looseper ;
    if (verbose > 1 || temp)
       cout << "Created " << numel << " elements in " << duration() << endl << flush ;
@@ -379,6 +380,8 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
    }
    if (verbose > 1 || temp)
       cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
+   if (w + looseper >= lim)
+      error("! out of memory") ;
    return w ;
 }
 /*
@@ -419,10 +422,10 @@ void doarraygod(const puzdef &pd) {
             loosepack(pd, p2, writer) ;
             writer += looseper ;
             if (writer + looseper >= lim)
-               writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+               writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
          }
       }
-      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      writer = sortuniq(s_2, s_1, levend, writer, 0, lim) ;
       newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
       tot += newseen ;
@@ -456,7 +459,7 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
       loosepack(pd, posns[sp], writer) ;
       writer += looseper ;
       if (writer + looseper >= lim)
-         writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+         writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
       return ;
    }
    ull mask = canonmask[st] ;
@@ -492,7 +495,7 @@ void doarraygod2(const puzdef &pd) {
       ull newseen = 0 ;
       levend = writer ;
       dorecurgod(pd, d, 0, 0) ;
-      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      writer = sortuniq(s_2, s_1, levend, writer, 0, lim) ;
       newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
       tot += newseen ;
@@ -579,10 +582,10 @@ void doarraygodsymm(const puzdef &pd) {
             loosepack(pd, p3, writer, 0, sym>1) ;
             writer += looseper ;
             if (writer + looseper >= lim)
-               writer = sortuniq(s_2, s_1, levend, writer, 1) ;
+               writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
          }
       }
-      writer = sortuniq(s_2, s_1, levend, writer, 0) ;
+      writer = sortuniq(s_2, s_1, levend, writer, 0, lim) ;
       newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
       tot += newseen ;
