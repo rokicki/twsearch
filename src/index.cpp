@@ -237,7 +237,7 @@ void calclooseper(const puzdef &pd) {
       bits++ ;
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
    looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
-   if (usehashenc && looseper >= 16) {
+   if (usehashenc && looseper >= 4) {
       looseper = 4 ;
       looseiper = 4 ;
       usehashenc += 256 ;
