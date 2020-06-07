@@ -324,7 +324,7 @@ int main(int argc, const char **argv) {
    if (dotimingtest)
       timingtest(pd) ;
    if (! phase2 && scramblealgo)
-      solvecmdline(pd, scramblealgo) ;
+      solvecmdline(pd, scramblealgo, gs) ;
    if (douniq)
       processlines(pd, uniqit) ;
    if (doinv)
@@ -369,7 +369,7 @@ int main(int argc, const char **argv) {
       scrambles.open(argv[2], ifstream::in) ;
       if (scrambles.fail())
          error("! could not open scramble file ", argv[2]) ;
-      processscrambles(&scrambles, pd) ;
+      processscrambles(&scrambles, pd, gs) ;
       scrambles.close() ;
    }
 }

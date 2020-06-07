@@ -70,7 +70,7 @@ extern "C" const char *w_solveposition(const char *s) {
    lastsolution = "--no solution--" ;
    checkprunetable() ;
    stringstream is(s) ;
-   processscrambles(&is, wasmdata.pd, wasmdata.pt) ;
+   processscrambles(&is, wasmdata.pd, wasmdata.pt, 0) ;
    return lastsolution.c_str() ;
 }
 #ifdef WASMTEST

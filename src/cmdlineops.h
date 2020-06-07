@@ -4,14 +4,15 @@
 #include <functional>
 #include "puzdef.h"
 #include "prunetable.h"
+#include "generatingset.h"
 /*
  *   The twsearch program also includes a number of utility operations,
  *   such as uniquifying a set of positions.  These routines support
  *   streaming a sequence of positions through various operations.
  */
-void solvecmdline(puzdef &pd, const char *scr) ;
-void processscrambles(istream *f, puzdef &pd) ;
-void processscrambles(istream *f, puzdef &pd, prunetable &pt) ;
+void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) ;
+void processscrambles(istream *f, puzdef &pd, generatingset *gs) ;
+void processscrambles(istream *f, puzdef &pd, prunetable &pt, generatingset *gs) ;
 void readfirstscramble(istream *f, puzdef &pd, setval sv) ;
 extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;

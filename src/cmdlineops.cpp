@@ -7,7 +7,7 @@
 #include "index.h"
 #include "rotations.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
-void solvecmdline(puzdef &pd, const char *scr) {
+void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
    stacksetval p1(pd) ;
    pd.assignpos(p1, pd.solved) ;
    string noname ;
@@ -15,13 +15,13 @@ void solvecmdline(puzdef &pd, const char *scr) {
    vector<setval> movelist = parsemovelist_generously(pd, scr) ;
    for (int i=0; i<(int)movelist.size(); i++)
       domove(pd, p1, movelist[i]) ;
-   solveit(pd, pt, noname, p1) ;
+   solveit(pd, pt, noname, p1, gs) ;
 }
-void processscrambles(istream *f, puzdef &pd) {
+void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
    prunetable pt(pd, maxmem) ;
-   processscrambles(f, pd, pt) ;
+   processscrambles(f, pd, pt, gs) ;
 }
-void processscrambles(istream *f, puzdef &pd, prunetable &pt) {
+void processscrambles(istream *f, puzdef &pd, prunetable &pt, generatingset *gs) {
    string scramblename ;
    ull checksum = 0 ;
    stacksetval p1(pd) ;
@@ -33,7 +33,7 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt) {
          expect(toks, 2) ;
          scramblename = twstrdup(toks[1].c_str()) ; ;
          setval p = readposition(pd, 'S', f, checksum) ;
-         solveit(pd, pt, scramblename, p) ;
+         solveit(pd, pt, scramblename, p, gs) ;
       } else if (toks[0] == "ScrambleAlg") {
          expect(toks, 2) ;
          scramblename = twstrdup(toks[1].c_str()) ; ;
@@ -47,7 +47,7 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt) {
             for (int i=0; i<(int)toks.size(); i++)
                domove(pd, p1, findmove_generously(pd, toks[i])) ;
          }
-         solveit(pd, pt, scramblename, p1) ;
+         solveit(pd, pt, scramblename, p1, gs) ;
       } else {
          error("! unsupported command in scramble file") ;
       }
