@@ -61,6 +61,9 @@ Options:
 
 `-g`    Calculate God's algorithm.
 
+`-H`    When doing God's algorithm calculations, use 128-bit hash to
+        encode states rather than actual packed state representation.
+
 `-i`    Read sequences from stdin and write inverted sequences to stdout.
 
 `-m` *#*  Set the max depth to search.

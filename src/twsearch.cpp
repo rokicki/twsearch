@@ -51,7 +51,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    checksolvable, doss, doorderedgs,dosyms ;
+    checksolvable, doss, doorderedgs, dosyms, usehashenc ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -150,6 +150,9 @@ case 'R':
             seed = atol(argv[1]) ;
             argc-- ;
             argv++ ;
+            break ;
+case 'H':
+            usehashenc++ ;
             break ;
 case 'M':
             maxmem = 1048576 * atoll(argv[1]) ;

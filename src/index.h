@@ -6,7 +6,7 @@
  *   less dense but faster.
  */
 extern vector<pair<ull, int> > parts ;
-extern int looseper, looseiper, basebits ;
+extern int looseper, looseiper, basebits, usehashenc ;
 void calclooseper(const puzdef &pd) ;
 long long permtoindex(const uchar *perm, int n) ;
 void indextoperm(uchar *perm, ull ind, int n) ;

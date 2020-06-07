@@ -1,4 +1,5 @@
 #include "index.h"
+#include "city.h"
 #include <iostream>
 vector<pair<ull, int> > parts ;
 long long permtoindex(const uchar *perm, int n) {
@@ -236,12 +237,22 @@ void calclooseper(const puzdef &pd) {
       bits++ ;
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
    looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
+   if (usehashenc && looseper >= 16) {
+      looseper = 4 ;
+      looseiper = 4 ;
+      usehashenc += 256 ;
+   }
    cout << "Requiring " << bits << " bits " << looseper*sizeof(loosetype)
         << " bytes per entry; " << (looseiper*sizeof(loosetype))
         << " from identity." << endl ;
 }
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) {
    uchar *p = pos.dat ;
+   if (usehashenc >= 256) {
+      uint128 *wp = (uint128*)w ;
+      *wp = CityHash128((const char *)p, pd.totsize) ;
+      return ;
+   }
    ull accum = 0 ;
    int storedbits = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
@@ -305,6 +316,9 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
 }
 void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
    uchar *p = pos.dat ;
+   if (usehashenc >= 256) {
+      error("! can't use hash encoding if you need to unpack") ;
+   }
    ull accum = 0 ;
    int storedbits = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {

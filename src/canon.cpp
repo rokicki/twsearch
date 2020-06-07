@@ -241,6 +241,27 @@ void makecanonstates2(puzdef &pd) {
    freeContainer(statemap) ;
    freeContainer(ccseen) ;
 }
+vector<int> movestack ;
+void showseqs(const puzdef &pd, int togo, int st) {
+   if (togo == 0) {
+      for (auto m : movestack)
+         cout << " " << pd.moves[m].name ;
+      cout << endl ;
+      return ;
+   }
+   ull mask = canonmask[st] ;
+   const vector<int> &ns = canonnext[st] ;
+   for (int i=0; i<(int)pd.moves.size(); i++) {
+      const moove &mv = pd.moves[i] ;
+      if ((mask >> mv.cs) & 1)
+         continue ;
+      if (mv.twist != 1)
+         continue ;
+      movestack.push_back(i) ;
+      showseqs(pd, togo-1, ns[mv.cs]) ;
+      movestack.pop_back() ;
+   }
+}
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;
    int nstates = canonmask.size() ;
@@ -279,4 +300,10 @@ void showcanon(const puzdef &pd, int show) {
          }
       }
    }
+/*
+   for (int d=1; ; d++) {
+      cout << "Seqs of length " << d << endl ;
+      showseqs(pd, d, 0) ;
+   }
+ */
 }
