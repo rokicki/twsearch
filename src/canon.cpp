@@ -55,6 +55,20 @@ void makecanonstates(puzdef &pd) {
             commutes[pd.moves[j].cs] &= ~(1LL << pd.moves[i].cs) ;
          }
       }
+/*
+   cout << "Commutes table:\n" ;
+   for (int i=0; i<nbase; i++) {
+      for (int j=0; j<(int)pd.moves.size(); j++)
+         if (pd.moves[j].cs == i) {
+            cout << pd.moves[j].name << " " ;
+            break ;
+         }
+      for (int j=0; j<nbase; j++)
+         cout << ((commutes[i] >> j) & 1) ;
+      cout << endl ;
+   }
+ */
+   pd.commutes = commutes ;
    using trip = tuple<ull, int, int> ;
    map<trip, int> statemap ;
    vector<trip > statebits ;
@@ -77,7 +91,7 @@ void makecanonstates(puzdef &pd) {
       for (int m=0; m<nbase; m++) {
          // if there's a lesser move in the state that commutes with this
          // move m, we can't move m.
-         if ((stateb & commutes[m] & ((1LL << m) - 1)) != 0) {
+         if ((stateb & commutes[m] & ((1LL << m) - 1)) != 0) { // ordering
             canonmask[fromst] |= 1LL << m ;
             continue ;
          }
@@ -261,6 +275,79 @@ void showseqs(const puzdef &pd, int togo, int st) {
       showseqs(pd, togo-1, ns[mv.cs]) ;
       movestack.pop_back() ;
    }
+}
+vector<int> mergemoves(const puzdef &pd, vector<int> mvseq) {
+   // move cancellations need to be handled separately from
+   // canonicalization.
+   while (1) {
+      int didcancel = 0 ;
+      for (int i=0; i<(int)mvseq.size(); i++) {
+         int j = i+1 ;
+         while (j < (int)mvseq.size() &&
+                pd.moves[mvseq[i]].base != pd.moves[mvseq[j]].base &&
+                (1 & (pd.commutes[pd.moves[mvseq[i]].cs] >> pd.moves[mvseq[j]].cs)))
+            j++ ;
+         if (j < (int)mvseq.size() && 
+             pd.moves[mvseq[i]].base == pd.moves[mvseq[j]].base) {
+            int twist = (pd.moves[mvseq[i]].twist + pd.moves[mvseq[j]].twist) %
+                        pd.basemoveorders[pd.moves[mvseq[i]].base] ;
+            mvseq.erase(mvseq.begin()+j) ;
+            if (twist == 0) {
+               mvseq.erase(mvseq.begin()+i) ;
+            } else {
+               int nind = mvseq[i] ;
+               while (pd.moves[nind].twist > twist && nind > 0 &&
+                      pd.moves[nind-1].base == pd.moves[mvseq[i]].base)
+                  nind-- ;
+               while (pd.moves[nind].twist < twist &&
+                      nind+1 < (int)pd.moves.size() &&
+                      pd.moves[nind+1].base == pd.moves[mvseq[i]].base)
+                  nind++ ;
+               if (pd.moves[nind].twist != twist ||
+                   pd.moves[nind].base != pd.moves[mvseq[i]].base)
+                  error("! could not find combined move") ;
+               mvseq[i] = nind ;
+            }
+            didcancel = 1 ;
+            i-- ; // check this one again
+         }
+      }
+      if (!didcancel)
+         break ;
+   }
+   return mvseq ;
+}
+vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) {
+   mvseq = mergemoves(pd, mvseq) ;
+   vector<int> fwdcnt(mvseq.size()) ;
+   for (int i=0; i<(int)mvseq.size(); i++) {
+      const moove &mv = pd.moves[mvseq[i]] ;
+      for (int j=0; j<i; j++)
+         if (((pd.commutes[pd.moves[mvseq[j]].cs] >> mv.cs) & 1) == 0)
+            fwdcnt[j]++ ;
+   }
+   vector<int> r ;
+   for (int i=mvseq.size()-1; i>=0; i--) {
+      int best = -1 ;
+      for (int j=mvseq.size()-1; j>=0; j--)
+         if (fwdcnt[j] == 0 && (best < 0 || mvseq[j] < mvseq[best]))
+            best = j ;
+      for (int j=0; j<best; j++)
+         if (((pd.commutes[pd.moves[mvseq[j]].cs] >> pd.moves[mvseq[best]].cs) & 1) == 0)
+            fwdcnt[j]-- ;
+      fwdcnt[best] = -1 ;
+      r.push_back(mvseq[best]) ;
+   }
+   reverse(r.begin(), r.end()) ;
+//  now test.  we can remove this if necessary.
+   int cst = 0 ;
+   for (int i=0; i<(int)r.size(); i++) {
+      const moove &mv = pd.moves[r[i]] ;
+      if ((canonmask[cst] >> mv.cs) & 1)
+         error("! bad move in canonicalized.") ;
+      cst = canonnext[cst][mv.cs] ;
+   }
+   return r ;
 }
 void showcanon(const puzdef &pd, int show) {
    cout.precision(16) ;

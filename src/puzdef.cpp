@@ -237,6 +237,6 @@ void domove(const puzdef &pd, setval p, setval pos) {
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
 }
-void domove(puzdef &pd, setval p, int mv) {
+void domove(const puzdef &pd, setval p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;
 }

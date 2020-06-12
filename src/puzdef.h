@@ -81,6 +81,7 @@ struct puzdef {
    setval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
    vector<int> basemoveorders ;
+   vector<ull> commutes ;
    int totsize ;
    int ncs ;
    setval id ;
@@ -214,6 +215,6 @@ extern vector<allocsetval> posns ;
 extern vector<int> movehist ;
 void calculatesizes(puzdef &pd) ;
 void domove(const puzdef &pd, setval p, setval pos) ;
-void domove(puzdef &pd, setval p, int mv) ;
+void domove(const puzdef &pd, setval p, int mv) ;
 #define PUZDEF_H
 #endif
