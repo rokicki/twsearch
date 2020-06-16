@@ -99,6 +99,8 @@ void processargs(int &argc, argvtype &argv) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
             ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--distinguishall") == 0) {
+            distinguishall = 1 ;
          } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
             noearlysolutions = 1 ;
          } else if (strcmp(argv[0], "--checkbeforesolve") == 0) {
@@ -250,6 +252,8 @@ puzdef makepuzdef(istream *f) {
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (distinguishall)
+      pd.addoptionssum("distinguishall") ;
    if (doss || checkbeforesolve)
       gs = new generatingset(pd) ;
    if (pd.rotations.size())

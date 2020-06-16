@@ -46,6 +46,13 @@ void makecanonstates(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    for (int i=0; i<nbase; i++)
       commutes[i] = (1LL << nbase) - 1 ;
+   /*
+    *   All moves in a particular class must commute against all moves in
+    *   another class, or we treat the enture class as not commuting.
+    *   For instance, on the 5x5x5, 3U2 and 3R2 commute, but 3U and 3R does
+    *   not, so we mark the entire 3U class as not commuting with the entire
+    *   3R class.
+    */
    for (int i=0; i<(int)pd.moves.size(); i++)
       for (int j=0; j<i; j++) {
          pd.mul(pd.moves[i].pos, pd.moves[j].pos, p1) ;
@@ -276,6 +283,9 @@ void showseqs(const puzdef &pd, int togo, int st) {
       movestack.pop_back() ;
    }
 }
+/*
+ *   Merge moves (with cancellations) in the given sequence.
+ */
 vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq) {
    // move cancellations need to be handled separately from
    // canonicalization.
