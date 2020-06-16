@@ -1,7 +1,7 @@
 #include "readksolve.h"
 #include "parsemoves.h"
 #include <iostream>
-int nocorners, nocenters, noedges, ignoreori ;
+int nocorners, nocenters, noedges, ignoreori, distinguishall ;
 vector<string> getline(istream *f, ull &checksum) {
    string s ;
    int c ;
@@ -341,6 +341,9 @@ puzdef readdef(istream *f) {
       for (int j=0; j<n; j++)
          p[j] = 0 ;
       p += n ;
+   }
+   if (distinguishall) {
+      pz.solved = pz.id ;
    }
    pz.checksum = checksum ;
    return pz ;
