@@ -11,6 +11,6 @@ int getnumber(int minval, const string &s) ;
 setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) ;
 puzdef readdef(istream *f) ;
 void addmovepowers(puzdef &pd) ;
-extern int nocorners, nocenters, noedges, ignoreori ;
+extern int nocorners, nocenters, noedges, ignoreori, distinguishall ;
 #define READKSOLVE_H
 #endif
