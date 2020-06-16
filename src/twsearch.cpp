@@ -51,7 +51,8 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 }
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    checksolvable, doss, doorderedgs, dosyms, usehashenc ;
+    checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
+    domergeseqs ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -120,6 +121,10 @@ void processargs(int &argc, argvtype &argv) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
             nowrite++ ;
+         } else if (strcmp(argv[0], "--mergeseqs") == 0) {
+            domergeseqs++ ;
+         } else if (strcmp(argv[0], "--cancelseqs") == 0) {
+            docancelseqs++ ;
          } else if (strcmp(argv[0], "--mindepth") == 0) {
             optmindepth = atol(argv[1]) ;
             argc-- ;
@@ -329,6 +334,10 @@ int main(int argc, const char **argv) {
       processlines(pd, uniqit) ;
    if (doinv)
       processlines3(pd, invertit) ;
+   if (domergeseqs)
+      processlines3(pd, mergeit) ;
+   if (docancelseqs)
+      processlines3(pd, cancelit) ;
    if (dosyms)
       processlines(pd, symsit) ;
    if (doorder)

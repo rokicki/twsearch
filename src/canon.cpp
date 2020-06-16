@@ -276,7 +276,7 @@ void showseqs(const puzdef &pd, int togo, int st) {
       movestack.pop_back() ;
    }
 }
-vector<int> mergemoves(const puzdef &pd, vector<int> mvseq) {
+vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq) {
    // move cancellations need to be handled separately from
    // canonicalization.
    while (1) {
@@ -318,7 +318,7 @@ vector<int> mergemoves(const puzdef &pd, vector<int> mvseq) {
    return mvseq ;
 }
 vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) {
-   mvseq = mergemoves(pd, mvseq) ;
+   mvseq = cancelmoves(pd, mvseq) ;
    vector<int> fwdcnt(mvseq.size()) ;
    for (int i=0; i<(int)mvseq.size(); i++) {
       const moove &mv = pd.moves[mvseq[i]] ;

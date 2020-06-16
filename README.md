@@ -51,11 +51,17 @@ Options:
 
 `-C`    Calculate and print information about canonical sequences.
 
+`--cancelseqs`  Read sequences on standard in and perform move cancellations
+                to minimize the length of the sequences.
+
 `--checkbeforesolve`  Check that a position is legal before attempting to
                     solve it.  This may take extra time or memory for
                     large puzzles.
 
 `-d` *#*  Set the max depth to search.
+
+`--distinguishall`  Distinguish all pieces, despite any identical
+        piece definitions in the tws file.
 
 `-F`    Force the use of arrays rather than bitmaps in God calculations.
 
@@ -69,6 +75,9 @@ Options:
 `-m` *#*  Set the max depth to search.
 
 `-M` *#*  Set the maximum memory size as an integer number of megabytes.
+
+`--mergeseqs`  Read move sequences on standard input and merge the sequences
+               into canonical sequences.
 
 `--mindepth`   Start solving at this depth.
 

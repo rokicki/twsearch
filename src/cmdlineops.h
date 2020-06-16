@@ -18,6 +18,8 @@ extern vector<loosetype> uniqwork ;
 extern set<vector<loosetype> > uniqseen ;
 void uniqit(const puzdef &pd, setval p, const char *s) ;
 void invertit(const puzdef &pd, vector<int> &v, const char *s) ;
+void cancelit(const puzdef &pd, vector<int> &v, const char *s) ;
+void mergeit(const puzdef &pd, vector<int> &v, const char *s) ;
 void symsit(const puzdef &pd, setval p, const char *s) ;
 void orderit(const puzdef &pd, setval p, const char *s) ;
 void emitmove(const puzdef &pd, setval p, const char *s) ;

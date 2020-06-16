@@ -6,6 +6,7 @@
 #include "readksolve.h"
 #include "index.h"
 #include "rotations.h"
+#include "canon.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
    stacksetval p1(pd) ;
@@ -121,6 +122,26 @@ void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
             cout << (o - twist) << "'" ;
          }
       }
+   }
+   cout << endl ;
+}
+void cancelit(const puzdef &pd, vector<int> &movelist, const char *) {
+   if (movelist.size() == 0) {
+      cout << " " ;
+   } else {
+      auto res = cancelmoves(pd, movelist) ;
+      for (auto mvind: res)
+         cout << " " << pd.moves[mvind].name ;
+   }
+   cout << endl ;
+}
+void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
+   if (movelist.size() == 0) {
+      cout << " " ;
+   } else {
+      auto res = canonicalize(pd, movelist) ;
+      for (auto mvind: res)
+         cout << " " << pd.moves[mvind].name ;
    }
    cout << endl ;
 }
