@@ -9,6 +9,30 @@ const int HIWR = 4 ;
 ll extendkey(ll k, int nwr, int npwr) {
    return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
 }
+void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
+   while (setnum >= 0) {
+      int dig = key % 10 ;
+      if (dig != 0) {
+         if (s.size() > 0)
+            s += " " ;
+         s += pd.setdefs[setnum].name ;
+         s += "/" ;
+         s += (char)('0'+(dig >> 1)) ;
+         if (dig % 2 == 0) {
+            s += "o" ;
+         } else {
+            s += "p" ;
+         }
+      }
+      setnum-- ;
+      key /= 10 ;
+   }
+}
+string keydesc(const puzdef &pd, ll key) {
+   string r ;
+   keydesc(pd, key, pd.setdefs.size()-1, r) ;
+   return r ;
+}
 ll bigcnt = 0 ;
 struct algo1worker {
    void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
@@ -27,7 +51,7 @@ struct algo1worker {
          get_global_lock() ;
          if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
             bestsofar[key] = mvs ;
-            cout << key << " " << mvs << " (" ;
+            cout << keydesc(pd, key) << " " << mvs << " (" ;
             for (int i=0; i<sp; i++) {
                if (i)
                   cout << " " ;
@@ -88,7 +112,7 @@ struct algo2worker {
                get_global_lock() ;
                if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
                   bestsofar[key] = mvs ;
-                  cout << key << " " << mvs << " (" ;
+                  cout << keydesc(pd, key) << " " << mvs << " (" ;
                   for (int i=0; i<sp; i++) {
                      if (i)
                         cout << " " ;
@@ -159,7 +183,7 @@ struct algo3worker {
          get_global_lock() ;
          if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
             bestsofar[key] = mvs ;
-            cout << key << " " << mvs << " [" ;
+            cout << keydesc(pd, key) << " " << mvs << " [" ;
             for (int i=0; i<fp; i++) {
                if (i)
                   cout << " " ;
