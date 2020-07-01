@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <map>
 #include <unordered_set>
 #include "canon.h"
