@@ -171,6 +171,7 @@ void calculatesizes(puzdef &pd) {
    dllstates = 1 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       ull llperms = 1 ;
+      double tllstates = 1 ;
       ull llords = 1 ;
       double logstates = 0 ;
       setdef &sd = pd.setdefs[i] ;
@@ -190,18 +191,19 @@ void calculatesizes(puzdef &pd) {
             for (int k=0; k<sd.cnts[j]; k++) {
                llperms *= left ;
                logstates += log2(left) ;
-               dllstates *= left ;
+               tllstates *= left ;
                left-- ;
                llperms /= (k+1) ;
                logstates -= log2(k+1) ;
-               dllstates /= k+1 ;
+               tllstates /= k+1 ;
             }
          }
          if (left != 0)
             error("! internal error when calculating sizes") ;
          // llperms might overflow due to divisions above, but FP should be good
-         if (logstates <= 50 && llperms < dllstates)
-            llperms = dllstates ;
+         if (logstates <= 50 && llperms < tllstates)
+            llperms = tllstates ;
+         dllstates *= tllstates ;
       }
       if (sd.omod != 1) {
          int st = 0 ;
