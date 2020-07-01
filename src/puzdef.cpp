@@ -210,9 +210,13 @@ void calculatesizes(puzdef &pd) {
          if (sd.oparity)
             st++ ;
          for (int j=st; j<n; j++) {
-            llords *= sd.omod ;
-            logstates += log2(sd.omod) ;
-            dllstates *= sd.omod ;
+            if (sd.wildo && pd.solved.dat[sd.off+n+j] == 2 * sd.omod) {
+               // do nothing; this no-value will stay as such forever
+            } else {
+               llords *= sd.omod ;
+               logstates += log2(sd.omod) ;
+               dllstates *= sd.omod ;
+            }
          }
       }
       sd.llperms = llperms ;
