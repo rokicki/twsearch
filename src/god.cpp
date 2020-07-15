@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <algorithm>
+#include <array>
 #include "god.h"
 #include "index.h"
 #include "antipode.h"
@@ -350,13 +351,30 @@ static inline int compare(const void *a_, const void *b_) {
          return (a[i] < b[i] ? -1 : 1) ;
    return 0 ;
 }
+template<typename T> void tmqsort(T *beg, ll numel) {
+   sort(beg, beg+numel) ;
+}
+void mqsort(void *beg, ll numel, ll sz) {
+   switch(sz/sizeof(loosetype)) {
+case 1: tmqsort((array<loosetype, 1>*)beg, numel) ; break ;
+case 2: tmqsort((array<loosetype, 2>*)beg, numel) ; break ;
+case 3: tmqsort((array<loosetype, 3>*)beg, numel) ; break ;
+case 4: tmqsort((array<loosetype, 4>*)beg, numel) ; break ;
+case 5: tmqsort((array<loosetype, 5>*)beg, numel) ; break ;
+case 6: tmqsort((array<loosetype, 6>*)beg, numel) ; break ;
+case 7: tmqsort((array<loosetype, 7>*)beg, numel) ; break ;
+case 8: tmqsort((array<loosetype, 8>*)beg, numel) ; break ;
+default:
+      qsort(beg, numel, sz, compare) ;
+   }
+}
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
                     loosetype *beg, loosetype *end, int temp,
                     loosetype *lim) {
    size_t numel = (end-beg) / looseper ;
    if (verbose > 1 || temp)
       cout << "Created " << numel << " elements in " << duration() << endl << flush ;
-   qsort(beg, numel, looseper*sizeof(loosetype), compare) ;
+   mqsort(beg, numel, looseper*sizeof(loosetype)) ;
    if (verbose > 1)
       cout << "Sorted " << flush ;
    loosetype *s_0 = beg ;
@@ -506,7 +524,7 @@ void doarraygod2(const puzdef &pd) {
       if (cnts[d] == 0 || tot == pd.llstates)
          break ;
       if (levend != s_2)
-         qsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype), compare) ;
+         mqsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype)) ;
       s_1 = levend ;
       reader = levend ;
    }
