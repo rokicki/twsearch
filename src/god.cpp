@@ -352,14 +352,15 @@ static inline int compare(const void *a_, const void *b_) {
          return (a[i] < b[i] ? -1 : 1) ;
    return 0 ;
 }
-const int SHIFT = 5 ;
+const int SHIFT = 10 ;
 const int BUCKETS = 1<<SHIFT ;
+const int SPLIT = 32 ;
 template<typename T> int extract(const T &a) {
    return a[0]>>(32-SHIFT) ;
 }
 static int wi ;
-static ll beg[BUCKETS], endb[BUCKETS] ;
-static pair<ll, int> bysize[BUCKETS] ;
+static ll beg[SPLIT], endb[SPLIT] ;
+static pair<ll, int> bysize[SPLIT] ;
 template<typename T> void tmqsort(T *a, ll n) {
    if (n < 4096) {
       sort(a, a+n) ;
@@ -370,29 +371,48 @@ template<typename T> void tmqsort(T *a, ll n) {
       cnts[i] = 0 ;
    for (ll i=0; i<n; i++)
       cnts[extract(a[i])]++ ;
-   ll s = 0 ;
+   int split[BUCKETS] ;
+   ll cnts2[SPLIT] ;
+   ll rem = n ;
+   ll goal = (2 * n + SPLIT) / (2 * SPLIT) ;
+   int at = 0 ;
+   for (int i=0; i<SPLIT; i++)
+      cnts2[i] = 0 ;
    for (int i=0; i<BUCKETS; i++) {
+      if (at+1 < SPLIT && cnts2[at] + cnts[i] - goal > goal - cnts2[at]) {
+         rem -= cnts2[at] ;
+         goal = (2 * rem + (SPLIT - at)) / (2 * (SPLIT - at)) ;
+         at++ ;
+      }
+      split[i] = at ;
+      cnts2[at] += cnts[i] ;
+   }
+   for (int i=0; i<SPLIT; i++)
+      cout << " " << cnts2[i] ;
+   cout << endl ;
+   ll s = 0 ;
+   for (int i=0; i<SPLIT; i++) {
       beg[i] = s ;
-      s += cnts[i] ;
+      s += cnts2[i] ;
       endb[i] = s ;
    }
-   for (int b=0; b<BUCKETS; b++) {
+   for (int b=0; b<SPLIT; b++) {
       for (ll i=beg[b]; i<endb[b]; i++) {
          while (1) {
-            int buck = extract(a[i]) ;
+            int buck = split[extract(a[i])] ;
             if (buck == b)
                break ;
             swap(a[i], a[beg[buck]++]) ;
          }
       }
    }
-   for (int i=0; i<BUCKETS; i++)
-      bysize[i] = {-cnts[i], i} ;
-   sort(bysize, bysize+BUCKETS) ;
+   for (int i=0; i<SPLIT; i++)
+      bysize[i] = {-cnts2[i], i} ;
+   sort(bysize, bysize+SPLIT) ;
    s = 0 ;
-   for (int i=0; i<BUCKETS; i++) {
+   for (int i=0; i<SPLIT; i++) {
       beg[i] = s ;
-      s += cnts[i] ;
+      s += cnts2[i] ;
    }
 #ifdef USE_PTHREADS
    wi = 0 ;
@@ -401,7 +421,7 @@ template<typename T> void tmqsort(T *a, ll n) {
       while (1) {
          int w = -1 ;
          get_global_lock() ;
-         if (wi < BUCKETS)
+         if (wi < SPLIT)
             w = wi++ ;
          release_global_lock() ;
          if (w < 0)
@@ -415,7 +435,7 @@ template<typename T> void tmqsort(T *a, ll n) {
    for (int i=0; i<numthreads; i++)
       join_thread(i) ;
 #else
-   for (int i=0; i<BUCKETS; i++) {
+   for (int i=0; i<SPLIT; i++) {
       int b = bysize[i].second ;
       sort(a+beg[b], a+endb[b]) ;
    }
