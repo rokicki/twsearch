@@ -465,7 +465,7 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1,
    }
    if (verbose > 1 || temp)
       cout << "to " << (w - s_0) / looseper << " in " << duration() << endl << flush ;
-   if (w + looseper >= lim)
+   if (temp && (w + looseper - s_0) >= (lim - s_0) * 95 / 100)
       error("! out of memory") ;
    return w ;
 }
