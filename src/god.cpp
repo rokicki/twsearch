@@ -387,9 +387,6 @@ template<typename T> void tmqsort(T *a, ll n) {
       split[i] = at ;
       cnts2[at] += cnts[i] ;
    }
-   for (int i=0; i<SPLIT; i++)
-      cout << " " << cnts2[i] ;
-   cout << endl ;
    ll s = 0 ;
    for (int i=0; i<SPLIT; i++) {
       beg[i] = s ;
