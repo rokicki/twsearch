@@ -8,6 +8,7 @@
 #include "readksolve.h"
 #include "canon.h"
 #include "rotations.h"
+#include "threads.h"
 /*
  *   God's algorithm using two bits per state.
  */
@@ -351,8 +352,74 @@ static inline int compare(const void *a_, const void *b_) {
          return (a[i] < b[i] ? -1 : 1) ;
    return 0 ;
 }
-template<typename T> void tmqsort(T *beg, ll numel) {
-   sort(beg, beg+numel) ;
+const int SHIFT = 5 ;
+const int BUCKETS = 1<<SHIFT ;
+template<typename T> int extract(const T &a) {
+   return a[0]>>(32-SHIFT) ;
+}
+static int wi ;
+static ll beg[BUCKETS], endb[BUCKETS] ;
+static pair<ll, int> bysize[BUCKETS] ;
+template<typename T> void tmqsort(T *a, ll n) {
+   if (n < 4096) {
+      sort(a, a+n) ;
+      return ;
+   }
+   ll cnts[BUCKETS] ;
+   for (int i=0; i<BUCKETS; i++)
+      cnts[i] = 0 ;
+   for (ll i=0; i<n; i++)
+      cnts[extract(a[i])]++ ;
+   ll s = 0 ;
+   for (int i=0; i<BUCKETS; i++) {
+      beg[i] = s ;
+      s += cnts[i] ;
+      endb[i] = s ;
+   }
+   for (int b=0; b<BUCKETS; b++) {
+      for (ll i=beg[b]; i<endb[b]; i++) {
+         while (1) {
+            int buck = extract(a[i]) ;
+            if (buck == b)
+               break ;
+            swap(a[i], a[beg[buck]++]) ;
+         }
+      }
+   }
+   for (int i=0; i<BUCKETS; i++)
+      bysize[i] = {-cnts[i], i} ;
+   sort(bysize, bysize+BUCKETS) ;
+   s = 0 ;
+   for (int i=0; i<BUCKETS; i++) {
+      beg[i] = s ;
+      s += cnts[i] ;
+   }
+#ifdef USE_PTHREADS
+   wi = 0 ;
+   auto worker = [](void *ap) -> void* {
+      T *a = (T*)ap ;
+      while (1) {
+         int w = -1 ;
+         get_global_lock() ;
+         if (wi < BUCKETS)
+            w = wi++ ;
+         release_global_lock() ;
+         if (w < 0)
+            return (void *)0 ;
+         int b = bysize[w].second ;
+         sort(a+beg[b], a+endb[b]) ;
+      }
+   } ;
+   for (int i=0; i<numthreads; i++)
+      spawn_thread(i, worker, a) ;
+   for (int i=0; i<numthreads; i++)
+      join_thread(i) ;
+#else
+   for (int i=0; i<BUCKETS; i++) {
+      int b = bysize[i].second ;
+      sort(a+beg[b], a+endb[b]) ;
+   }
+#endif
 }
 void mqsort(void *beg, ll numel, ll sz) {
    switch(sz/sizeof(loosetype)) {
