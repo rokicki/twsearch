@@ -221,6 +221,7 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
             } else {
                p[j] = 2 * pz.setdefs[i].omod ;
                pz.setdefs[i].wildo = 1 ;
+               pz.setdefs[i].obits = ceillog2(pz.setdefs[i].omod+1) ;
                pz.wildo = 1 ;
                pz.setdefs[i].oparity = 0 ;
             }
@@ -275,10 +276,11 @@ puzdef readdef(istream *f) {
          sd.oparity = 1 ;
          sd.pbits = ceillog2(sd.size) ;
          sd.pibits = sd.pbits ;
-         if (sd.wildo)
+         if (sd.wildo) {
             sd.obits = ceillog2(sd.omod+1) ;
-         else
+         } else {
             sd.obits = ceillog2(sd.omod) ;
+         }
          sd.uniq = 1 ;
          sd.off = pz.totsize ;
          pz.setdefs.push_back(sd) ;
