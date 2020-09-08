@@ -194,7 +194,10 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
                cout << " "  << newori[i] ;
          } else {
             for (int i=0; i<n; i++)
-               cout << " "  << (int)(a[i+n]) ;
+               if (a[i+n] >= sd.omod)
+                  cout << " ?" ;
+               else
+                  cout << " "  << (int)(a[i+n]) ;
          }
          cout << endl ;
       }
