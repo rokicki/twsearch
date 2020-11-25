@@ -21,5 +21,8 @@ HSOURCE = src/antipode.h src/calcsymm.h src/canon.h src/cmdlineops.h \
 
 CITYSRC = src/cityhash/src/city.cc
 
+clean:
+	rm -f *.o twsearch
+
 twsearch: $(CSOURCE) $(HSOURCE)
 	$(CXX) $(CXXFLAGS) $(FLAGS) -o twsearch $(CSOURCE) $(CITYSRC) $(LDFLAGS)
