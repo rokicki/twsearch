@@ -6,21 +6,30 @@ int noearlysolutions ;
 int phase2 ;
 int optmindepth ;
 string lastsolution ;
+int didprepass ;
 solveworker solveworkers[MAXTHREADS] ;
+int (*callback)(setval &pos, const vector<int> &moves, int d, int id) ;
+int (*flushback)(int d) ;
+void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d, int id), 
+                      int (*g)(int)) {
+   callback = f ;
+   flushback = g ;
+}
 void *threadworker(void *o) {
    workerparam *wp = (workerparam *)o ;
    solveworkers[wp->tid].dowork(wp->pd, wp->pt) ;
    return 0 ;
 }
-void solveworker::init(const puzdef &pd, int d_, const setval &p) {
+void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
    // make the position table big to minimize false sharing.
-   while (posns.size() <= 100 || (int)posns.size() <= d_+1) {
+   while (posns.size() <= 100 || (int)posns.size() <= d_+10) {
       posns.push_back(allocsetval(pd, pd.solved)) ;
       movehist.push_back(-1) ;
    }
    pd.assignpos(posns[0], p) ;
    lookups = 0 ;
    d = d_ ;
+   id = id_ ;
 }
 int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
    lookups++ ;
@@ -29,10 +38,15 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
       return -1 ;
    if (v > togo)
       return 0 ;
+   if (togo == 1 && didprepass && v != 1)
+      return 0 ;
    if (v == 0 && togo > 0 && pd.comparepos(posns[sp], pd.solved) == 0 &&
        noearlysolutions)
       return 0 ;
    if (togo == 0) {
+      if (callback) {
+         return callback(posns[sp], movehist, d, id) ;
+      }
       if (pd.comparepos(posns[sp], pd.solved) == 0) {
          int r = 1 ;
          get_global_lock() ;
@@ -130,7 +144,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
          makeworkchunks(pd, 0) ;
       int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
-         solveworkers[t].init(pd, d, p) ;
+         solveworkers[t].init(pd, d, t, p) ;
 #ifdef USE_PTHREADS
       for (int i=0; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
@@ -157,9 +171,13 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
          if (verbose > 1 || dur > 1)
             cout << "Depth " << d << " finished in " << dur << endl << flush ;
       }
-      pt.checkextend(pd) ; // fill table up a bit more if needed
+      if (flushback)
+         if (flushback(d))
+            break ;
+      if (d != maxdepth)
+         pt.checkextend(pd) ; // fill table up a bit more if needed
    }
-   if (!phase2)
+   if (!phase2 && callback == 0)
       cout << "No solution found in " << maxdepth << endl << flush ;
    return -1 ;
 }

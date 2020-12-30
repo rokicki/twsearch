@@ -238,6 +238,10 @@ void calculatesizes(puzdef &pd) {
               " log2 " << glogstates << endl ;
    }
 }
+void domove(const puzdef &pd, setval p, setval pos, setval pt) {
+   pd.mul(p, pos, pt) ;
+   pd.assignpos(p, pt) ;
+}
 void domove(const puzdef &pd, setval p, setval pos) {
    stacksetval pt(pd) ;
    pd.mul(p, pos, pt) ;
@@ -245,4 +249,7 @@ void domove(const puzdef &pd, setval p, setval pos) {
 }
 void domove(const puzdef &pd, setval p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;
+}
+void domove(const puzdef &pd, setval p, int mv, setval pt) {
+   domove(pd, p, pd.moves[mv].pos, pt) ;
 }

@@ -29,6 +29,7 @@
 #include "cmdlineops.h"
 #include "rotations.h"
 #include "twsearch.h"
+#include "coset.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -52,7 +53,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs ;
+    domergeseqs, docoset ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -131,6 +132,18 @@ void processargs(int &argc, argvtype &argv) {
             optmindepth = atol(argv[1]) ;
             argc-- ;
             argv++ ;
+         } else if (strcmp(argv[0], "--maxdepth") == 0) {
+            maxdepth = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
+         } else if (strcmp(argv[0], "--coset") == 0) {
+            cosetmovelist = argv[1] ;
+            cosetmoveseq = argv[2] ;
+            docoset++ ;
+            argc -= 2 ;
+            argv += 2 ;
+         } else if (strcmp(argv[0], "--listcosets") == 0) {
+            listcosets++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -356,6 +369,9 @@ int main(int argc, const char **argv) {
       processlines(pd, [&](const puzdef &pd, setval p, const char *) {
                           solveit(pd, pt, emptys, p) ;
                        }) ;
+   }
+   if (docoset) {
+      runcoset(pd) ;
    }
    if (phase2) {
       if (argc <= 2 && !scramblealgo)
