@@ -3,6 +3,7 @@
 #include "solve.h"
 #include "index.h"
 #include <map>
+#include <algorithm>
 #include <iostream>
 using namespace std ;
 // from command line
