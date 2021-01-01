@@ -141,14 +141,8 @@ void showcosetantipodes() {
                   for (int j=0; j<sd.size; j++)
                      src.dat[off+j] = tmp.dat[j] ;
                }
-               for (int i=0; i<(int)cosetrepmoves.size(); i++) {
-                  auto &mv = pd.moves[cosetrepmoves[i]] ;
-                  int b = mv.base ;
-                  int o = pd.basemoveorders[b] ;
-                  int twist = (o - mv.twist) % o ;
-                  int moff = twist - mv.twist ;
+               for (int i=0; i<(int)cosetrepmoves.size(); i++)
                   domove(pd, src, pd.moves[cosetrepmoves[i]].pos) ;
-               }
                emitposition(pd, src, 0) ;
             }
       }
