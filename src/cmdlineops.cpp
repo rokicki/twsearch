@@ -8,6 +8,7 @@
 #include "rotations.h"
 #include "canon.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
+int compact ;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
    stacksetval p1(pd) ;
    pd.assignpos(p1, pd.solved) ;
@@ -21,6 +22,45 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
 void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
    prunetable pt(pd, maxmem) ;
    processscrambles(f, pd, pt, gs) ;
+}
+int getcompactval(int &at, const string &s) {
+   if (at < 0 || at >= (int)s.size())
+      error("! out of bounds while reading compact") ;
+   char c = s[at++] ;
+   if ('0' <= c && c <= '9')
+      return c - '0' ;
+   if ('A' <= c && c <= 'Z')
+      return c - 'A' + 10 ;
+   if ('a' <= c && c <= 'z')
+      return c - 'a' + 36 ;
+   error("! bad character in compact format") ;
+   return -1 ;
+}
+void readposition(puzdef &pd, setval &p1, string crep) {
+   int at = 0 ;
+   for (int i=0; i<(int)pd.setdefs.size(); i++) {
+      setdef &sd = pd.setdefs[i] ;
+      int n = sd.size ;
+      int ss = n * sd.omod ;
+      int off = sd.off ;
+      for (int j=0; j<n; j++) {
+         int v = 0 ;
+         if (ss <= 62) {
+            v = getcompactval(at, crep) ;
+         } else if (ss <= 62 * 62) {
+            v = getcompactval(at, crep) ;
+            v = v * 62 + getcompactval(at, crep) ;
+         } else {
+            error("! can't read compact format for this puzdef") ;
+         }
+         if (v < 0 || v >= ss)
+            error("! bad value in compact format") ;
+         p1.dat[off+j] = v / sd.omod ;
+         p1.dat[off+j+n] = v % sd.omod ;
+      }
+   }
+   if (at != (int)crep.size())
+      error("! extra input in compact format") ;
 }
 void processscrambles(istream *f, puzdef &pd, prunetable &pt, generatingset *gs) {
    string scramblename ;
@@ -48,6 +88,11 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt, generatingset *gs)
             for (int i=0; i<(int)toks.size(); i++)
                domove(pd, p1, findmove_generously(pd, toks[i])) ;
          }
+         solveit(pd, pt, scramblename, p1, gs) ;
+      } else if (toks[0] == "CPOS") {
+         expect(toks, 2) ;
+         scramblename = "noname" ;
+         readposition(pd, p1, toks[1]) ;
          solveit(pd, pt, scramblename, p1, gs) ;
       } else {
          error("! unsupported command in scramble file") ;
@@ -170,40 +215,80 @@ void orderit(const puzdef &pd, setval p, const char *s) {
       m++ ;
    }
 }
+void emitcompact(int v) {
+   if (v < 10)
+      cout << v ;
+   else if (v < 36)
+      cout << (char)('A' + v - 10) ;
+   else
+      cout << (char)('a' + v - 36) ;   
+}
 void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
    uchar *a = p.dat ;
-   if (fixmoves)
-      cout << "Move noname" << endl ;
-   else
-      cout << "Scramble noname" << endl ;
+   if (compact) {
+      if (fixmoves)
+         cout << "CMOV " ;
+      else
+         cout << "CPOS " ;
+   } else {
+      if (fixmoves)
+         cout << "Move noname" << endl ;
+      else
+         cout << "Scramble noname" << endl ;
+   }
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
-      cout << "   " << pd.setdefs[i].name << endl ;
-      cout << "  " ;
-      for (int i=0; i<n; i++)
-         cout << " "  << (int)(a[i]+1) ;
-      cout << endl ;
-      if (sd.omod > 1) {
-         cout << "   " ;
-         if (fixmoves) {
-            vector<int> newori(n) ;
-            for (int i=0; i<n; i++)
-               newori[a[i]] = a[i+n] ;
-            for (int i=0; i<n; i++)
-               cout << " "  << newori[i] ;
-         } else {
-            for (int i=0; i<n; i++)
-               if (a[i+n] >= sd.omod)
-                  cout << " ?" ;
-               else
-                  cout << " "  << (int)(a[i+n]) ;
+      if (compact) {
+         int nn = sd.size * sd.omod ;
+         for (int i=0; i<n; i++)
+            if (a[i+n] >= sd.omod)
+               error("! compact doesn't support orientation ? yet") ;
+         for (int i=0; i<n; i++) {
+            int v = a[i] * sd.omod + a[i+n] ;
+            if (nn <= 62) {
+               emitcompact(v) ;
+            } else if (nn <= 62 * 62) {
+               emitcompact(v/62) ;
+               emitcompact(v%62) ;
+            } else {
+               error("! state too large for compact") ;
+            }
          }
+      } else {
+         cout << "   " << pd.setdefs[i].name << endl ;
+         cout << "  " ;
+         for (int i=0; i<n; i++)
+            cout << " "  << (int)(a[i]+1) ;
          cout << endl ;
+         if (sd.omod > 1) {
+            cout << "   " ;
+            if (fixmoves) {
+               for (int i=0; i<n; i++)
+                  if (a[i+n] >= sd.omod)
+                     error("! moves don't support orientation ? yet") ;
+               vector<int> newori(n) ;
+               for (int i=0; i<n; i++)
+                  newori[a[i]] = a[i+n] ;
+               for (int i=0; i<n; i++)
+                  cout << " "  << newori[i] ;
+            } else {
+               for (int i=0; i<n; i++)
+                  if (a[i+n] >= sd.omod)
+                     cout << " ?" ;
+                  else
+                     cout << " "  << (int)(a[i+n]) ;
+            }
+            cout << endl ;
+         }
       }
       a += 2 * n ;
    }
-   cout << "End" << endl ;
+   if (compact) {
+      cout << endl ;
+   } else {
+      cout << "End" << endl ;
+   }
 }
 void emitmove(const puzdef &pd, setval p, const char *s) {
    emitmp(pd, p, s, 1) ;

@@ -144,6 +144,8 @@ void processargs(int &argc, argvtype &argv) {
             argv += 2 ;
          } else if (strcmp(argv[0], "--listcosets") == 0) {
             listcosets++ ;
+         } else if (strcmp(argv[0], "--compact") == 0) {
+            compact++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
