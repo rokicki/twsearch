@@ -2,6 +2,8 @@
 #include "parsemoves.h"
 #include "solve.h"
 #include "index.h"
+#include "antipode.h" // just for antipode count
+#include "cmdlineops.h" // for emitposition
 #include <map>
 #include <algorithm>
 #include <iostream>
@@ -10,15 +12,16 @@ using namespace std ;
 const char *cosetmovelist, *cosetmoveseq ;
 int listcosets ;
 // state from runcoset into callback
-setval *cosetsolved, *cosetstart, *cosetmoving ;
+setval *cosetsolved, *cosetstart, *cosetmoving, *cosetosolved ;
 puzdef *cosetpd ;
 ull *cosetbm, *cosetbm2 ;
 vector<int> staticv ;
 ll cosetsize, cosetbmsize ;
-vector<int> cosetmoves ;
+vector<int> cosetmoves, cosetrepmoves ;
 // local counters
 ll solcnt = 0, searchcnt = 0 ;
 const int COSETBUFSIZE = 512 ;
+vector<char> remap ;
 struct cosetbuf {
    ull buf[COSETBUFSIZE] ;
    int cnt ;
@@ -104,6 +107,52 @@ int cosetcallback(setval &pos, const vector<int> &moves, int d, int id) {
    cb.buf[cb.cnt++] = getindex(pos) ;
    return solcnt >= cosetsize ;
 }
+void showcosetantipodes() {
+   puzdef &pd = *cosetpd ;
+   stacksetval src(pd), tmp(pd) ;
+   vector<char> iremap(remap.size()) ;
+   for (int i=0; i<(int)remap.size(); i++)
+      iremap[remap[i]] = i ;
+   for (ll off=0; off<cosetbmsize; off++)
+      if (cosetbm[off] != 0xffffffffffffffffull) {
+         for (ll bit=0; bit<64; bit++)
+            if (0 == ((cosetbm[off] >> bit) & 1)) {
+               ull ind = (off << 6) + bit ;
+               if (ind >= (ull)cosetsize)
+                  continue ;
+               setindex(ind, src) ;
+               for (int i=((int)pd.setdefs.size())-1; i>=0; i--) {
+                  setdef &sd = pd.setdefs[i] ;
+                  int off = sd.off ;
+                  for (int j=0; j<sd.size; j++) {
+                     if (cosetmoving->dat[off+j])
+                        src.dat[off+j] = iremap[src.dat[off+j]] ;
+                     else
+                        src.dat[off+j] = cosetosolved->dat[off+j] ;
+                  }
+                  // invert the position!
+                  for (int j=0; j<sd.size; j++)
+                     tmp.dat[j] = 255 ;
+                  for (int j=0; j<sd.size; j++)
+                     tmp.dat[src.dat[off+j]] = j ;
+                  for (int j=0; j<sd.size; j++)
+                     if (tmp.dat[j] == 255)
+                        error("! bad in show antipodes") ;
+                  for (int j=0; j<sd.size; j++)
+                     src.dat[off+j] = tmp.dat[j] ;
+               }
+               for (int i=0; i<(int)cosetrepmoves.size(); i++) {
+                  auto &mv = pd.moves[cosetrepmoves[i]] ;
+                  int b = mv.base ;
+                  int o = pd.basemoveorders[b] ;
+                  int twist = (o - mv.twist) % o ;
+                  int moff = twist - mv.twist ;
+                  domove(pd, src, pd.moves[cosetrepmoves[i]].pos) ;
+               }
+               emitposition(pd, src, 0) ;
+            }
+      }
+}
 int prepass(int d) {
    didprepass = 1 ;
    if (solcnt >= cosetsize)
@@ -158,6 +207,8 @@ int prepass(int d) {
    }
    swap(cosetbm, cosetbm2) ;
    cout << "Prepass for depth " << d << " see " << solcnt << " in " << duration() << endl << flush ;
+   if (solcnt < cosetsize && solcnt + antipodecount >= cosetsize)
+      showcosetantipodes() ;
    return solcnt >= cosetsize ;
 }
 int cosetflushback(int d) {
@@ -229,6 +280,8 @@ void runcoset(puzdef &pd) {
    auto moves = parsemovelist(pd, cosetmovelist) ;
    stacksetval moving(pd), osolved(pd), rsolved(pd) ;
    cosetmoving = &moving ;
+   cosetosolved = &osolved ;
+   cout << endl ;
    cosetsolved = &rsolved ;
    cosetpd = &pd ;
    pd.addoptionssum("coset") ;
@@ -259,7 +312,6 @@ void runcoset(puzdef &pd) {
          else
             stat++ ;
       cout << "At set " << i << " static " << stat << " moving " << mov << endl ;
-      vector<char> remap ;
       int stati = 0 ;
       for (int j=0; j<sd.size; j++) {
          if (moving.dat[j+off])
@@ -364,10 +416,10 @@ void runcoset(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
    pd.assignpos(p2, rsolved) ;
-   vector<setval> movelist = parsemovelist_generously(pd, cosetmoveseq) ;
-   for (int i=0; i<(int)movelist.size(); i++) {
-      domove(pd, p1, movelist[i]) ;
-      domove(pd, p2, movelist[i]) ;
+   cosetrepmoves = parsemovelist(pd, cosetmoveseq) ;
+   for (int i=0; i<(int)cosetrepmoves.size(); i++) {
+      domove(pd, p1, cosetrepmoves[i]) ;
+      domove(pd, p2, cosetrepmoves[i]) ;
    }
    cout << "Doing solve . . ." << endl ;
    cosetstart = &p2 ;
