@@ -14,6 +14,7 @@ void calcrotations(puzdef &pd) {
       if (!sd.uniq)
          error("! non-uniq not yet supported for rotations") ;
    }
+   stacksetval pw(pd) ;
    vector<moove> &q = pd.rotgroup ;
    set<vector<uchar>> seen ;
    seen.insert(setvaltovec(pd, pd.id)) ;
@@ -36,6 +37,18 @@ void calcrotations(puzdef &pd) {
          }
       }
    }
+   pd.rotinv.clear() ;
+   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
+      for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
+         pd.mul(pd.rotgroup[m1].pos, pd.rotgroup[m2].pos, pw) ;
+         if (pd.comparepos(pd.id, pw) == 0) {
+            pd.rotinv.push_back(m2) ;
+            break ;
+         }
+      }
+   }
+   if (pd.rotinv.size() != pd.rotgroup.size())
+      error("! error looking for rotation inverses") ;
    cout << "Rotation group size is " << q.size() << endl ;
 }
 void showpos(const puzdef &pd, const setval s) {
@@ -59,7 +72,9 @@ int slowmodm(const puzdef &pd, const setval p1, setval p2) {
 // cout << "Doing " ; showpos(pd, p1) ;
    for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
       pd.mul(pd.rotgroup[m1].pos, p1, s1) ;
-      for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
+      int m2 = pd.rotinv[m1] ;
+      {
+//    for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
          int t = s1.dat[pd.rotgroup[m2].pos.dat[0]] - v0 ;
          if (t > 0)
             continue ;

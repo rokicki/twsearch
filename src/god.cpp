@@ -634,6 +634,7 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
       if (p[symoff] & symbit) {
          looseunpack(pd, p1, p) ;
          int sym = slowmodm(pd, p1, p2) ;
+// cout << "Sym is " << sym << endl ;
          if (rotmul[sym] == 0 || rotmul[sym] > rots)
             error("! bad symmetry calculation") ;
          r += rotmul[sym] - rots ;

@@ -81,6 +81,7 @@ struct puzdef {
    setval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
    vector<int> basemoveorders ;
+   vector<int> rotinv ;
    vector<ull> commutes ;
    int totsize ;
    int ncs ;
