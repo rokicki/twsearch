@@ -305,7 +305,7 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
          accum >>= BITSPERLOOSE ;
          storedbits -= BITSPERLOOSE ;
       }
-      accum += 1LL << storedbits ;
+      accum += ((ull)(sym - 1)) << storedbits ;
       storedbits++ ;
    }
    while (storedbits > 0) {

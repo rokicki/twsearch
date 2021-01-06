@@ -653,7 +653,7 @@ void doarraygodsymm(const puzdef &pd) {
    stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p2, pd.solved) ;
    int sym = slowmodm(pd, p2, p1) ;
-   loosepack(pd, p1, mem, 0, sym>1) ;
+   loosepack(pd, p1, mem, 0, 1+(sym>1)) ;
    cnts.clear() ;
    cnts.push_back(1) ;
    scnts.clear() ;
@@ -682,7 +682,7 @@ void doarraygodsymm(const puzdef &pd) {
             if (!pd.legalstate(p2))
                continue ;
             sym = slowmodm(pd, p2, p3) ;
-            loosepack(pd, p3, writer, 0, sym>1) ;
+            loosepack(pd, p3, writer, 0, 1+(sym>1)) ;
             writer += looseper ;
             if (writer + looseper >= lim)
                writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
