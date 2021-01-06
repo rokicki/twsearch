@@ -65,7 +65,7 @@ void showpos(const puzdef &pd, const setval s) {
  *   the correct thing.  Only center pieces should be permitted to be
  *   (so omod should be 1 unless the setdef is uniq.)
  */
-int slowmodm(const puzdef &pd, const setval p1, setval p2) {
+int slowmodm0(const puzdef &pd, const setval p1, setval p2) {
    int cnt = -1 ;
    stacksetval s1(pd), s2(pd) ;
    int v0 = 1000, v1=1000 ;
@@ -98,6 +98,39 @@ int slowmodm(const puzdef &pd, const setval p1, setval p2) {
                } else
                   cnt++ ;
             }
+         }
+      }
+   }
+// cout << "Returning count of " << cnt << endl ;
+   return cnt ;
+}
+int slowmodm(const puzdef &pd, const setval p1, setval p2) {
+   int cnt = -1 ;
+   int v0 = 1000, v1=1000 ;
+   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
+      int m2 = pd.rotinv[m1] ;
+      int t = pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[0]]] - v0 ;
+      if (t > 0)
+         continue ;
+      if (t == 0 && pd.setdefs[0].size > 1) {
+         t = pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[1]]] - v1 ;
+         if (t > 0)
+            continue ;
+      }
+      if (t < 0) {
+         pd.mul3(pd.rotgroup[m1].pos, p1, pd.rotgroup[m2].pos, p2) ;
+         cnt = 1 ;
+         v0 = p2.dat[0] ;
+         v1 = p2.dat[1] ;
+      } else {
+         t = pd.mulcmp3(pd.rotgroup[m1].pos, p1, pd.rotgroup[m2].pos, p2) ;
+         if (t <= 0) {
+            if (t < 0) {
+               cnt = 1 ;
+               v0 = p2.dat[0] ;
+               v1 = p2.dat[1] ;
+            } else
+               cnt++ ;
          }
       }
    }

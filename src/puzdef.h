@@ -138,8 +138,82 @@ struct puzdef {
          cp += n ;
       }
    }
+   void mul3(const setval a, const setval b, const setval c, setval d) const {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      const uchar *cp = c.dat ;
+      uchar *dp = d.dat ;
+      memset(dp, 0, totsize) ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++)
+            dp[j] = ap[bp[cp[j]]] ;
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         dp += n ;
+         if (sd.omod > 1) {
+            uchar *moda = gmoda[sd.omod] ;
+            for (int j=0; j<n; j++)
+               dp[j] = moda[ap[bp[cp[j-n]-n]]+moda[bp[cp[j-n]]+cp[j]]] ;
+         } else {
+            for (int j=0; j<n; j++)
+               dp[j] = 0 ;
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         dp += n ;
+      }
+   }
    // does a multiplication and a comparison at the same time.
    // c must be initialized already.
+   int mulcmp3(const setval a, const setval b, const setval c, setval d) const {
+      const uchar *ap = a.dat ;
+      const uchar *bp = b.dat ;
+      const uchar *cp = c.dat ;
+      uchar *dp = d.dat ;
+      int r = 0 ;
+      for (int i=0; i<(int)setdefs.size(); i++) {
+         const setdef &sd = setdefs[i] ;
+         int n = sd.size ;
+         for (int j=0; j<n; j++) {
+            int nv = ap[bp[cp[j]]] ;
+            if (r > 0)
+               dp[j] = nv ;
+            else if (nv > dp[j])
+               return 1 ;
+            else if (nv < dp[j]) {
+               r = 1 ;
+               dp[j] = nv ;
+            }
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         dp += n ;
+         if (sd.omod > 1) {
+            uchar *moda = gmoda[sd.omod] ;
+            for (int j=0; j<n; j++) {
+               int nv = moda[ap[bp[cp[j-n]-n]]+moda[bp[cp[j-n]]+cp[j]]] ;
+               if (r > 0)
+                  dp[j] = nv ;
+               else if (nv > dp[j])
+                  return 1 ;
+               else if (nv < dp[j]) {
+                  r = 1 ;
+                  dp[j] = nv ;
+               }
+            }
+         }
+         ap += n ;
+         bp += n ;
+         cp += n ;
+         dp += n ;
+      }
+      return -r ;
+   }
    int mulcmp(const setval a, const setval b, setval c) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;

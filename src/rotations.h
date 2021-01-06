@@ -2,4 +2,5 @@
 #include "puzdef.h"
 void calcrotations(puzdef &pd) ;
 int slowmodm(const puzdef &, const setval, setval) ;
+int slowmodm2(const puzdef &, const setval, setval) ;
 #endif
