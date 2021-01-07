@@ -223,7 +223,7 @@ void ioqueue::finishall() {
 }
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
    totsize = pd.totsize ;
-   ull bytesize = 16 ;
+   ull bytesize = 2048 ;
    while (2 * bytesize <= maxmem &&
           (pd.logstates > 55 || 8 * bytesize < pd.llstates))
       bytesize *= 2 ;
