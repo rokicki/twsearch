@@ -38,11 +38,13 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
       return -1 ;
    if (v > togo)
       return 0 ;
-   if (togo == 1 && didprepass && v != 1)
-      return 0 ;
-   if (v == 0 && togo > 0 && pd.comparepos(posns[sp], pd.solved) == 0 &&
-       noearlysolutions)
-      return 0 ;
+   if (v == 0) {
+      if (togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0)
+         return 0 ;
+      if (togo > 0 && noearlysolutions &&
+          pd.comparepos(posns[sp], pd.solved) == 0)
+         return 0 ;
+   }
    if (togo == 0) {
       if (callback) {
          return callback(posns[sp], movehist, d, id) ;
