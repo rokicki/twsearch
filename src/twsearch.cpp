@@ -53,7 +53,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs, docoset ;
+    domergeseqs, docoset, douniqsymm ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -198,6 +198,11 @@ case 'g':
             break ;
 case 'o':
             doorder++ ;
+            break ;
+case 'U':
+            douniqsymm++ ;
+            if (argv[0][2] >= '0')
+               proclim = atoll(argv[0]+2) ;
             break ;
 case 'u':
             douniq++ ;
@@ -351,6 +356,8 @@ int main(int argc, const char **argv) {
       solvecmdline(pd, scramblealgo, gs) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (douniqsymm)
+      processlines2(pd, uniqitsymm) ;
    if (doinv)
       processlines3(pd, invertit) ;
    if (domergeseqs)

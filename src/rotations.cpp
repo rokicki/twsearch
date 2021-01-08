@@ -11,8 +11,6 @@ void calcrotations(puzdef &pd) {
       setdef &sd = pd.setdefs[i] ;
       if (sd.omod != 1 && !sd.uniq)
          error("! can't use rotations when oriented duplicated pieces.") ;
-      if (!sd.uniq)
-         error("! non-uniq not yet supported for rotations") ;
    }
    stacksetval pw(pd) ;
    vector<moove> &q = pd.rotgroup ;
@@ -124,6 +122,42 @@ int slowmodm(const puzdef &pd, const setval p1, setval p2) {
          v1 = p2.dat[1] ;
       } else {
          t = pd.mulcmp3(pd.rotgroup[m1].pos, p1, pd.rotgroup[m2].pos, p2) ;
+         if (t <= 0) {
+            if (t < 0) {
+               cnt = 1 ;
+               v0 = p2.dat[0] ;
+               v1 = p2.dat[1] ;
+            } else
+               cnt++ ;
+         }
+      }
+   }
+// cout << "Returning count of " << cnt << endl ;
+   return cnt ;
+}
+int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
+   int cnt = -1 ;
+   int v0 = 1000, v1=1000 ;
+   stacksetval pw(pd) ;
+   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
+      int m2 = pd.rotinv[m1] ;
+      int t = pd.solved.dat[pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[0]]]] - v0 ;
+      if (t > 0)
+         continue ;
+      if (t == 0 && pd.setdefs[0].size > 1) {
+         t = pd.solved.dat[pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[1]]]] - v1 ;
+         if (t > 0)
+            continue ;
+      }
+      if (t < 0) {
+         pd.mul(pd.solved, pd.rotgroup[m1].pos, pw) ;
+         pd.mul3(pw, p1, pd.rotgroup[m2].pos, p2) ;
+         cnt = 1 ;
+         v0 = p2.dat[0] ;
+         v1 = p2.dat[1] ;
+      } else {
+         pd.mul(pd.solved, pd.rotgroup[m1].pos, pw) ;
+         t = pd.mulcmp3(pw, p1, pd.rotgroup[m2].pos, p2) ;
          if (t <= 0) {
             if (t < 0) {
                cnt = 1 ;

@@ -650,6 +650,8 @@ void doarraygodsymm(const puzdef &pd) {
    loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
       error("! not enough memory") ;
+   if (!pd.canpackdense())
+      error("! can't do God's algorithm with symmetry with identical pieces.") ;
    stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p2, pd.solved) ;
    int sym = slowmodm(pd, p2, p1) ;
