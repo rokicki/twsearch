@@ -231,6 +231,8 @@ struct stateinfo {
    ull predstate ;
 } ;
 void listthecosets() {
+   if (looseper > 2)
+      error("! coset too large; update coset.cpp") ;
    puzdef &pd = *cosetpd ;
    ull ss = getcosetindex(pd.solved) ;
    map<ull, stateinfo> dist ;
@@ -342,6 +344,7 @@ void runcoset(puzdef &pd) {
          sd.cnts[pd.solved.dat[off+j]]++ ;
          sd.psum += pd.solved.dat[off+j] ;
       }
+      sd.pbits = ceillog2(sd.cnts.size()) ;
       // calculate the needed bitmap size for the moving pieces
       if (movi) {
         vector<int> cnts(movi) ;
