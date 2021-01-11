@@ -275,7 +275,6 @@ void runcoset(puzdef &pd) {
    stacksetval moving(pd), osolved(pd), rsolved(pd) ;
    cosetmoving = &moving ;
    cosetosolved = &osolved ;
-   cout << endl ;
    cosetsolved = &rsolved ;
    cosetpd = &pd ;
    pd.addoptionssum("coset") ;
@@ -305,7 +304,6 @@ void runcoset(puzdef &pd) {
             mov++ ;
          else
             stat++ ;
-      cout << "At set " << i << " static " << stat << " moving " << mov << endl ;
       int stati = 0 ;
       for (int j=0; j<sd.size; j++) {
          if (moving.dat[j+off])
