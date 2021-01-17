@@ -4,13 +4,14 @@
 #include "index.h"
 #include "antipode.h" // just for antipode count
 #include "cmdlineops.h" // for emitposition
+#include "rotations.h" // for slowmodmip
 #include <map>
 #include <algorithm>
 #include <iostream>
 using namespace std ;
 // from command line
 const char *cosetmovelist, *cosetmoveseq ;
-int listcosets ;
+int listcosets, relaxcosets ;
 // state from runcoset into callback
 setval *cosetsolved, *cosetstart, *cosetmoving, *cosetosolved ;
 puzdef *cosetpd ;
@@ -228,41 +229,149 @@ void setcosetindex(ull state, setval pos) {
 }
 struct stateinfo {
    int dist, move ;
-   ull predstate ;
+   ull predstate ; // this is reduced by symmetry
 } ;
-void listthecosets() {
-   if (looseper > 2)
-      error("! coset too large; update coset.cpp") ;
+map<ull, stateinfo> dist ;
+vector<moove> cosetrotations ;
+vector<int> cosetrotinv ;
+void getcosetrotations(puzdef &pd, vector<moove> &r, vector<int> &rinv) {
+   stacksetval p1(pd), p2(pd), p3(pd) ;
+   vector<int> mb(pd.rotgroup.size(), -1) ;
+   vector<int> mf ;
+   for (int i=0; i<(int)pd.rotgroup.size(); i++) {
+      pd.mul(pd.solved, pd.rotgroup[i].pos, p2) ;
+      int good = 1 ;
+      for (int j=0; j<(int)pd.setdefs.size(); j++) {
+         auto &sd = pd.setdefs[j] ;
+         int off = sd.off ;
+         int n = sd.size ;
+         for (int k=0; k<n; k++)
+            if ((p2.dat[off+k] >= staticv[j]) != (pd.solved.dat[off+k] >= staticv[j]))
+               good = 0 ;
+      }
+      if (good) {
+         r.push_back(pd.rotgroup[i]) ;
+         mb[i] = mf.size() ;
+         mf.push_back(i) ;
+      }
+   }
+   for (int i=0; i<(int)mf.size(); i++)
+      rinv.push_back(mb[pd.rotinv[mf[i]]]) ;
+}
+void getmoves(ull s, vector<int> &seq) {
+   seq.clear() ;
+   while (dist[s].move >= 0) {
+      seq.push_back(dist[s].move) ;
+      s = dist[s].predstate ;
+   }
+   reverse(seq.begin(), seq.end()) ;
+}
+void relaxcosetgraph() {
+   cout << "Dist size is " << dist.size() << endl ;
    puzdef &pd = *cosetpd ;
-   ull ss = getcosetindex(pd.solved) ;
-   map<ull, stateinfo> dist ;
-   dist[ss] = {0, -1, 0} ;
+   vector<vector<ull>> bydist ;
+   stacksetval pos(pd), tmp(pd), orig(pd), src(pd), dst(pd) ;
+   while (1) {
+      int d ;
+      string lin ;
+      if (!(cin >> d))
+         break ;
+      getline(cin, lin) ;
+      auto mvs = parsemovelist_generously(pd, lin.c_str()) ;
+      pd.assignpos(pos, pd.id) ;
+      for (auto mv : mvs) {
+         pd.mul(pos, mv, tmp) ;
+         pd.assignpos(pos, tmp) ;
+      }
+      slowmodmip(pd, pos, tmp, cosetrotations, cosetrotinv) ;
+      ull v = getcosetindex(tmp) ;
+      if ((int)bydist.size() <= d)
+         bydist.resize(d+1) ;
+      bydist[d].push_back(v) ;
+   }
    vector<ull> q ;
-   int qg = 0 ;
-   q.push_back(ss) ;
+   for (int d=0; d<(int)bydist.size(); d++)
+      for (auto vv : bydist[d]) {
+         if (dist.find(vv) == dist.end())
+            error("! input not coset member") ;
+         if (dist[vv].dist > d) {
+            dist[vv].dist = d ;
+            q.push_back(vv) ;
+         }
+      }
    vector<int> seq ;
-   stacksetval src(pd), dst(pd) ;
+   int qg = 0 ;
    while (qg < (int)q.size()) {
       ull s = q[qg] ;
-      seq.clear() ;
-      while (s != ss) {
-         seq.push_back(dist[s].move) ;
-         s = dist[s].predstate ;
-      }
-      reverse(seq.begin(), seq.end()) ;
-      if (seq.size() == 0)
-         cout << " " ;
+      getmoves(s, seq) ;
+      pd.assignpos(orig, pd.id) ;
       for (int i=0; i<(int)seq.size(); i++) {
-         cout << " " << pd.moves[seq[i]].name ;
+         pd.mul(orig, pd.moves[seq[i]].pos, tmp) ;
+         pd.assignpos(orig, tmp) ;
       }
-      cout << endl ;
       s = q[qg++] ;
       int newd = dist[s].dist + 1 ;
       for (int i=0; i<(int)pd.moves.size(); i++) {
          if (quarter && pd.moves[i].cost > 1)
             continue ;
-         setcosetindex(s, src) ;
-         pd.mul(src, pd.moves[i].pos, dst) ;
+         pd.assignpos(src, orig) ;
+         pd.mul(src, pd.moves[i].pos, tmp) ;
+         slowmodmip(pd, tmp, dst, cosetrotations, cosetrotinv) ;
+         ull d = getcosetindex(dst) ;
+         if (dist[d].dist > newd) {
+            dist[d].dist = newd ;
+            q.push_back(d) ;
+         }
+      }
+   }
+   for (auto v : dist) {
+      getmoves(v.first, seq) ;
+      cout << "CGDEP " << v.second.dist ;
+      if (seq.size() == 0) {
+         cout << " " ;
+      } else {
+         for (int i=0; i<(int)seq.size(); i++) {
+            cout << " " << pd.moves[seq[i]].name ;
+         }
+      }
+      cout << endl ;
+   }
+}
+void listthecosets(int showthem) {
+   if (looseper > 2)
+      error("! coset too large; update coset.cpp") ;
+   puzdef &pd = *cosetpd ;
+   stacksetval orig(pd), src(pd), dst(pd), tmp(pd) ;
+   getcosetrotations(pd, cosetrotations, cosetrotinv) ;
+   slowmodmip(pd, pd.id, dst, cosetrotations, cosetrotinv) ;
+   ull ss = getcosetindex(dst) ;
+   dist[ss] = {1000, -1, 0} ;
+   vector<ull> q ;
+   int qg = 0 ;
+   q.push_back(ss) ;
+   vector<int> seq ;
+   while (qg < (int)q.size()) {
+      ull s = q[qg] ;
+      getmoves(s, seq) ;
+      if (seq.size() == 0 && showthem)
+         cout << " " ;
+      pd.assignpos(orig, pd.id) ;
+      for (int i=0; i<(int)seq.size(); i++) {
+         pd.mul(orig, pd.moves[seq[i]].pos, tmp) ;
+         pd.assignpos(orig, tmp) ;
+         if (showthem)
+            cout << " " << pd.moves[seq[i]].name ;
+      }
+      if (showthem)
+         cout << endl ;
+      s = q[qg++] ;
+      int newd = dist[s].dist + 1 ;
+      for (int i=0; i<(int)pd.moves.size(); i++) {
+         if (quarter && pd.moves[i].cost > 1)
+            continue ;
+         pd.assignpos(src, orig) ;
+         pd.mul(src, pd.moves[i].pos, tmp) ;
+         slowmodmip(pd, tmp, dst, cosetrotations, cosetrotinv) ;
          ull d = getcosetindex(dst) ;
          if (dist.find(d) == dist.end()) {
             dist[d] = {newd, i, s} ;
@@ -397,7 +506,12 @@ void runcoset(puzdef &pd) {
    cout << "Coset size is " << llperms << endl ;
    cosetsize = llperms ;
    if (listcosets) {
-      listthecosets() ;
+      listthecosets(true) ;
+      return ;
+   }
+   if (relaxcosets) {
+      listthecosets(false) ;
+      relaxcosetgraph() ;
       return ;
    }
    ull bmsize = (llperms + 63) >> 6 ;

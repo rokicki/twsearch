@@ -135,29 +135,33 @@ int slowmodm(const puzdef &pd, const setval p1, setval p2) {
 // cout << "Returning count of " << cnt << endl ;
    return cnt ;
 }
-int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
+int slowmodmip(const puzdef &pd, const setval p1, setval p2, const vector<moove> &rotgroup, const vector<int> &rotinv) {
+   if (rotgroup.size() == 0) {
+      pd.mul(pd.solved, p1, p2) ;
+      return 1 ;
+   }
    int cnt = -1 ;
    int v0 = 1000, v1=1000 ;
    stacksetval pw(pd) ;
-   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
-      int m2 = pd.rotinv[m1] ;
-      int t = pd.solved.dat[pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[0]]]] - v0 ;
+   for (int m1=0; m1<(int)rotgroup.size(); m1++) {
+      int m2 = rotinv[m1] ;
+      int t = pd.solved.dat[rotgroup[m1].pos.dat[p1.dat[rotgroup[m2].pos.dat[0]]]] - v0 ;
       if (t > 0)
          continue ;
       if (t == 0 && pd.setdefs[0].size > 1) {
-         t = pd.solved.dat[pd.rotgroup[m1].pos.dat[p1.dat[pd.rotgroup[m2].pos.dat[1]]]] - v1 ;
+         t = pd.solved.dat[rotgroup[m1].pos.dat[p1.dat[rotgroup[m2].pos.dat[1]]]] - v1 ;
          if (t > 0)
             continue ;
       }
       if (t < 0) {
-         pd.mul(pd.solved, pd.rotgroup[m1].pos, pw) ;
-         pd.mul3(pw, p1, pd.rotgroup[m2].pos, p2) ;
+         pd.mul(pd.solved, rotgroup[m1].pos, pw) ;
+         pd.mul3(pw, p1, rotgroup[m2].pos, p2) ;
          cnt = 1 ;
          v0 = p2.dat[0] ;
          v1 = p2.dat[1] ;
       } else {
-         pd.mul(pd.solved, pd.rotgroup[m1].pos, pw) ;
-         t = pd.mulcmp3(pw, p1, pd.rotgroup[m2].pos, p2) ;
+         pd.mul(pd.solved, rotgroup[m1].pos, pw) ;
+         t = pd.mulcmp3(pw, p1, rotgroup[m2].pos, p2) ;
          if (t <= 0) {
             if (t < 0) {
                cnt = 1 ;
@@ -170,4 +174,7 @@ int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
    }
 // cout << "Returning count of " << cnt << endl ;
    return cnt ;
+}
+int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
+   return slowmodmip(pd, p1, p2, pd.rotgroup, pd.rotinv) ;
 }
