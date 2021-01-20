@@ -154,6 +154,7 @@ int prepass(int d) {
       return 1 ;
    if (solcnt == 0)
       return 0 ;
+   ll osolcnt = solcnt ;
    puzdef &pd = *cosetpd ;
    stacksetval src(pd), dst(pd) ;
    memcpy(cosetbm2, cosetbm, cosetbmsize * sizeof(ull)) ;
@@ -204,6 +205,8 @@ int prepass(int d) {
    cout << "Prepass for depth " << d << " see " << solcnt << " in " << duration() << endl << flush ;
    if (solcnt < cosetsize && solcnt + antipodecount >= cosetsize)
       showcosetantipodes() ;
+   if (solcnt == osolcnt)
+      exit(0) ;
    return solcnt >= cosetsize ;
 }
 int cosetflushback(int d) {
