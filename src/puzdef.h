@@ -80,6 +80,7 @@ struct puzdef {
    setdefs_t setdefs ;
    setval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
+   vector<setval> rotinvmap ;
    vector<int> basemoveorders ;
    vector<int> rotinv ;
    vector<ull> commutes ;
@@ -279,7 +280,7 @@ struct stacksetval : setval {
    ~stacksetval() { delete [] dat ; }
 } ;
 struct allocsetval : setval {
-   allocsetval(const puzdef &pd, const setval iv) : setval(new uchar[pd.totsize]) {
+   allocsetval(const puzdef &pd, const setval &iv) : setval(new uchar[pd.totsize]) {
       memcpy(dat, iv.dat, pd.totsize) ;
    }
    ~allocsetval() {

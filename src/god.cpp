@@ -633,7 +633,7 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
    for (ull i=0; i<cnt; i++, p+=looseper) {
       if (p[symoff] & symbit) {
          looseunpack(pd, p1, p) ;
-         int sym = slowmodm(pd, p1, p2) ;
+         int sym = slowmodm2(pd, p1, p2) ;
 // cout << "Sym is " << sym << endl ;
          if (rotmul[sym] == 0 || rotmul[sym] > rots)
             error("! bad symmetry calculation") ;
@@ -650,11 +650,9 @@ void doarraygodsymm(const puzdef &pd) {
    loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
       error("! not enough memory") ;
-   if (!pd.canpackdense())
-      error("! can't do God's algorithm with symmetry with identical pieces.") ;
    stacksetval p1(pd), p2(pd), p3(pd) ;
    pd.assignpos(p2, pd.solved) ;
-   int sym = slowmodm(pd, p2, p1) ;
+   int sym = slowmodm2(pd, p2, p1) ;
    loosepack(pd, p1, mem, 0, 1+(sym>1)) ;
    cnts.clear() ;
    cnts.push_back(1) ;
@@ -683,7 +681,7 @@ void doarraygodsymm(const puzdef &pd) {
             pd.mul(p1, pd.moves[i].pos, p2) ;
             if (!pd.legalstate(p2))
                continue ;
-            sym = slowmodm(pd, p2, p3) ;
+            sym = slowmodm2(pd, p2, p3) ;
             loosepack(pd, p3, writer, 0, 1+(sym>1)) ;
             writer += looseper ;
             if (writer + looseper >= lim)
