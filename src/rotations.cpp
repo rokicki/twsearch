@@ -113,7 +113,6 @@ void calcrotations(puzdef &pd) {
             }
          }
          if (found < 0) {
-            cout << "Killing due to move" << endl ;
             good = 0 ;
          }
       }
