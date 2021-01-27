@@ -2,6 +2,7 @@
 #include "puzdef.h"
 #include "threads.h"
 #include "workchunks.h"
+#include "rotations.h"
 #include "canon.h"
 /*
  *   This code supports pruning tables for arbitrary puzzles.  Memory
@@ -41,10 +42,11 @@ struct fillworker {
    vector<allocsetval> posns ;
    int d ;
    fillbuf fillbufs[MEMSHARDS] ;
+   allocsetval *looktmp ;
    char pad[256] ;
    void init(const puzdef &pd, int d_) ;
    ull fillstart(const puzdef &pd, prunetable &pt, int w) ;
-   ull fillflush(const prunetable &pt, int shard) ;
+   ull fillflush(prunetable &pt, int shard) ;
    void dowork(const puzdef &pd, prunetable &pt) ;
    ull filltable(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
 } ;
@@ -89,8 +91,14 @@ struct prunetable {
    void prefetch(ull h) const {
       __builtin_prefetch(mem+((h & hmask) >> 5)) ;
    }
-   int lookup(const setval sv) const {
-      ull h = fasthash(totsize, sv) & hmask ;
+   int lookup(const setval sv, setval *looktmp) const {
+      ull h ;
+      if ((int)pdp->rotgroup.size() > 1) {
+         slowmodm2(*pdp, sv, *looktmp) ;
+         h = fasthash(totsize, *looktmp) & hmask ;
+      } else {
+         h = fasthash(totsize, sv) & hmask ;
+      }
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 0)
          return mem[(h >> 5) & ~7] & 15 ;
@@ -111,6 +119,7 @@ struct prunetable {
    void readblock(ull *mem, ull explongcnt, istream *f) ;
    void writept(const puzdef &pd) ;
    int readpt(const puzdef &pd) ;
+   const puzdef *pdp ;
    ull size, hmask, popped, totpop ;
    ull lookupcnt ;
    ull fillcnt ;

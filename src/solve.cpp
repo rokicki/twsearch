@@ -21,6 +21,11 @@ void *threadworker(void *o) {
    return 0 ;
 }
 void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
+   if (looktmp) {
+      delete looktmp ;
+      looktmp = 0 ;
+   }
+   looktmp = new allocsetval(pd, pd.solved) ;
    // make the position table big to minimize false sharing.
    while (posns.size() <= 100 || (int)posns.size() <= d_+10) {
       posns.push_back(allocsetval(pd, pd.solved)) ;
@@ -33,7 +38,7 @@ void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
 }
 int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
    lookups++ ;
-   int v = pt.lookup(posns[sp]) ;
+   int v = pt.lookup(posns[sp], looktmp) ;
    if (v > togo + 1)
       return -1 ;
    if (v > togo)
@@ -133,17 +138,18 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
          cout << "Ignoring unsolvable position." << endl ;
       return -1 ;
    }
+   stacksetval looktmp(pd) ;
    double starttime = walltime() ;
    ull totlookups = 0 ;
-   int initd = pt.lookup(p) ;
+   int initd = pt.lookup(p, &looktmp) ;
    solutionsfound = 0 ;
    for (int d=initd; d <= maxdepth; d++) {
       if (d < optmindepth)
          continue ;
       if (d - initd > 3)
-         makeworkchunks(pd, d) ;
+         makeworkchunks(pd, d, 0) ;
       else
-         makeworkchunks(pd, 0) ;
+         makeworkchunks(pd, 0, 0) ;
       int wthreads = setupthreads(pd, pt) ;
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, d, t, p) ;

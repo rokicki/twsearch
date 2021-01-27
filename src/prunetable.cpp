@@ -44,6 +44,11 @@ void *packworker(void *o) {
    return 0 ;
 }
 void fillworker::init(const puzdef &pd, int d_) {
+   if (looktmp) {
+      delete looktmp ;
+      looktmp = 0 ;
+   }
+   looktmp = new allocsetval(pd, pd.solved) ;
    while (posns.size() <= 100 || (int)posns.size() <= d_+1)
       posns.push_back(allocsetval(pd, pd.solved)) ;
    pd.assignpos(posns[0], pd.solved) ;
@@ -62,7 +67,8 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
       pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
          return 0 ;
-      st = canonnext[st][pd.moves[mv].cs] ;
+      if (pd.rotgroup.size() <= 1)
+         st = canonnext[st][pd.moves[mv].cs] ;
       sp++ ;
       togo-- ;
       initmoves /= nmoves ;
@@ -72,13 +78,14 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
       r += fillflush(pt, i) ;
    return r ;
 }
-ull fillworker::fillflush(const prunetable &pt, int shard) {
+ull fillworker::fillflush(prunetable &pt, int shard) {
    ull r = 0 ;
    fillbuf &fb = fillbufs[shard] ;
    if (fb.nchunks > 0) {
 #ifdef USE_PTHREADS
       pthread_mutex_lock(&(memshards[shard].mutex)) ;
 #endif
+      pt.fillcnt += fb.nchunks ;
       for (int i=0; i<fb.nchunks; i++) {
          ull h = fb.chunks[i] ;
          if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
@@ -114,7 +121,13 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
                           int sp, int st) {
    ull r = 0 ;
    if (togo == 0) {
-      ull h = fasthash(pd.totsize, posns[sp]) & pt.hmask ;
+      ull h ;
+      if ((int)pd.rotgroup.size() > 1) {
+         slowmodm2(pd, posns[sp], *looktmp) ;
+         h = fasthash(pd.totsize, *looktmp) & pt.hmask ;
+      } else {
+         h = fasthash(pd.totsize, posns[sp]) & pt.hmask ;
+      }
       int shard = (h >> pt.shardshift) ;
       fillbuf &fb = fillbufs[shard] ;
       fb.chunks[fb.nchunks++] = h ;
@@ -222,6 +235,7 @@ void ioqueue::finishall() {
    }
 }
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
+   pdp = &pd ;
    totsize = pd.totsize ;
    ull bytesize = 2048 ;
    while (2 * bytesize <= maxmem &&
@@ -261,7 +275,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
    cout << "Filling table at depth " << d << " with val " << wval << flush ;
-   makeworkchunks(pd, d) ;
+   makeworkchunks(pd, d, true) ;
    int wthreads = setupthreads(pd, *this) ;
    for (int t=0; t<wthreads; t++)
       fillworkers[t].init(pd, d) ;
@@ -273,8 +287,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #else
    fillthreadworker((void *)&workerparams[0]) ;
 #endif
-   fillcnt += canonseqcnt[d] ;
-   cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
+   cout << " saw " << popped << " (" << fillcnt << ") in "
         << duration() << endl << flush ;
    totpop += popped ;
    justread = 0 ;

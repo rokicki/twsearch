@@ -19,6 +19,7 @@ struct solveworker {
    vector<int> movehist ;
    long long lookups ;
    int d, id ;
+   setval *looktmp ;
    char padding[256] ; // kill false sharing
    void init(const puzdef &pd, int d_, int id_, const setval &p) ;
    int solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
