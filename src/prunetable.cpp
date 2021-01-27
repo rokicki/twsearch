@@ -250,6 +250,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    int base = 1 ;
    while (base + 2 < (int)canontotcnt.size() && canontotcnt[base+2] < size)
       base++ ;
+   if (pd.rotgroup.size() > 1)
+      base = 100 ;
    // hack memalign
    mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
    while (((ull)mem) & (CACHELINESIZE - 1))
