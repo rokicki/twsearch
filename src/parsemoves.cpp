@@ -8,6 +8,9 @@ setval findmove_generously(const puzdef &pd, const char *mvstring) {
    for (int i=0; i<(int)pd.parsemoves.size(); i++)
       if (strcmp(mvstring, pd.parsemoves[i].name) == 0)
          return pd.parsemoves[i].pos ;
+   for (int i=0; i<(int)pd.rotations.size(); i++)
+      if (strcmp(mvstring, pd.rotations[i].name) == 0)
+         return pd.rotations[i].pos ;
    error("! bad move name ", mvstring) ;
    return setval(0) ;
 }
