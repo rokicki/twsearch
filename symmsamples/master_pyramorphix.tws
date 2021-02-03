@@ -1,0 +1,202 @@
+# /usr/local/bin/node /Users/rokicki/cubing.js/dist/bin/puzzle-geometry-bin.js --rotations --optimize --ksolve master pyramorphix
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# t e 0.866025403784437 rotations true optimize true
+Name PuzzleGeometryPuzzle
+
+Set EDGES 6 2
+Set CENTERS 12 1
+Set CORNERS 4 3
+Set CENTERS2 4 1
+
+Solved
+EDGES
+1 2 3 4 5 6
+0 0 0 0 0 0
+CENTERS
+1 2 3 4 1 4 2 3 1 4 2 3
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+1 2 3 4
+0 0 0 0
+CENTERS2
+1 2 3 4
+0 0 0 0
+End
+
+Move FD
+EDGES
+1 2 3 4 5 6
+0 0 1 0 0 0
+CENTERS
+1 2 3 4 7 6 5 8 11 10 9 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+1 2 4 3
+0 0 2 1
+End
+
+Move LR
+EDGES
+1 2 3 4 5 6
+0 0 0 1 0 0
+CENTERS
+1 2 3 4 5 8 7 6 9 12 11 10
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+2 1 3 4
+0 0 0 0
+End
+
+Move FDv
+EDGES
+2 1 3 4 6 5
+0 0 1 1 0 0
+CENTERS
+2 1 4 3 7 8 5 6 11 12 9 10
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+2 1 4 3
+0 0 2 1
+CENTERS2
+2 1 4 3
+0 0 0 0
+End
+
+Move FL
+EDGES
+1 2 3 4 5 6
+0 0 0 0 1 0
+CENTERS
+3 2 1 4 5 6 7 8 12 10 11 9
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+3 2 1 4
+2 0 1 0
+End
+
+Move DR
+EDGES
+1 2 3 4 5 6
+0 0 0 0 0 1
+CENTERS
+1 4 3 2 5 6 7 8 9 11 10 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+1 4 3 2
+0 1 0 2
+End
+
+Move FLv
+EDGES
+2 1 4 3 5 6
+1 1 0 0 1 1
+CENTERS
+3 4 1 2 8 7 6 5 12 11 10 9
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+3 4 1 2
+2 1 1 2
+CENTERS2
+3 4 1 2
+0 0 0 0
+End
+
+Move DL
+EDGES
+1 2 3 4 5 6
+0 1 0 0 0 0
+CENTERS
+1 3 2 4 5 6 8 7 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+1 3 2 4
+0 2 1 0
+End
+
+Move FR
+EDGES
+1 2 3 4 5 6
+1 0 0 0 0 0
+CENTERS
+4 2 3 1 6 5 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+4 2 3 1
+1 0 0 2
+End
+
+Move DLv
+EDGES
+1 2 4 3 6 5
+1 1 1 1 1 1
+CENTERS
+4 3 2 1 6 5 8 7 10 9 12 11
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+4 3 2 1
+1 2 1 2
+CENTERS2
+4 3 2 1
+0 0 0 0
+End
+
+Move Fv
+EDGES
+5 6 1 2 3 4
+0 0 0 1 0 1
+CENTERS
+9 10 11 12 1 3 4 2 5 8 6 7
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+3 2 4 1
+0 2 0 0
+CENTERS2
+1 4 2 3
+0 0 0 0
+End
+
+Move Dv
+EDGES
+5 6 2 1 4 3
+1 1 1 0 1 0
+CENTERS
+12 11 10 9 3 1 2 4 8 5 7 6
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+1 4 2 3
+2 1 1 1
+CENTERS2
+3 2 4 1
+0 0 0 0
+End
+
+Move Lv
+EDGES
+6 5 1 2 4 3
+1 1 0 1 0 1
+CENTERS
+10 9 12 11 4 2 1 3 6 7 5 8
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+2 3 1 4
+1 2 0 2
+CENTERS2
+4 1 3 2
+0 0 0 0
+End
+
+Move Rv
+EDGES
+6 5 2 1 3 4
+0 0 1 0 1 0
+CENTERS
+11 12 9 10 2 4 3 1 7 6 8 5
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNERS
+4 1 3 2
+2 0 2 1
+CENTERS2
+2 3 1 4
+0 0 0 0
+End
+
