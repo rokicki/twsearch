@@ -1,5 +1,6 @@
 #ifndef READKSOLVE_H
 #include <cstdio>
+#include <set>
 #include "puzdef.h"
 /*
  *   This code manages parsing a tws file (an extension of the ksolve
@@ -12,5 +13,6 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) ;
 puzdef readdef(istream *f) ;
 void addmovepowers(puzdef &pd) ;
 extern int nocorners, nocenters, noedges, ignoreori, distinguishall ;
+extern set<string> omitsets ;
 #define READKSOLVE_H
 #endif

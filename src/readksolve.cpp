@@ -2,6 +2,7 @@
 #include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori, distinguishall ;
+set<string> omitsets ;
 vector<string> getline(istream *f, ull &checksum) {
    string s ;
    int c ;
@@ -101,6 +102,8 @@ int oddperm(uchar *p, int n) {
    return r & 1 ;
 }
 int omitset(string s) {
+   if (omitsets.find(s) != omitsets.end())
+      return 1 ;
    if (s.size() < 2)
       return 0 ;
    if (nocorners && tolower(s[0]) == 'c' && s[1] != 0 && tolower(s[2]) == 'r')

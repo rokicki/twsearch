@@ -100,6 +100,10 @@ void processargs(int &argc, argvtype &argv) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
             ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--omit") == 0) {
+            omitsets.insert(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--distinguishall") == 0) {
             distinguishall = 1 ;
          } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
