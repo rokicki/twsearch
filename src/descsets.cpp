@@ -5,7 +5,7 @@ void descsets(puzdef &pd) {
       const setdef &sd = pd.setdefs[i] ;
       int n = sd.size ;
       for (int j=0; j<n; j++) {
-         cout << sd.name << " " << j ;
+         cout << sd.name << " " << (1+j) ;
          for (int k=0; k<(int)pd.basemoves.size(); k++) {
             if (pd.basemoves[k].pos.dat[sd.off+j] != j ||
                 pd.basemoves[k].pos.dat[sd.off+j+n] != 0)
