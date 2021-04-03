@@ -30,6 +30,7 @@
 #include "rotations.h"
 #include "twsearch.h"
 #include "coset.h"
+#include "descsets.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -53,7 +54,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs, docoset, douniqsymm ;
+    domergeseqs, docoset, douniqsymm, dodescsets ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -152,6 +153,8 @@ void processargs(int &argc, argvtype &argv) {
             relaxcosets++ ;
          } else if (strcmp(argv[0], "--compact") == 0) {
             compact++ ;
+         } else if (strcmp(argv[0], "--describesets") == 0) {
+            dodescsets++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -327,6 +330,9 @@ int main(int argc, const char **argv) {
    puzdef pd = makepuzdef(&f) ;
    if (doorderedgs)
       runorderedgs(pd) ;
+   if (dodescsets) {
+      descsets(pd) ;
+   }
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
