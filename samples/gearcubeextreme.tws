@@ -1,0 +1,110 @@
+Name GearCubeExtreme
+
+Set CORNERS 8 1
+Set EDGES_p0 8 3
+Set EDGES_p8 4 1
+Set CENTERS 6 1
+
+Solved
+CORNERS
+1 2 3 4 5 6 7 8
+EDGES_p0
+1 2 3 4 5 6 7 8
+EDGES_p8
+1 2 3 4
+CENTERS
+1 2 3 4 5 6
+End
+
+Move F
+CORNERS
+6 2 3 5 4 1 7 8
+EDGES_p0
+5 4 3 8 1 2 7 6
+0 1 0 1 0 1 0 1
+EDGES_p8
+2 1 3 4
+CENTERS
+2 6 3 1 5 4
+End
+
+Move B
+CORNERS
+1 7 8 4 5 6 2 3
+EDGES_p0
+1 6 7 2 5 8 3 4
+0 1 0 1 0 1 0 1
+EDGES_p8
+1 2 4 3
+CENTERS
+4 1 3 6 5 2
+End
+
+Move U
+CORNERS
+2 3 4 1 5 6 7 8
+EDGES_p0
+2 3 4 1 5 6 7 8
+End
+
+Move D
+CORNERS
+1 2 3 4 6 7 8 5
+EDGES_p0
+1 2 3 4 8 5 6 7
+End
+
+Move R
+CORNERS
+8 5 3 4 2 6 7 1
+EDGES_p0
+5 6 1 4 7 2 3 8
+1 0 1 0 1 0 1 0
+EDGES_p8
+3 2 1 4
+CENTERS
+3 2 6 4 1 5
+End
+
+Move L
+CORNERS
+1 2 6 7 5 3 4 8
+EDGES_p0
+3 2 7 8 1 6 5 4
+1 0 1 0 1 0 1 0
+EDGES_p8
+1 4 3 2
+CENTERS
+5 2 1 4 6 3
+End
+
+# Move 2U
+# EDGES_p8
+# 3 1 4 2
+# CENTERS
+# 1 3 4 5 2 6
+# End
+
+Move Uv
+CORNERS
+2 3 4 1 8 5 6 7
+EDGES_p0
+2 3 4 1 6 7 8 5
+ 0 0 0 0 0 0 0 0
+EDGES_p8
+3 1 4 2
+CENTERS
+1 3 4 5 2 6
+End
+
+Move Rv
+CORNERS
+8 5 6 7 2 3 4 1
+EDGES_p0
+7 6 5 8 3 2 1 4
+0 0 0 0 0 0 0 0
+EDGES_p8
+3 4 1 2
+CENTERS
+6 2 5 4 3 1
+End
