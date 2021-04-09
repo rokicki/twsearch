@@ -223,6 +223,8 @@ case 'i':
             break ;
 case 's':
             dosolvelines++ ;
+            if (argv[0][2] == 'i')
+               onlyimprovements = 1 ;
             break ;
 case 'C':
             docanon++ ;

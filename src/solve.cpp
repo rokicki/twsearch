@@ -1,8 +1,10 @@
 #include <iostream>
 #include "solve.h"
+#include "cmdlineops.h"
 ull solutionsfound = 0 ;
 ull solutionsneeded = 1 ;
 int noearlysolutions ;
+int onlyimprovements ;
 int phase2 ;
 int optmindepth ;
 string lastsolution ;
@@ -144,6 +146,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    int initd = pt.lookup(p, &looktmp) ;
    solutionsfound = 0 ;
    for (int d=initd; d <= maxdepth; d++) {
+      if (onlyimprovements && d >= globalinputmovecount)
+         break ;
       if (d < optmindepth)
          continue ;
       if (d - initd > 3)
