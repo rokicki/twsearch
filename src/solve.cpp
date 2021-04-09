@@ -145,11 +145,13 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    ull totlookups = 0 ;
    int initd = pt.lookup(p, &looktmp) ;
    solutionsfound = 0 ;
+   int hid = 0 ;
    for (int d=initd; d <= maxdepth; d++) {
       if (onlyimprovements && d >= globalinputmovecount)
          break ;
       if (d < optmindepth)
          continue ;
+      hid = d ;
       if (d - initd > 3)
          makeworkchunks(pd, d, 0) ;
       else
@@ -190,6 +192,6 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
          pt.checkextend(pd) ; // fill table up a bit more if needed
    }
    if (!phase2 && callback == 0)
-      cout << "No solution found in " << maxdepth << endl << flush ;
+      cout << "No solution found in " << hid << endl << flush ;
    return -1 ;
 }
