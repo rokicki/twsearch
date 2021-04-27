@@ -8,11 +8,7 @@ struct ioqueue ioqueue ;
 string inputbasename = "unknownpuzzle" ;
 int nowrite ;
 ull fasthash(int n, const setval sv) {
-   ull r = CityHash64((const char *)sv.dat, n) ;
-   // this little hack ensures that at least one of bits 1..7
-   // (numbered from zero) is set.
-   r ^= ((r | (1LL << 43)) & ((r & 0xfe) - 2)) >> 42 ;
-   return r ;
+   return CityHash64((const char *)sv.dat, n) ;
 }
 vector<workerparam> workerparams ;
 void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
@@ -124,9 +120,9 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
       ull h ;
       if ((int)pd.rotgroup.size() > 1) {
          slowmodm2(pd, posns[sp], *looktmp) ;
-         h = fasthash(pd.totsize, *looktmp) & pt.hmask ;
+         h = pt.indexhash(pd.totsize, *looktmp) ;
       } else {
-         h = fasthash(pd.totsize, posns[sp]) & pt.hmask ;
+         h = pt.indexhash(pd.totsize, posns[sp]) ;
       }
       int shard = (h >> pt.shardshift) ;
       fillbuf &fb = fillbufs[shard] ;
@@ -234,6 +230,12 @@ void ioqueue::finishall() {
       nextthread = (nextthread + 1) % numthreads ;
    }
 }
+/*
+ *   We used to support table sizes that were only powers of two.
+ *   Now we support table sizes that are powers of 2 and also
+ *   3/4, 7/8, 15/16, and 31/32 times powers of two, so we can make
+ *   better use of large memory machines.
+ */
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
    pdp = &pd ;
    totsize = pd.totsize ;
@@ -241,11 +243,23 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    while (2 * bytesize <= maxmem &&
           (pd.logstates > 55 || 8 * bytesize < pd.llstates))
       bytesize *= 2 ;
+   subshift = 42 ;
+   for (int sh=1; (bytesize|(bytesize>>1)) <= maxmem &&
+          (pd.logstates > 55 || 4 * (bytesize|(bytesize>>1)) < pd.llstates);
+        sh++) {
+      subshift = sh ;
+      bytesize |= bytesize >> 1 ;
+   }
    size = bytesize * 4 ;
    shardshift = 0 ;
    while ((size >> shardshift) > MEMSHARDS)
       shardshift++ ;
-   hmask = size - 1 ;
+   ull hh = 0xffffffffffffffffULL ;
+   hh -= hh >> subshift ;
+   memshift = 0 ;
+   while (hh >> memshift > size)
+      memshift++ ;
+   cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift " << subshift << " memshift " << memshift << " shardshift " << shardshift << endl ;
    totpop = 0 ;
    int base = 1 ;
    if (pd.rotgroup.size() > 1)
@@ -347,24 +361,24 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd) const {
-   string filename = "tws2-" + inputbasename + "-" ;
+   string filename = "tws3-" + inputbasename + "-" ;
    if (quarter)
       filename += "q-" ;
    ull bytes = size >> 2 ;
    char suffix = 0 ;
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'K' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'M' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'G' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'T' ;
       bytes >>= 10 ;
    }
@@ -579,7 +593,8 @@ void prunetable::writept(const puzdef &pd) {
    w.put(SIGNATURE);
    w.write((char *)&pd.checksum, sizeof(pd.checksum)) ;
    w.write((char *)&size, sizeof(size)) ;
-   w.write((char *)&hmask, sizeof(hmask)) ;
+   w.write((char *)&subshift, sizeof(subshift)) ;
+   w.write((char *)&memshift, sizeof(memshift)) ;
    w.write((char *)&popped, sizeof(popped)) ;
    w.write((char *)&totpop, sizeof(totpop)) ;
    w.write((char *)&fillcnt, sizeof(fillcnt)) ;
@@ -633,7 +648,8 @@ int prunetable::readpt(const puzdef &pd) {
       r.close() ;
       return 0 ;
    }
-   r.read((char *)&hmask, sizeof(hmask));
+   r.read((char *)&subshift, sizeof(subshift)) ;
+   r.read((char *)&memshift, sizeof(memshift)) ;
    r.read((char *)&popped, sizeof(popped));
    r.read((char *)&totpop, sizeof(totpop));
    r.read((char *)&fillcnt, sizeof(fillcnt));

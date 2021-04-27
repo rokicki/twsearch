@@ -81,7 +81,7 @@ struct prunetable {
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd) ;
    int lookuph(ull h) const {
-      h &= hmask ;
+      h = indexhash(h) ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 0)
          return mem[(h >> 5) & ~7] & 15 ;
@@ -89,15 +89,25 @@ struct prunetable {
          return v + baseval - 1 ;
    }
    void prefetch(ull h) const {
-      __builtin_prefetch(mem+((h & hmask) >> 5)) ;
+      __builtin_prefetch(mem+((indexhash(h)) >> 5)) ;
+   }
+   ull indexhash(ull lowb) const {
+      ull h = lowb ;
+      h -= h >> subshift ;
+      h >>= memshift ;
+      h ^= 0xff & ((((h & 0xfe) - 2) >> 8) & (lowb | 2)) ;
+      return h ;
+   }
+   ull indexhash(int n, const setval sv) const {
+      return indexhash(fasthash(n, sv)) ;
    }
    int lookup(const setval sv, setval *looktmp) const {
       ull h ;
       if ((int)pdp->rotgroup.size() > 1) {
          slowmodm2(*pdp, sv, *looktmp) ;
-         h = fasthash(totsize, *looktmp) & hmask ;
+         h = indexhash(totsize, *looktmp) ;
       } else {
-         h = fasthash(totsize, sv) & hmask ;
+         h = indexhash(totsize, sv) ;
       }
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 0)
@@ -120,7 +130,8 @@ struct prunetable {
    void writept(const puzdef &pd) ;
    int readpt(const puzdef &pd) ;
    const puzdef *pdp ;
-   ull size, hmask, popped, totpop ;
+   ull size, popped, totpop ;
+   ull subshift, memshift ;
    ull lookupcnt ;
    ull fillcnt ;
    ull *mem ;
