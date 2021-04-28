@@ -345,7 +345,6 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
       wval = wval + 1 ;
    }
    baseval++ ;
-   cout << "Prediction is " << prediction << endl ;
    filltable(pd, baseval+1) ;
    writept(pd) ;
 }
