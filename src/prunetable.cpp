@@ -261,33 +261,25 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
       memshift++ ;
    cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift " << subshift << " memshift " << memshift << " shardshift " << shardshift << endl ;
    totpop = 0 ;
-   int base = 1 ;
-   if (pd.rotgroup.size() > 1)
-      while (base < 100 && base + 2 < (int)canontotcnt.size() &&
-             canontotcnt[base+2] / pd.rotgroup.size() < size)
-         base++ ;
-   else
-      while (base + 2 < (int)canontotcnt.size() && canontotcnt[base+2] < size)
-         base++ ;
+   ptotpop = 0 ;
+   baseval = 0 ;
+   wval = 0 ;
    // hack memalign
    mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
    while (((ull)mem) & (CACHELINESIZE - 1))
       mem++ ;
    lookupcnt = 0 ;
    fillcnt = 0 ;
-   hibase = base ;
    justread = 0 ;
    if (!readpt(pd)) {
+      cout << "Initializing memory " << flush ;
       memset(mem, -1, bytesize) ;
-      baseval = min(hibase, 2) ;
-      for (int d=0; d<=baseval+1; d++) {
-         int val = 0 ;
-         if (d >= baseval)
-            val = d - baseval + 1 ;
-         wval = val ;
-         wbval = min(d, 15) ;
-         filltable(pd, d) ;
-      }
+      cout << "in " << duration() << endl << flush ;
+      baseval = 1 ;
+      filltable(pd, 0) ;
+      filltable(pd, 1) ;
+      filltable(pd, 2) ;
+      checkextend(pd, 1) ;
    }
    writept(pd) ;
 }
@@ -308,40 +300,52 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #endif
    cout << " saw " << popped << " (" << fillcnt << ") in "
         << duration() << endl << flush ;
+   ptotpop = totpop ;
    totpop += popped ;
    justread = 0 ;
 }
-void prunetable::checkextend(const puzdef &pd) {
-   if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
-       baseval > hibase ||
-       (pd.logstates <= 50 && totpop * 2 > pd.llstates))
+void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
+   double prediction = 0 ;
+   if (ptotpop != 0)
+      prediction = totpop * (double)totpop / ptotpop ;
+   if ((ignorelookup == 0 && lookupcnt < 3 * fillcnt) ||
+       baseval > 100 || prediction > size ||
+       (pd.logstates <= 50 && prediction > pd.llstates))
       return ;
-   ull longcnt = (size + 31) >> 5 ;
-   cout << "Demoting memory values " << flush ;
-   for (ull i=0; i<longcnt; i += 8) {
-      // decrement 1's and 2's; leave 3's alone
-      // watch out for first element; the 0 in the first one is not a mistake
-      ull v = mem[i] ;
-      mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
-      v = mem[i+1] ;
-      mem[i+1] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+2] ;
-      mem[i+2] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+3] ;
-      mem[i+3] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+4] ;
-      mem[i+4] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+5] ;
-      mem[i+5] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+6] ;
-      mem[i+6] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+7] ;
-      mem[i+7] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+   if (wval == 2) {
+      ull longcnt = (size + 31) >> 5 ;
+      cout << "Demoting memory values " << flush ;
+      for (ull i=0; i<longcnt; i += 8) {
+         // decrement 1's and 2's; leave 3's alone
+         // watch out for first element; the 0 in the first one is not a mistake
+         ull v = mem[i] ;
+         mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
+         v = mem[i+1] ;
+         mem[i+1] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+2] ;
+         mem[i+2] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+3] ;
+         mem[i+3] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+4] ;
+         mem[i+4] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+5] ;
+         mem[i+5] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+6] ;
+         mem[i+6] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+7] ;
+         mem[i+7] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+      }
+      cout << "in " << duration() << endl << flush ;
+      wval-- ;
    }
-   cout << "in " << duration() << endl << flush ;
+   if (wval <= 0 && prediction < (size >> 8))
+      wval = 0 ;
+   else {
+      wval = wval + 1 ;
+   }
    baseval++ ;
-   wval = 2 ;
    wbval = min(15, baseval+1) ;
+   cout << "Prediction is " << prediction << endl ;
    filltable(pd, baseval+1) ;
    writept(pd) ;
 }
@@ -597,6 +601,7 @@ void prunetable::writept(const puzdef &pd) {
    w.write((char *)&memshift, sizeof(memshift)) ;
    w.write((char *)&popped, sizeof(popped)) ;
    w.write((char *)&totpop, sizeof(totpop)) ;
+   w.write((char *)&ptotpop, sizeof(ptotpop)) ;
    w.write((char *)&fillcnt, sizeof(fillcnt)) ;
    w.write((char *)&totsize, sizeof(totsize)) ;
    w.write((char *)&baseval, sizeof(baseval)) ;
@@ -652,6 +657,7 @@ int prunetable::readpt(const puzdef &pd) {
    r.read((char *)&memshift, sizeof(memshift)) ;
    r.read((char *)&popped, sizeof(popped));
    r.read((char *)&totpop, sizeof(totpop));
+   r.read((char *)&ptotpop, sizeof(ptotpop));
    r.read((char *)&fillcnt, sizeof(fillcnt));
    r.read((char *)&totsize, sizeof(totsize));
    r.read((char *)&baseval, sizeof(baseval));

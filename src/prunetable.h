@@ -79,7 +79,7 @@ struct prunetable {
    prunetable() {}
    prunetable(const puzdef &pd, ull maxmem) ;
    void filltable(const puzdef &pd, int d) ;
-   void checkextend(const puzdef &pd) ;
+   void checkextend(const puzdef &pd, int ignorelookups=0) ;
    int lookuph(ull h) const {
       h = indexhash(h) ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
@@ -130,7 +130,7 @@ struct prunetable {
    void writept(const puzdef &pd) ;
    int readpt(const puzdef &pd) ;
    const puzdef *pdp ;
-   ull size, popped, totpop ;
+   ull size, popped, totpop, ptotpop ;
    ull subshift, memshift ;
    ull lookupcnt ;
    ull fillcnt ;
