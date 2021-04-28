@@ -285,6 +285,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
 }
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
+   wbval = min(d, 15) ;
    cout << "Filling table at depth " << d << " with val " << wval << flush ;
    makeworkchunks(pd, d, true) ;
    int wthreads = setupthreads(pd, *this) ;
@@ -344,7 +345,6 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
       wval = wval + 1 ;
    }
    baseval++ ;
-   wbval = min(15, baseval+1) ;
    cout << "Prediction is " << prediction << endl ;
    filltable(pd, baseval+1) ;
    writept(pd) ;
