@@ -339,11 +339,10 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
       cout << "in " << duration() << endl << flush ;
       wval-- ;
    }
-   if (wval <= 0 && prediction < (size >> 8))
+   if (wval <= 0 && prediction < (size >> 9))
       wval = 0 ;
-   else {
-      wval = wval + 1 ;
-   }
+   else
+      wval++ ;
    baseval++ ;
    filltable(pd, baseval+1) ;
    writept(pd) ;
