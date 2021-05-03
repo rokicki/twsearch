@@ -138,7 +138,7 @@ void puzdef::addillegal(const char *setname, int pos, int val) {
       error("! did not find set in Illegal command") ;
    for (auto &i : illegal)
       if (i.pos == rpos) {
-         i.mask |= 1LL << val ;
+         i.mask |= 1ULL << (val-1) ;
          return ;
       }
    illegal.push_back(illegal_t({rpos, 1ULL << (val-1)})) ;
