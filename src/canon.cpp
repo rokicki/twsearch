@@ -163,7 +163,7 @@ void makecanonstates(puzdef &pd) {
  */
 }
 map<ull,int> statemap ;
-int movebits, ccount ;
+int movebits, ccount, canonlim ;
 vector<loosetype> ccenc ;
 unordered_set<vector<loosetype>, hashvector<loosetype>> ccseen ;
 vector<int> ccnextstate ;
@@ -369,7 +369,7 @@ void showcanon(const puzdef &pd, int show) {
    counts[0][0] = 1 ;
    double gsum = 0 ;
    double osum = 1 ;
-   for (int d=0; d<=100; d++) {
+   for (int d=0; d<=canonlim; d++) {
       while ((int)counts.size() <= d+1)
          counts.push_back(zeros) ;
       double sum = 0 ;

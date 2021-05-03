@@ -31,6 +31,7 @@
 #include "twsearch.h"
 #include "coset.h"
 #include "descsets.h"
+#include "ordertree.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -54,7 +55,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs, docoset, douniqsymm, dodescsets ;
+    domergeseqs, docoset, douniqsymm, dodescsets, doordertree ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -155,6 +156,8 @@ void processargs(int &argc, argvtype &argv) {
             compact++ ;
          } else if (strcmp(argv[0], "--describesets") == 0) {
             dodescsets++ ;
+         } else if (strcmp(argv[0], "--ordertree") == 0) {
+            doordertree++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -228,6 +231,8 @@ case 's':
             break ;
 case 'C':
             docanon++ ;
+            if (argv[0][2] >= '0')
+               canonlim = atoll(argv[0]+2) ;
             break ;
 case 'F':
             forcearray++ ;
@@ -335,6 +340,9 @@ int main(int argc, const char **argv) {
    if (dodescsets) {
       descsets(pd) ;
    }
+   if (doordertree) {
+      ordertree(pd) ;
+   }
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
@@ -344,7 +352,7 @@ int main(int argc, const char **argv) {
       int statesfitsa = forcearray ||
           (pd.logstates <= 50 &&
              ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
-      if (statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
+      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
