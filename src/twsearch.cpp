@@ -288,6 +288,13 @@ puzdef makepuzdef(istream *f) {
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (ignoreori)
+      pd.addoptionssum("noorientation") ;
+   if (omitsets.size()) {
+      pd.addoptionssum("omit") ;
+      for (auto s: omitsets)
+         pd.addoptionssum(s.c_str()) ;
+   }
    if (distinguishall)
       pd.addoptionssum("distinguishall") ;
    if (doss || checkbeforesolve)
