@@ -241,11 +241,15 @@ void calculatesizes(puzdef &pd) {
 void domove(const puzdef &pd, setval p, setval pos, setval pt) {
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
+   if (!pd.legalstate(p))
+      warn("illegal position") ;
 }
 void domove(const puzdef &pd, setval p, setval pos) {
    stacksetval pt(pd) ;
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
+   if (!pd.legalstate(p))
+      warn("illegal position") ;
 }
 void domove(const puzdef &pd, setval p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;
