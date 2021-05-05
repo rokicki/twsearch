@@ -369,6 +369,8 @@ void showcanon(const puzdef &pd, int show) {
    counts[0][0] = 1 ;
    double gsum = 0 ;
    double osum = 1 ;
+   if (canonlim == 0)
+      canonlim = 100 ;
    for (int d=0; d<=canonlim; d++) {
       while ((int)counts.size() <= d+1)
          counts.push_back(zeros) ;
