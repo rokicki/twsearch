@@ -363,7 +363,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd) const {
-   string filename = "tws3-" + inputbasename + "-" ;
+   string filename = "tws4-" + inputbasename + "-" ;
    if (quarter)
       filename += "q-" ;
    ull bytes = size >> 2 ;
@@ -604,6 +604,7 @@ void prunetable::writept(const puzdef &pd) {
    w.write((char *)&totsize, sizeof(totsize)) ;
    w.write((char *)&baseval, sizeof(baseval)) ;
    w.write((char *)&hibase, sizeof(hibase)) ;
+   w.write((char *)&wval, sizeof(wval)) ;
    w.write((char *)codewidths, sizeof(codewidths[0]) * 256) ;
    if (longcnt % BLOCKSIZE != 0)
       error("Size must be a multiple of block size") ;
@@ -660,6 +661,7 @@ int prunetable::readpt(const puzdef &pd) {
    r.read((char *)&totsize, sizeof(totsize));
    r.read((char *)&baseval, sizeof(baseval));
    r.read((char *)&hibase, sizeof(hibase));
+   r.read((char *)&wval, sizeof(wval));
    r.read((char *)codewidths, sizeof(codewidths[0]) * 256);
    if (r.fail()) {
       warn("I/O error in reading pruning table") ;
