@@ -1,6 +1,7 @@
 # Filtered to contain only the C++ build.
 
-all: twsearch
+.PHONY: build
+build: twsearch
 
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
 FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL -Isrc -Isrc/cityhash/src
@@ -21,6 +22,7 @@ HSOURCE = src/antipode.h src/calcsymm.h src/canon.h src/cmdlineops.h \
 
 CITYSRC = src/cityhash/src/city.cc
 
+.PHONY: clean
 clean:
 	rm -f *.o twsearch
 
