@@ -11,7 +11,7 @@
 #include "cmdlineops.h"
 struct wasmdata {
    puzdef pd ;
-   prunetable pt ;
+   prunetable *pt ;
    int havepd, havept ;
 } wasmdata ;
 extern "C" void w_args(const char *s_) {
@@ -45,7 +45,7 @@ void checkprunetable() {
       error(
      "! you must set the ksolve definition before building a pruning table") ;
    if (!wasmdata.havept) {
-      wasmdata.pt = prunetable(wasmdata.pd, maxmem) ;
+      wasmdata.pt = new prunetable(wasmdata.pd, maxmem) ;
       wasmdata.havept = 1 ;
    }
 }
@@ -63,14 +63,14 @@ extern "C" const char *w_solvescramble(const char *s) {
    for (auto &m : movelist)
       domove(pd, p1, m) ;
    string noname("NoScrambleName") ;
-   solveit(pd, wasmdata.pt, noname, p1) ;
+   solveit(pd, *wasmdata.pt, noname, p1) ;
    return lastsolution.c_str() ;
 }
 extern "C" const char *w_solveposition(const char *s) {
    lastsolution = "--no solution--" ;
    checkprunetable() ;
    stringstream is(s) ;
-   processscrambles(&is, wasmdata.pd, wasmdata.pt, 0) ;
+   processscrambles(&is, wasmdata.pd, *wasmdata.pt, 0) ;
    return lastsolution.c_str() ;
 }
 #ifdef WASMTEST
