@@ -76,6 +76,9 @@ vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
  */
 int isrotation(const char *mv) {
    const char *q = mv ;
+   if ((*q == 'x' || *q == 'y' || *q == 'z') &&
+       (q[1] == 0 || q[1] == '\'' || q[1] == '2'))
+      return true;
    while ('A' <= *q && *q <= 'Z')
       q++ ;
    if (*q != 'v' || q[1] != 0 || mv == q)
