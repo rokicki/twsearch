@@ -79,7 +79,7 @@ int isrotation(const char *mv) {
    if ((*q == 'x' || *q == 'y' || *q == 'z') &&
        (q[1] == 0 || q[1] == '\'' || q[1] == '2'))
       return true;
-   while ('A' <= *q && *q <= 'Z')
+   while (*q == '_' || ('A' <= *q && *q <= 'Z'))
       q++ ;
    if (*q != 'v' || q[1] != 0 || mv == q)
       return 0 ;
