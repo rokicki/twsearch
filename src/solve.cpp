@@ -161,9 +161,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       for (int t=0; t<wthreads; t++)
          solveworkers[t].init(pd, d, t, p) ;
 #ifdef USE_PTHREADS
-      for (int i=0; i<wthreads; i++)
+      for (int i=1; i<wthreads; i++)
          spawn_thread(i, threadworker, &(workerparams[i])) ;
-      for (int i=0; i<wthreads; i++)
+      threadworker((void*)&workerparams[0]) ;
+      for (int i=1; i<wthreads; i++)
          join_thread(i) ;
 #else
       threadworker((void*)&workerparams[0]) ;
