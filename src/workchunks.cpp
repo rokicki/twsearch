@@ -7,12 +7,17 @@ vector<ull> workchunks ;
 vector<int> workstates ;
 int workat ;
 static vector<allocsetval> seen ;
+static int lastsize ;
 void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
    workchunks.clear() ;
    workstates.clear() ;
    workchunks.push_back(1) ;
    workstates.push_back(0) ;
    if (numthreads > 1 && d >= 3) {
+      if (pd.totsize != lastsize) {
+         lastsize = pd.totsize ;
+         seen.clear() ;
+      }
       stacksetval p1(pd), p2(pd), p3(pd) ;
       int nmoves = pd.moves.size() ;
       int chunkmoves = 0 ;
