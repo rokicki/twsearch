@@ -544,7 +544,7 @@ void prunetable::writept(const puzdef &pd) {
       if (b.second >= 256)
          dep = max(dep, 1 + depths[b.second-256]) ;
       maxwidth = max(maxwidth, dep) ;
-      if (maxwidth > 56)
+      if (maxwidth >= 56)
          error("! exceeded maxwidth in Huffman encoding; fix the code") ;
       depths.push_back(dep) ;
       codes.insert(make_pair(a.first+b.first, nextcode)) ;
@@ -694,7 +694,7 @@ int prunetable::readpt(const puzdef &pd) {
          widthbases[codewidths[i]]++ ;
       }
    at = 0 ; // restore the widthbases
-   int theight[7] ;
+   int theight[8] ;
    for (int i=63; i>0; i--) {
       if (widthcounts[i]) {
          widthbases[i] = at >> (maxwidth - i) ;
