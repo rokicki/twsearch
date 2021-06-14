@@ -6,20 +6,21 @@
 vector<ull> workchunks ;
 vector<int> workstates ;
 int workat ;
+static vector<allocsetval> seen ;
 void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
    workchunks.clear() ;
    workstates.clear() ;
    workchunks.push_back(1) ;
    workstates.push_back(0) ;
-   int nmoves = pd.moves.size() ;
-   int chunkmoves = 0 ;
-   stacksetval p1(pd), p2(pd), p3(pd) ;
    if (numthreads > 1 && d >= 3) {
+      stacksetval p1(pd), p2(pd), p3(pd) ;
+      int nmoves = pd.moves.size() ;
+      int chunkmoves = 0 ;
       ull mul = 1 ;
       while (chunkmoves + 3 < d && (int)workchunks.size() < 40 * numthreads) {
          vector<ull> wc2 ;
          vector<int> ws2 ;
-         vector<allocsetval> seen ;
+         int seensize = 0 ;
          if (symmreduce && pd.rotgroup.size() > 1) {
             for (int i=0; i<(int)workchunks.size(); i++) {
                ull pmv = workchunks[i] ;
@@ -35,7 +36,7 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                      continue ;
                   slowmodm2(pd, p2, p3) ;
                   int isnew = 1 ;
-                  for (int j=0; j<(int)seen.size(); j++)
+                  for (int j=0; j<(int)seensize; j++)
                      if (pd.comparepos(p3, seen[j]) == 0) {
                         isnew = 0 ;
                         break ;
@@ -43,7 +44,12 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                   if (isnew) {
                      wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
                      ws2.push_back(0) ;
-                     seen.push_back(allocsetval(pd, p3)) ;
+                     if (seensize < (int)seen.size()) {
+                        pd.assignpos(seen[seensize], p3) ;
+                     } else {
+                        seen.push_back(allocsetval(pd, p3)) ;
+                     }
+                     seensize++ ;
                   }
                }
             }

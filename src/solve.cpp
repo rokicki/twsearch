@@ -24,6 +24,7 @@ void *threadworker(void *o) {
 }
 void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
    if (looktmp) {
+      delete [] looktmp->dat ;
       delete looktmp ;
       looktmp = 0 ;
    }
