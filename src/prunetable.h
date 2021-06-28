@@ -83,10 +83,10 @@ struct prunetable {
    int lookuph(ull h) const {
       h = indexhash(h) ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 0)
-         return mem[(h >> 5) & ~7] & 15 ;
+      if (v == 3)
+         return (mem[(h >> 5) & ~7] & 15) - 1 ;
       else
-         return v + baseval - 1 ;
+         return 2 - v + baseval ;
    }
    void prefetch(ull h) const {
       __builtin_prefetch(mem+((indexhash(h)) >> 5)) ;
@@ -110,10 +110,10 @@ struct prunetable {
          h = indexhash(totsize, sv) ;
       }
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 0)
-         return mem[(h >> 5) & ~7] & 15 ;
+      if (v == 3)
+         return (mem[(h >> 5) & ~7] & 15) - 1 ;
       else
-         return v + baseval - 1 ;
+         return 2 - v + baseval ;
    }
    void addlookups(ull lookups) {
       lookupcnt += lookups ;

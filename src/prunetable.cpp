@@ -84,10 +84,10 @@ ull fillworker::fillflush(prunetable &pt, int shard) {
       pt.fillcnt += fb.nchunks ;
       for (int i=0; i<fb.nchunks; i++) {
          ull h = fb.chunks[i] ;
-         if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
-            pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
-            if ((pt.mem[(h>>5)&-8] & 15) == 15)
-               pt.mem[(h>>5)&-8] -= 15 - pt.wbval ;
+         if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 0) {
+            pt.mem[h>>5] += (3LL - pt.wval) << (2*(h&31)) ;
+            if ((pt.mem[(h>>5)&-8] & 15) == 0)
+               pt.mem[(h>>5)&-8] += 1 + pt.wbval ;
             r++ ;
          }
       }
@@ -265,7 +265,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    baseval = 0 ;
    wval = 0 ;
    // hack memalign
-   mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
+   mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1) ;
    while (((ull)mem) & (CACHELINESIZE - 1))
       mem++ ;
    lookupcnt = 0 ;
@@ -273,7 +273,6 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    justread = 0 ;
    if (!readpt(pd)) {
       cout << "Initializing memory " << flush ;
-      memset(mem, -1, bytesize) ;
       cout << "in " << duration() << endl << flush ;
       baseval = 1 ;
       filltable(pd, 0) ;
@@ -285,7 +284,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
 }
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
-   wbval = min(d, 15) ;
+   wbval = min(d, 14) ;
    cout << "Filling table at depth " << d << " with val " << wval << flush ;
    makeworkchunks(pd, d, true) ;
    int wthreads = setupthreads(pd, *this) ;
@@ -317,24 +316,24 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
       ull longcnt = (size + 31) >> 5 ;
       cout << "Demoting memory values " << flush ;
       for (ull i=0; i<longcnt; i += 8) {
-         // decrement 1's and 2's; leave 3's alone
+         // increment 1's and 2's; leave 3's alone
          // watch out for first element; the 0 in the first one is not a mistake
          ull v = mem[i] ;
-         mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
+         mem[i] = v + ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
          v = mem[i+1] ;
-         mem[i+1] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+1] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+2] ;
-         mem[i+2] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+2] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+3] ;
-         mem[i+3] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+3] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+4] ;
-         mem[i+4] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+4] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+5] ;
-         mem[i+5] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+5] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+6] ;
-         mem[i+6] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+6] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
          v = mem[i+7] ;
-         mem[i+7] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         mem[i+7] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
       }
       cout << "in " << duration() << endl << flush ;
       wval-- ;
@@ -363,7 +362,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd) const {
-   string filename = "tws4-" + inputbasename + "-" ;
+   string filename = "tws5-" + inputbasename + "-" ;
    if (quarter)
       filename += "q-" ;
    ull bytes = size >> 2 ;
