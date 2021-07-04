@@ -1,0 +1,37 @@
+Name Tezze
+
+Set EDGES 11 1
+Set CORNERS 10 3
+
+Solved
+End
+
+Move R
+EDGES
+6 1 2 3 4 5 7 8 9 10 11
+CORNERS
+6 1 2 3 4 5 7 8 9 10
+1 1 1 1 1 1 0 0 0 0
+End
+
+Move L
+EDGES
+7 2 3 4 5 6 8 9 10 11 1
+CORNERS
+2 7 3 4 5 6 8 9 10 1
+1 1 0 0 0 0 1 1 1 1
+End
+
+Move Fv
+EDGES
+1 11 10 9 8 7 6 5 4 3 2
+CORNERS
+2 1 10 9 8 7 6 5 4 3
+End
+
+Illegal EDGES 1 3
+Illegal EDGES 1 10
+Illegal EDGES 7 11 4
+Illegal EDGES 2 11 4
+Illegal EDGES 6 2 9
+Illegal EDGES 11 2 9

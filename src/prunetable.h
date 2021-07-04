@@ -2,6 +2,7 @@
 #include "puzdef.h"
 #include "threads.h"
 #include "workchunks.h"
+#include "rotations.h"
 #include "canon.h"
 /*
  *   This code supports pruning tables for arbitrary puzzles.  Memory
@@ -41,10 +42,11 @@ struct fillworker {
    vector<allocsetval> posns ;
    int d ;
    fillbuf fillbufs[MEMSHARDS] ;
+   allocsetval *looktmp ;
    char pad[256] ;
    void init(const puzdef &pd, int d_) ;
    ull fillstart(const puzdef &pd, prunetable &pt, int w) ;
-   ull fillflush(const prunetable &pt, int shard) ;
+   ull fillflush(prunetable &pt, int shard) ;
    void dowork(const puzdef &pd, prunetable &pt) ;
    ull filltable(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
 } ;
@@ -77,25 +79,41 @@ struct prunetable {
    prunetable() {}
    prunetable(const puzdef &pd, ull maxmem) ;
    void filltable(const puzdef &pd, int d) ;
-   void checkextend(const puzdef &pd) ;
+   void checkextend(const puzdef &pd, int ignorelookups=0) ;
    int lookuph(ull h) const {
-      h &= hmask ;
+      h = indexhash(h) ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 0)
-         return mem[(h >> 5) & ~7] & 15 ;
+      if (v == 3)
+         return (mem[(h >> 5) & ~7] & 15) - 1 ;
       else
-         return v + baseval - 1 ;
+         return 2 - v + baseval ;
    }
    void prefetch(ull h) const {
-      __builtin_prefetch(mem+((h & hmask) >> 5)) ;
+      __builtin_prefetch(mem+((indexhash(h)) >> 5)) ;
    }
-   int lookup(const setval sv) const {
-      ull h = fasthash(totsize, sv) & hmask ;
+   ull indexhash(ull lowb) const {
+      ull h = lowb ;
+      h -= h >> subshift ;
+      h >>= memshift ;
+      h ^= 0xff & ((((h & 0xfe) - 2) >> 8) & (lowb | 2)) ;
+      return h ;
+   }
+   ull indexhash(int n, const setval sv) const {
+      return indexhash(fasthash(n, sv)) ;
+   }
+   int lookup(const setval sv, setval *looktmp) const {
+      ull h ;
+      if ((int)pdp->rotgroup.size() > 1) {
+         slowmodm2(*pdp, sv, *looktmp) ;
+         h = indexhash(totsize, *looktmp) ;
+      } else {
+         h = indexhash(totsize, sv) ;
+      }
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 0)
-         return mem[(h >> 5) & ~7] & 15 ;
+      if (v == 3)
+         return (mem[(h >> 5) & ~7] & 15) - 1 ;
       else
-         return v + baseval - 1 ;
+         return 2 - v + baseval ;
    }
    void addlookups(ull lookups) {
       lookupcnt += lookups ;
@@ -111,7 +129,9 @@ struct prunetable {
    void readblock(ull *mem, ull explongcnt, istream *f) ;
    void writept(const puzdef &pd) ;
    int readpt(const puzdef &pd) ;
-   ull size, hmask, popped, totpop ;
+   const puzdef *pdp ;
+   ull size, popped, totpop, ptotpop ;
+   ull subshift, memshift ;
    ull lookupcnt ;
    ull fillcnt ;
    ull *mem ;

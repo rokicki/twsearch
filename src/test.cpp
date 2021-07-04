@@ -31,18 +31,33 @@ void timingtest(puzdef &pd) {
    }
    tim = duration() ;
    cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
+   if ((int)pd.rotgroup.size() > 1) {
+      cout << "Timing moves plus symmetry." << endl << flush ;
+      duration() ;
+      cnt = 100000000 ;
+      ull sum = 0 ;
+      for (int i=0; i<cnt; i++) {
+         int rmv = myrand(pd.moves.size()) ;
+         pd.mul(p1, pd.moves[rmv].pos, p2) ;
+         slowmodm2(pd, p2, p1) ;
+         sum += fasthash(pd.totsize, p2) ;
+      }
+      tim = duration() ;
+      cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
+   }
    prunetable pt(pd, maxmem) ;
    cout << "Timing moves plus lookup." << endl << flush ;
    duration() ;
    cnt = 100000000 ;
    sum = 0 ;
+   stacksetval looktmp(pd) ;
    for (int i=0; i<cnt; i += 2) {
       int rmv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
-      sum += pt.lookup(p2) ;
+      sum += pt.lookup(p2, &looktmp) ;
       rmv = myrand(pd.moves.size()) ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
-      sum += pt.lookup(p1) ;
+      sum += pt.lookup(p1, &looktmp) ;
    }
    tim = duration() ;
    cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;
@@ -56,17 +71,28 @@ void timingtest(puzdef &pd) {
       duration() ;
       cnt = 100000000 ;
       sum = 0 ;
-      for (int i=0; i<cnt; i += 2) {
-         int rmv = myrand(pd.moves.size()) ;
-         pd.mul(p1, pd.moves[rmv].pos, p2) ;
-         sum += pt.lookuph(tgo[i&mask]) ;
-         tgo[i&mask] = fasthash(pd.totsize, p2) ;
-         pt.prefetch(tgo[i&mask]) ;
-         rmv = myrand(pd.moves.size()) ;
-         pd.mul(p2, pd.moves[rmv].pos, p1) ;
-         sum += pt.lookuph(tgo[1+(i&mask)]) ;
-         tgo[1+(i&mask)] = fasthash(pd.totsize, p1) ;
-         pt.prefetch(tgo[1+(i&mask)]) ;
+      if ((int)pd.rotgroup.size() > 1) {
+         for (int i=0; i<cnt; i++) {
+            int rmv = myrand(pd.moves.size()) ;
+            pd.mul(p1, pd.moves[rmv].pos, p2) ;
+            slowmodm2(pd, p2, p1) ;
+            sum += pt.lookuph(tgo[i&mask]) ;
+            tgo[i&mask] = fasthash(pd.totsize, p1) ;
+            pt.prefetch(tgo[i&mask]) ;
+         }
+      } else {
+         for (int i=0; i<cnt; i += 2) {
+            int rmv = myrand(pd.moves.size()) ;
+            pd.mul(p1, pd.moves[rmv].pos, p2) ;
+            sum += pt.lookuph(tgo[i&mask]) ;
+            tgo[i&mask] = fasthash(pd.totsize, p2) ;
+            pt.prefetch(tgo[i&mask]) ;
+            rmv = myrand(pd.moves.size()) ;
+            pd.mul(p2, pd.moves[rmv].pos, p1) ;
+            sum += pt.lookuph(tgo[1+(i&mask)]) ;
+            tgo[1+(i&mask)] = fasthash(pd.totsize, p1) ;
+            pt.prefetch(tgo[1+(i&mask)]) ;
+         }
       }
       tim = duration() ;
       cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << " sum " << sum << endl << flush ;

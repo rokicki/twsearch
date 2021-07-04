@@ -138,7 +138,7 @@ void puzdef::addillegal(const char *setname, int pos, int val) {
       error("! did not find set in Illegal command") ;
    for (auto &i : illegal)
       if (i.pos == rpos) {
-         i.mask |= 1LL << val ;
+         i.mask |= 1ULL << (val-1) ;
          return ;
       }
    illegal.push_back(illegal_t({rpos, 1ULL << (val-1)})) ;
@@ -241,11 +241,15 @@ void calculatesizes(puzdef &pd) {
 void domove(const puzdef &pd, setval p, setval pos, setval pt) {
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
+   if (!pd.legalstate(p))
+      warn("illegal position") ;
 }
 void domove(const puzdef &pd, setval p, setval pos) {
    stacksetval pt(pd) ;
    pd.mul(p, pos, pt) ;
    pd.assignpos(p, pt) ;
+   if (!pd.legalstate(p))
+      warn("illegal position") ;
 }
 void domove(const puzdef &pd, setval p, int mv) {
    domove(pd, p, pd.moves[mv].pos) ;

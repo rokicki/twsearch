@@ -8,11 +8,7 @@ struct ioqueue ioqueue ;
 string inputbasename = "unknownpuzzle" ;
 int nowrite ;
 ull fasthash(int n, const setval sv) {
-   ull r = CityHash64((const char *)sv.dat, n) ;
-   // this little hack ensures that at least one of bits 1..7
-   // (numbered from zero) is set.
-   r ^= ((r | (1LL << 43)) & ((r & 0xfe) - 2)) >> 42 ;
-   return r ;
+   return CityHash64((const char *)sv.dat, n) ;
 }
 vector<workerparam> workerparams ;
 void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
@@ -44,6 +40,11 @@ void *packworker(void *o) {
    return 0 ;
 }
 void fillworker::init(const puzdef &pd, int d_) {
+   if (looktmp) {
+      delete looktmp ;
+      looktmp = 0 ;
+   }
+   looktmp = new allocsetval(pd, pd.solved) ;
    while (posns.size() <= 100 || (int)posns.size() <= d_+1)
       posns.push_back(allocsetval(pd, pd.solved)) ;
    pd.assignpos(posns[0], pd.solved) ;
@@ -62,7 +63,8 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
       pd.mul(posns[sp], pd.moves[mv].pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
          return 0 ;
-      st = canonnext[st][pd.moves[mv].cs] ;
+      if (pd.rotgroup.size() <= 1)
+         st = canonnext[st][pd.moves[mv].cs] ;
       sp++ ;
       togo-- ;
       initmoves /= nmoves ;
@@ -72,19 +74,20 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
       r += fillflush(pt, i) ;
    return r ;
 }
-ull fillworker::fillflush(const prunetable &pt, int shard) {
+ull fillworker::fillflush(prunetable &pt, int shard) {
    ull r = 0 ;
    fillbuf &fb = fillbufs[shard] ;
    if (fb.nchunks > 0) {
 #ifdef USE_PTHREADS
       pthread_mutex_lock(&(memshards[shard].mutex)) ;
 #endif
+      pt.fillcnt += fb.nchunks ;
       for (int i=0; i<fb.nchunks; i++) {
          ull h = fb.chunks[i] ;
-         if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 3) {
-            pt.mem[h>>5] -= (3LL - pt.wval) << (2*(h&31)) ;
-            if ((pt.mem[(h>>5)&-8] & 15) == 15)
-               pt.mem[(h>>5)&-8] -= 15 - pt.wbval ;
+         if (((pt.mem[h>>5] >> (2*(h&31))) & 3) == 0) {
+            pt.mem[h>>5] += (3LL - pt.wval) << (2*(h&31)) ;
+            if ((pt.mem[(h>>5)&-8] & 15) == 0)
+               pt.mem[(h>>5)&-8] += 1 + pt.wbval ;
             r++ ;
          }
       }
@@ -114,7 +117,13 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
                           int sp, int st) {
    ull r = 0 ;
    if (togo == 0) {
-      ull h = fasthash(pd.totsize, posns[sp]) & pt.hmask ;
+      ull h ;
+      if ((int)pd.rotgroup.size() > 1) {
+         slowmodm2(pd, posns[sp], *looktmp) ;
+         h = pt.indexhash(pd.totsize, *looktmp) ;
+      } else {
+         h = pt.indexhash(pd.totsize, posns[sp]) ;
+      }
       int shard = (h >> pt.shardshift) ;
       fillbuf &fb = fillbufs[shard] ;
       fb.chunks[fb.nchunks++] = h ;
@@ -221,47 +230,63 @@ void ioqueue::finishall() {
       nextthread = (nextthread + 1) % numthreads ;
    }
 }
+/*
+ *   We used to support table sizes that were only powers of two.
+ *   Now we support table sizes that are powers of 2 and also
+ *   3/4, 7/8, 15/16, and 31/32 times powers of two, so we can make
+ *   better use of large memory machines.
+ */
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
+   pdp = &pd ;
    totsize = pd.totsize ;
    ull bytesize = 2048 ;
    while (2 * bytesize <= maxmem &&
           (pd.logstates > 55 || 8 * bytesize < pd.llstates))
       bytesize *= 2 ;
+   subshift = 42 ;
+   for (int sh=1; (bytesize|(bytesize>>1)) <= maxmem &&
+          (pd.logstates > 55 || 4 * (bytesize|(bytesize>>1)) < pd.llstates);
+        sh++) {
+      subshift = sh+1 ;
+      bytesize |= bytesize >> 1 ;
+   }
    size = bytesize * 4 ;
    shardshift = 0 ;
    while ((size >> shardshift) > MEMSHARDS)
       shardshift++ ;
-   hmask = size - 1 ;
+   ull hh = 0xffffffffffffffffULL ;
+   hh -= hh >> subshift ;
+   memshift = 0 ;
+   while (hh >> memshift > size)
+      memshift++ ;
+   cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift " << subshift << " memshift " << memshift << " shardshift " << shardshift << endl ;
    totpop = 0 ;
-   int base = 1 ;
-   while (base + 2 < (int)canontotcnt.size() && canontotcnt[base+2] < size)
-      base++ ;
+   ptotpop = 0 ;
+   baseval = 0 ;
+   wval = 0 ;
    // hack memalign
-   mem = (ull *)malloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) ;
+   mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1) ;
    while (((ull)mem) & (CACHELINESIZE - 1))
       mem++ ;
    lookupcnt = 0 ;
    fillcnt = 0 ;
-   hibase = base ;
    justread = 0 ;
    if (!readpt(pd)) {
-      memset(mem, -1, bytesize) ;
-      baseval = min(hibase, 2) ;
-      for (int d=0; d<=baseval+1; d++) {
-         int val = 0 ;
-         if (d >= baseval)
-            val = d - baseval + 1 ;
-         wval = val ;
-         wbval = min(d, 15) ;
-         filltable(pd, d) ;
-      }
+      cout << "Initializing memory " << flush ;
+      cout << "in " << duration() << endl << flush ;
+      baseval = 1 ;
+      filltable(pd, 0) ;
+      filltable(pd, 1) ;
+      filltable(pd, 2) ;
+      checkextend(pd, 1) ;
    }
    writept(pd) ;
 }
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
+   wbval = min(d, 14) ;
    cout << "Filling table at depth " << d << " with val " << wval << flush ;
-   makeworkchunks(pd, d) ;
+   makeworkchunks(pd, d, true) ;
    int wthreads = setupthreads(pd, *this) ;
    for (int t=0; t<wthreads; t++)
       fillworkers[t].init(pd, d) ;
@@ -273,43 +298,51 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #else
    fillthreadworker((void *)&workerparams[0]) ;
 #endif
-   fillcnt += canonseqcnt[d] ;
-   cout << " saw " << popped << " (" << canonseqcnt[d] << ") in "
+   cout << " saw " << popped << " (" << fillcnt << ") in "
         << duration() << endl << flush ;
+   ptotpop = totpop ;
    totpop += popped ;
    justread = 0 ;
 }
-void prunetable::checkextend(const puzdef &pd) {
-   if (lookupcnt < 3 * fillcnt || baseval > 100 || totpop * 2 > size ||
-       baseval > hibase ||
-       (pd.logstates <= 50 && totpop * 2 > pd.llstates))
+void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
+   double prediction = 0 ;
+   if (ptotpop != 0)
+      prediction = totpop * (double)totpop / ptotpop ;
+   if ((ignorelookup == 0 && lookupcnt < 3 * fillcnt) ||
+       baseval > 100 || prediction > size ||
+       (pd.logstates <= 50 && prediction > pd.llstates))
       return ;
-   ull longcnt = (size + 31) >> 5 ;
-   cout << "Demoting memory values " << flush ;
-   for (ull i=0; i<longcnt; i += 8) {
-      // decrement 1's and 2's; leave 3's alone
-      // watch out for first element; the 0 in the first one is not a mistake
-      ull v = mem[i] ;
-      mem[i] = v - ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
-      v = mem[i+1] ;
-      mem[i+1] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+2] ;
-      mem[i+2] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+3] ;
-      mem[i+3] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+4] ;
-      mem[i+4] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+5] ;
-      mem[i+5] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+6] ;
-      mem[i+6] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
-      v = mem[i+7] ;
-      mem[i+7] = v - ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+   if (wval == 2) {
+      ull longcnt = (size + 31) >> 5 ;
+      cout << "Demoting memory values " << flush ;
+      for (ull i=0; i<longcnt; i += 8) {
+         // increment 1's and 2's; leave 3's alone
+         // watch out for first element; the 0 in the first one is not a mistake
+         ull v = mem[i] ;
+         mem[i] = v + ((v ^ (v >> 1)) & 0x5555555555555550LL) ;
+         v = mem[i+1] ;
+         mem[i+1] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+2] ;
+         mem[i+2] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+3] ;
+         mem[i+3] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+4] ;
+         mem[i+4] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+5] ;
+         mem[i+5] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+6] ;
+         mem[i+6] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+         v = mem[i+7] ;
+         mem[i+7] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
+      }
+      cout << "in " << duration() << endl << flush ;
+      wval-- ;
    }
-   cout << "in " << duration() << endl << flush ;
+   if (wval <= 0 && prediction < (size >> 9))
+      wval = 0 ;
+   else
+      wval++ ;
    baseval++ ;
-   wval = 2 ;
-   wbval = min(15, baseval+1) ;
    filltable(pd, baseval+1) ;
    writept(pd) ;
 }
@@ -329,24 +362,24 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd) const {
-   string filename = "tws2-" + inputbasename + "-" ;
+   string filename = "tws5-" + inputbasename + "-" ;
    if (quarter)
       filename += "q-" ;
    ull bytes = size >> 2 ;
    char suffix = 0 ;
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'K' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'M' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'G' ;
       bytes >>= 10 ;
    }
-   if (bytes >= 1024) {
+   if ((bytes & 1023) == 0) {
       suffix = 'T' ;
       bytes >>= 10 ;
    }
@@ -510,7 +543,7 @@ void prunetable::writept(const puzdef &pd) {
       if (b.second >= 256)
          dep = max(dep, 1 + depths[b.second-256]) ;
       maxwidth = max(maxwidth, dep) ;
-      if (maxwidth > 56)
+      if (maxwidth >= 56)
          error("! exceeded maxwidth in Huffman encoding; fix the code") ;
       depths.push_back(dep) ;
       codes.insert(make_pair(a.first+b.first, nextcode)) ;
@@ -561,13 +594,16 @@ void prunetable::writept(const puzdef &pd) {
    w.put(SIGNATURE);
    w.write((char *)&pd.checksum, sizeof(pd.checksum)) ;
    w.write((char *)&size, sizeof(size)) ;
-   w.write((char *)&hmask, sizeof(hmask)) ;
+   w.write((char *)&subshift, sizeof(subshift)) ;
+   w.write((char *)&memshift, sizeof(memshift)) ;
    w.write((char *)&popped, sizeof(popped)) ;
    w.write((char *)&totpop, sizeof(totpop)) ;
+   w.write((char *)&ptotpop, sizeof(ptotpop)) ;
    w.write((char *)&fillcnt, sizeof(fillcnt)) ;
    w.write((char *)&totsize, sizeof(totsize)) ;
    w.write((char *)&baseval, sizeof(baseval)) ;
    w.write((char *)&hibase, sizeof(hibase)) ;
+   w.write((char *)&wval, sizeof(wval)) ;
    w.write((char *)codewidths, sizeof(codewidths[0]) * 256) ;
    if (longcnt % BLOCKSIZE != 0)
       error("Size must be a multiple of block size") ;
@@ -615,13 +651,16 @@ int prunetable::readpt(const puzdef &pd) {
       r.close() ;
       return 0 ;
    }
-   r.read((char *)&hmask, sizeof(hmask));
+   r.read((char *)&subshift, sizeof(subshift)) ;
+   r.read((char *)&memshift, sizeof(memshift)) ;
    r.read((char *)&popped, sizeof(popped));
    r.read((char *)&totpop, sizeof(totpop));
+   r.read((char *)&ptotpop, sizeof(ptotpop));
    r.read((char *)&fillcnt, sizeof(fillcnt));
    r.read((char *)&totsize, sizeof(totsize));
    r.read((char *)&baseval, sizeof(baseval));
    r.read((char *)&hibase, sizeof(hibase));
+   r.read((char *)&wval, sizeof(wval));
    r.read((char *)codewidths, sizeof(codewidths[0]) * 256);
    if (r.fail()) {
       warn("I/O error in reading pruning table") ;
@@ -654,7 +693,7 @@ int prunetable::readpt(const puzdef &pd) {
          widthbases[codewidths[i]]++ ;
       }
    at = 0 ; // restore the widthbases
-   int theight[7] ;
+   int theight[8] ;
    for (int i=63; i>0; i--) {
       if (widthcounts[i]) {
          widthbases[i] = at >> (maxwidth - i) ;

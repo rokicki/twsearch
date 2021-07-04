@@ -1,0 +1,206 @@
+# /usr/local/bin/node /Users/rokicki/cubing.js/dist/bin/puzzle-geometry-bin.js --rotations --optimize --ksolve skewb diamond
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# o f 0 rotations true optimize true
+Name PuzzleGeometryPuzzle
+
+Set C4RNER 6 4
+Set CENTERS 8 1
+
+Solved
+C4RNER
+1 2 3 4 5 6
+0 0 0 0 0 0
+CENTERS
+1 2 3 4 5 6 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move F
+C4RNER
+4 1 3 2 5 6
+0 0 0 0 0 0
+CENTERS
+1 2 3 6 4 5 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move BB
+C4RNER
+1 2 5 4 6 3
+0 0 0 0 0 0
+CENTERS
+1 3 8 4 5 6 7 2
+0 0 0 0 0 0 0 0
+End
+
+Move Fv
+C4RNER
+4 1 6 2 3 5
+0 0 0 0 0 0
+CENTERS
+1 8 2 6 4 5 7 3
+0 0 0 0 0 0 0 0
+End
+
+Move D
+C4RNER
+1 4 3 5 2 6
+0 3 0 2 3 0
+CENTERS
+3 1 2 4 5 6 7 8
+0 0 0 0 0 0 0 0
+End
+
+Move U
+C4RNER
+3 2 6 4 5 1
+3 0 3 0 0 2
+CENTERS
+1 2 3 7 5 4 6 8
+0 0 0 0 0 0 0 0
+End
+
+Move Dv
+C4RNER
+6 4 1 5 2 3
+1 3 2 2 3 1
+CENTERS
+3 1 2 6 5 7 4 8
+0 0 0 0 0 0 0 0
+End
+
+Move L
+C4RNER
+6 2 3 1 5 4
+2 0 0 3 0 3
+CENTERS
+8 2 1 4 5 6 7 3
+0 0 0 0 0 0 0 0
+End
+
+Move BR
+C4RNER
+1 5 2 4 3 6
+0 3 2 0 3 0
+CENTERS
+1 2 3 5 7 6 4 8
+0 0 0 0 0 0 0 0
+End
+
+Move Lv
+C4RNER
+6 3 5 1 2 4
+2 1 1 3 2 3
+CENTERS
+8 2 1 7 4 6 5 3
+0 0 0 0 0 0 0 0
+End
+
+Move BL
+C4RNER
+1 2 3 6 4 5
+0 0 0 3 2 3
+CENTERS
+1 2 3 4 6 7 5 8
+0 0 0 0 0 0 0 0
+End
+
+Move R
+C4RNER
+2 3 1 4 5 6
+3 2 3 0 0 0
+CENTERS
+2 8 3 4 5 6 7 1
+0 0 0 0 0 0 0 0
+End
+
+Move BLv
+C4RNER
+3 1 2 6 4 5
+2 1 1 3 2 3
+CENTERS
+8 1 3 4 6 7 5 2
+0 0 0 0 0 0 0 0
+End
+
+Move FRBRDv
+C4RNER
+4 2 1 5 3 6
+2 1 1 3 2 3
+CENTERS
+5 4 7 1 2 3 8 6
+0 0 0 0 0 0 0 0
+End
+
+Move FDBLLv
+C4RNER
+6 1 3 4 2 5
+3 2 3 1 1 2
+CENTERS
+6 4 5 8 1 3 2 7
+0 0 0 0 0 0 0 0
+End
+
+Move BBBLDBRv
+C4RNER
+1 4 2 6 5 3
+3 2 3 1 1 2
+CENTERS
+6 5 7 1 3 8 2 4
+0 0 0 0 0 0 0 0
+End
+
+Move FDv
+C4RNER
+5 4 6 2 1 3
+2 1 1 3 2 3
+CENTERS
+5 6 4 3 1 2 8 7
+0 0 0 0 0 0 0 0
+End
+
+Move FLv
+C4RNER
+4 6 5 1 3 2
+3 2 3 1 1 2
+CENTERS
+6 7 4 3 8 1 2 5
+0 0 0 0 0 0 0 0
+End
+
+Move DBLv
+C4RNER
+3 6 1 5 4 2
+0 0 0 0 0 0
+CENTERS
+7 6 5 8 3 2 1 4
+0 0 0 0 0 0 0 0
+End
+
+Move FRv
+C4RNER
+2 1 4 3 6 5
+1 3 2 2 3 1
+CENTERS
+4 6 7 1 8 2 3 5
+0 0 0 0 0 0 0 0
+End
+
+Move ULv
+C4RNER
+6 5 4 3 2 1
+0 0 0 0 0 0
+CENTERS
+7 5 4 3 2 8 1 6
+0 0 0 0 0 0 0 0
+End
+
+Move LBLv
+C4RNER
+5 3 2 6 1 4
+0 0 0 0 0 0
+CENTERS
+7 4 6 2 8 3 1 5
+0 0 0 0 0 0 0 0
+End
+

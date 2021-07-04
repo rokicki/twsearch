@@ -1,0 +1,189 @@
+# /usr/local/bin/node /Users/rokicki/cubing.js/dist/bin/puzzle-geometry-bin.js --rotations --optimize --ksolve Jing pyraminx
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+# t f 0 rotations true optimize true
+Name PuzzleGeometryPuzzle
+
+Set CENTERS 4 1
+Set EDGES 6 2
+Set CORNERS 4 3
+
+Solved
+CENTERS
+1 2 3 4
+0 0 0 0
+EDGES
+1 2 3 4 5 6
+0 0 0 0 0 0
+CORNERS
+1 2 3 4
+0 0 0 0
+End
+
+Move F
+EDGES
+5 1 3 4 2 6
+0 0 0 0 0 0
+CORNERS
+3 1 2 4
+0 0 0 0
+End
+
+Move DRL
+CENTERS
+1 3 4 2
+0 0 0 0
+EDGES
+1 2 6 3 5 4
+0 0 0 1 0 1
+CORNERS
+1 2 3 4
+0 0 0 1
+End
+
+Move Fv
+CENTERS
+1 4 2 3
+0 0 0 0
+EDGES
+5 1 4 6 2 3
+0 0 1 0 0 1
+CORNERS
+3 1 2 4
+0 0 0 2
+End
+
+Move D
+EDGES
+1 4 3 6 5 2
+0 1 0 1 0 0
+CORNERS
+1 3 4 2
+0 1 1 1
+End
+
+Move FLR
+CENTERS
+2 4 3 1
+0 0 0 0
+EDGES
+3 2 5 4 1 6
+1 0 1 0 0 0
+CORNERS
+1 2 3 4
+1 0 0 0
+End
+
+Move Dv
+CENTERS
+4 1 3 2
+0 0 0 0
+EDGES
+5 4 1 6 3 2
+1 1 0 1 1 0
+CORNERS
+1 3 4 2
+2 1 1 1
+End
+
+Move L
+EDGES
+1 2 4 5 3 6
+0 0 1 1 0 0
+CORNERS
+4 2 1 3
+1 0 0 2
+End
+
+Move FRD
+CENTERS
+3 1 2 4
+0 0 0 0
+EDGES
+2 6 3 4 5 1
+1 1 0 0 0 0
+CORNERS
+1 2 3 4
+0 1 0 0
+End
+
+Move Lv
+CENTERS
+2 3 1 4
+0 0 0 0
+EDGES
+6 1 4 5 3 2
+1 0 1 1 0 1
+CORNERS
+4 2 1 3
+1 2 0 2
+End
+
+Move R
+EDGES
+6 2 1 4 5 3
+0 0 0 0 0 0
+CORNERS
+2 4 3 1
+2 1 0 0
+End
+
+Move FDL
+CENTERS
+4 2 1 3
+0 0 0 0
+EDGES
+1 5 3 2 4 6
+0 0 0 1 1 0
+CORNERS
+1 2 3 4
+0 0 1 0
+End
+
+Move Rv
+CENTERS
+3 2 4 1
+0 0 0 0
+EDGES
+6 4 1 5 2 3
+0 1 0 0 1 0
+CORNERS
+2 4 3 1
+2 1 2 0
+End
+
+Move FDv
+CENTERS
+3 4 1 2
+0 0 0 0
+EDGES
+4 2 3 1 6 5
+0 1 1 0 0 0
+CORNERS
+4 3 2 1
+0 1 2 0
+End
+
+Move FLv
+CENTERS
+4 3 2 1
+0 0 0 0
+EDGES
+4 3 2 1 5 6
+1 0 0 1 1 1
+CORNERS
+3 4 1 2
+2 2 1 1
+End
+
+Move DLv
+CENTERS
+2 1 4 3
+0 0 0 0
+EDGES
+1 3 2 4 6 5
+1 1 1 1 1 1
+CORNERS
+2 1 4 3
+1 2 1 2
+End
+

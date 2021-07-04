@@ -22,7 +22,7 @@ vector<int> cosetmoves, cosetrepmoves ;
 // local counters
 ll solcnt = 0, searchcnt = 0 ;
 const int COSETBUFSIZE = 512 ;
-vector<char> remap ;
+vector<int> remap ;
 struct cosetbuf {
    ull buf[COSETBUFSIZE] ;
    int cnt ;
@@ -341,8 +341,10 @@ void relaxcosetgraph() {
    }
 }
 void listthecosets(int showthem) {
-   if (looseper > 2)
+   if (looseper > 2) {
+      cout << "Looseper is " << looseper << endl ;
       error("! coset too large; update coset.cpp") ;
+   }
    puzdef &pd = *cosetpd ;
    stacksetval orig(pd), src(pd), dst(pd), tmp(pd) ;
    getcosetrotations(pd, cosetrotations, cosetrotinv) ;
@@ -397,6 +399,7 @@ void runcoset(puzdef &pd) {
    for (int i=0; i<pd.totsize; i++)
       moving.dat[i] = 0;
    ll llperms = 1 ;
+   int toobig = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       setdef &sd = pd.setdefs[i] ;
       if (!sd.uniq)
@@ -472,13 +475,13 @@ void runcoset(puzdef &pd) {
                left-- ;
                llperms /= (k+1) ;
                if ((llperms >> 3) > maxmem)
-                  error("! coset needs too much memory") ;
+                  toobig = 1 ;
             }
          }
          if (sd.pparity)
             llperms >>= 1 ;
          if ((llperms >> 2) > maxmem)
-            error("! coset needs too much memory") ;
+            toobig = 1 ;
          if (left != 0)
             error("! internal error when calculating coset size") ;
       }
@@ -506,8 +509,10 @@ void runcoset(puzdef &pd) {
    // recalculate things for state space
    calculatesizes(pd) ;
    calclooseper(pd) ;
-   cout << "Coset size is " << llperms << endl ;
-   cosetsize = llperms ;
+   if (!toobig) {
+      cout << "Coset size is " << llperms << endl ;
+      cosetsize = llperms ;
+   }
    if (listcosets) {
       listthecosets(true) ;
       return ;
@@ -517,6 +522,8 @@ void runcoset(puzdef &pd) {
       relaxcosetgraph() ;
       return ;
    }
+   if (toobig)
+      error("! coset requires too much memory") ;
    ull bmsize = (llperms + 63) >> 6 ;
    cosetbmsize = bmsize ;
    ull *bm1 = (ull *)calloc(bmsize, sizeof(ull)) ;

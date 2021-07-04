@@ -8,6 +8,9 @@ setval findmove_generously(const puzdef &pd, const char *mvstring) {
    for (int i=0; i<(int)pd.parsemoves.size(); i++)
       if (strcmp(mvstring, pd.parsemoves[i].name) == 0)
          return pd.parsemoves[i].pos ;
+   for (int i=0; i<(int)pd.rotations.size(); i++)
+      if (strcmp(mvstring, pd.rotations[i].name) == 0)
+         return pd.rotations[i].pos ;
    error("! bad move name ", mvstring) ;
    return setval(0) ;
 }
@@ -73,7 +76,10 @@ vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
  */
 int isrotation(const char *mv) {
    const char *q = mv ;
-   while ('A' <= *q && *q <= 'Z')
+   if ((*q == 'x' || *q == 'y' || *q == 'z') &&
+       (q[1] == 0 || q[1] == '\'' || q[1] == '2'))
+      return true;
+   while (*q == '_' || ('A' <= *q && *q <= 'Z'))
       q++ ;
    if (*q != 'v' || q[1] != 0 || mv == q)
       return 0 ;

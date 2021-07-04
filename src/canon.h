@@ -19,7 +19,7 @@ extern vector<ull> canonseqcnt ;
 extern vector<ull> canontotcnt ;
 extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq) ;
 extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) ;
-extern int ccount ;
+extern int ccount, canonlim ;
 void makecanonstates2(puzdef &pd) ;
 void showcanon(const puzdef &pd, int show) ;
 #define CANON_H

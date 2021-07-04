@@ -30,6 +30,8 @@
 #include "rotations.h"
 #include "twsearch.h"
 #include "coset.h"
+#include "descsets.h"
+#include "ordertree.h"
 using namespace std ;
 int checkbeforesolve ;
 generatingset *gs ;
@@ -53,7 +55,7 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
 int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs, docoset, douniqsymm ;
+    domergeseqs, docoset, douniqsymm, dodescsets, doordertree ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -100,6 +102,10 @@ void processargs(int &argc, argvtype &argv) {
             nocenters++ ;
          } else if (strcmp(argv[0], "--noorientation") == 0) {
             ignoreori = 1 ;
+         } else if (strcmp(argv[0], "--omit") == 0) {
+            omitsets.insert(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--distinguishall") == 0) {
             distinguishall = 1 ;
          } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
@@ -148,6 +154,10 @@ void processargs(int &argc, argvtype &argv) {
             relaxcosets++ ;
          } else if (strcmp(argv[0], "--compact") == 0) {
             compact++ ;
+         } else if (strcmp(argv[0], "--describesets") == 0) {
+            dodescsets++ ;
+         } else if (strcmp(argv[0], "--ordertree") == 0) {
+            doordertree++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -216,9 +226,13 @@ case 'i':
             break ;
 case 's':
             dosolvelines++ ;
+            if (argv[0][2] == 'i')
+               onlyimprovements = 1 ;
             break ;
 case 'C':
             docanon++ ;
+            if (argv[0][2] >= '0')
+               canonlim = atoll(argv[0]+2) ;
             break ;
 case 'F':
             forcearray++ ;
@@ -274,6 +288,13 @@ puzdef makepuzdef(istream *f) {
       pd.addoptionssum("nocenters") ;
    if (noedges)
       pd.addoptionssum("noedges") ;
+   if (ignoreori)
+      pd.addoptionssum("noorientation") ;
+   if (omitsets.size()) {
+      pd.addoptionssum("omit") ;
+      for (auto s: omitsets)
+         pd.addoptionssum(s.c_str()) ;
+   }
    if (distinguishall)
       pd.addoptionssum("distinguishall") ;
    if (doss || checkbeforesolve)
@@ -323,6 +344,12 @@ int main(int argc, const char **argv) {
    puzdef pd = makepuzdef(&f) ;
    if (doorderedgs)
       runorderedgs(pd) ;
+   if (dodescsets) {
+      descsets(pd) ;
+   }
+   if (doordertree) {
+      ordertree(pd) ;
+   }
    if (genrand) {
       showrandompos(pd) ;
       return 0 ;
@@ -332,7 +359,7 @@ int main(int argc, const char **argv) {
       int statesfitsa = forcearray ||
           (pd.logstates <= 50 &&
              ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
-      if (statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
+      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
