@@ -36,6 +36,8 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                   t /= nmoves ;
                }
                for (int mv=0; mv<nmoves; mv++) {
+                  if (quarter && pd.moves[mv].cost > 1)
+                     continue ;
                   pd.mul(p1, pd.moves[mv].pos, p2) ;
                   if (!pd.legalstate(p2))
                      continue ;
