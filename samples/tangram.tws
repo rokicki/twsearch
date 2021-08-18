@@ -1,0 +1,126 @@
+Name TangramCube
+
+# Author: Daniel Goodman
+
+# Set Tangram Cube with white on U and green on F
+
+# Outcenters permutation
+# 1 UFL
+# 2 DBR
+
+# Outcenters orientation
+# 0 solved
+# 1 twisted clockwise
+# 2 twisted counterclockwise
+
+# Incenters permutation
+# 1 UR
+# 2 DF
+# 3 BL
+
+# Incenters orientation
+# 0 solved
+# 1 flipped
+
+# Outedges permutation
+# 1 UFR
+# 2 DFL
+# 3 UBL
+# 4 UBR
+# 5 DBL
+# 6 DFR
+
+# Inedges permutation
+# 1 FR
+# 2 DL
+# 3 UB
+
+# Inedges orientation
+# 0 solved
+# 1 flipped
+
+# Corners permutation
+# 1 U
+# 2 F
+# 3 L
+# 4 R
+# 5 B
+# 6 D
+
+Set OUTCENTERS 2 3
+Set INCENTERS 3 2
+Set OUTEDGES 6 1
+Set INEDGES 3 2
+Set CORNERS 6 1
+
+Solved
+OUTCENTERS
+1 2
+INCENTERS
+1 2 3
+OUTEDGES
+1 2 3 4 5 6
+INEDGES
+1 2 3
+CORNERS
+1 2 3 4 5 6
+End
+
+Move UFL
+OUTCENTERS
+1 2
+1 0
+OUTEDGES
+3 1 2 4 5 6
+CORNERS
+3 1 2 4 5 6
+End
+
+Move DBR
+OUTCENTERS
+1 2
+0 1
+OUTEDGES
+1 2 3 6 4 5
+CORNERS
+1 2 3 6 4 5
+End
+
+Move UR
+INCENTERS
+1 2 3
+1 0 0
+OUTEDGES
+4 2 3 1 5 6
+INEDGES
+3 2 1
+1 0 1
+CORNERS
+4 5 3 1 2 6
+End
+
+Move DF
+INCENTERS
+1 2 3
+0 1 0
+OUTEDGES
+1 6 3 4 5 2
+INEDGES
+2 1 3
+1 1 0
+CORNERS
+1 6 4 3 5 2
+End
+
+Move BL
+INCENTERS
+1 2 3
+0 0 1
+OUTEDGES
+1 2 5 4 3 6
+INEDGES
+1 3 2
+0 1 1
+CORNERS
+6 2 5 4 3 1
+End
