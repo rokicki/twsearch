@@ -324,6 +324,30 @@ puzdef readdef(istream *f) {
             m.base = pz.moves.size() ;
             pz.moves.push_back(m) ;
          }
+      } else if (toks[0] == "SwizzleSet") {
+         if (toks.size() < 3)
+            error("Too few tokens in SwizzleSet definition") ;
+         for (int i=1; i<(int)toks.size(); i++)
+            pz.swizzlenames.push_back(twstrdup(toks[i].c_str())) ;
+      } else if (toks[0] == "MoveAlias") {
+         if (state != 2)
+            error("! MoveAlias in wrong place") ;
+         expect(toks, 3) ;
+         pz.aliases.push_back(
+                      {twstrdup(toks[1].c_str()), twstrdup(toks[2].c_str())}) ;
+      } else if (toks[0] == "MoveSequence") {
+         if (state != 2)
+            error("! MoveSequence in wrong place") ;
+         if (toks.size() < 3)
+            error("Too few tokens in MoveSequence definition") ;
+         string seq ;
+         for (int i=2; i<(int)toks.size(); i++) {
+            if (i != 2)
+               seq += " " ;
+            seq += toks[i] ;
+         }
+         pz.moveseqs.push_back(
+                      {twstrdup(toks[1].c_str()), twstrdup(seq.c_str())}) ;
       } else {
          error("! unexpected first token on line ", toks[0]) ;
       }

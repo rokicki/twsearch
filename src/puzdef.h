@@ -72,6 +72,9 @@ struct moove {
    int cost, base, twist, cs ;
 } ;
 extern int origroup ;
+struct movealias {
+   const char *src, *dst ;
+} ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
               logstates(0), llstates(0), checksum(0), haveillegal(0), wildo(0)
@@ -80,6 +83,9 @@ struct puzdef {
    setdefs_t setdefs ;
    setval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
+   vector<movealias> aliases ;
+   vector<movealias> moveseqs ;
+   vector<const char *> swizzlenames ;
    vector<setval> rotinvmap ;
    vector<int> basemoveorders ;
    vector<int> rotinv ;
