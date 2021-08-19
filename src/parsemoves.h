@@ -17,6 +17,7 @@ void domove(puzdef &pd, setval p, string mvstring) ;
 void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p, 
              generatingset *gs=0) ;
 vector<int> parsemovelist(const puzdef &pd, const char *scr) ;
+vector<int> parsemoveorrotationlist(const puzdef &pd, const char *scr) ;
 vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) ;
 int isrotation(const char *s) ;
 #define PARSEMOVES_H

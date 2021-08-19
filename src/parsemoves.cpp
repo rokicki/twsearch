@@ -27,6 +27,19 @@ int findmove(const puzdef &pd, const char *mvstring) {
 int findmove(const puzdef &pd, string mvstring) {
    return findmove(pd, mvstring.c_str()) ;
 }
+int findmoveorrotation(const puzdef &pd, const char *mvstring) {
+   for (int i=0; i<(int)pd.moves.size(); i++)
+      if (strcmp(mvstring, pd.moves[i].name) == 0)
+         return i ;
+   for (int i=0; i<(int)pd.rotations.size(); i++)
+      if (strcmp(mvstring, pd.rotations[i].name) == 0)
+         return i+pd.moves.size() ;
+   error("! bad move or rotation name ", mvstring) ;
+   return -1 ;
+}
+int findmoveorrotation(const puzdef &pd, string mvstring) {
+   return findmoveorrotation(pd, mvstring.c_str()) ;
+}
 void domove(puzdef &pd, setval p, string mvstring) {
    domove(pd, p, findmove(pd, mvstring)) ;
 }
@@ -52,6 +65,22 @@ vector<int> parsemovelist(const puzdef &pd, const char *scr) {
    }
    if (move.size())
       movelist.push_back(findmove(pd, move)) ;
+   return movelist ;
+}
+vector<int> parsemoveorrotationlist(const puzdef &pd, const char *scr) {
+   vector<int> movelist ;
+   string move ;
+   for (const char *p=scr; *p; p++) {
+      if (*p <= ' ' || *p == ',') {
+         if (move.size()) {
+            movelist.push_back(findmoveorrotation(pd, move)) ;
+            move.clear() ;
+         }
+      } else
+         move.push_back(*p) ;
+   }
+   if (move.size())
+      movelist.push_back(findmoveorrotation(pd, move)) ;
    return movelist ;
 }
 vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {

@@ -7,6 +7,7 @@
 #include "index.h"
 #include "rotations.h"
 #include "canon.h"
+#include "unrotate.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
 int compact ;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
@@ -203,6 +204,19 @@ void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
    }
    cout << endl ;
 }
+void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
+   if (movelist.size() == 0) {
+      cout << " " ;
+   } else {
+      auto res = unrotate(pd, movelist) ;
+      for (auto mvind: res)
+         if (mvind < (int)pd.moves.size())
+            cout << " " << pd.moves[mvind].name ;
+         else
+            cout << " " << pd.rotations[mvind-pd.moves.size()].name ;
+   }
+   cout << endl ;
+}
 void symsit(const puzdef &pd, setval p, const char *s) {
    stacksetval p2(pd) ;
    int symval = slowmodm(pd, p, p2) ;
@@ -354,6 +368,16 @@ void processlines3(const puzdef &pd, function<void(const puzdef &, vector<int> &
    while (getline(cin, s)) {
       pd.assignpos(p1, pd.solved) ;
       vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+      globalinputmovecount = moveid.size() ;
+      f(pd, moveid, s.c_str()) ;
+   }
+}
+void processlines4(const puzdef &pd, function<void(const puzdef &, vector<int> &moveids, const char *)> f) {
+   string s ;
+   stacksetval p1(pd) ;
+   while (getline(cin, s)) {
+      pd.assignpos(p1, pd.solved) ;
+      vector<int> moveid = parsemoveorrotationlist(pd, s.c_str()) ;
       globalinputmovecount = moveid.size() ;
       f(pd, moveid, s.c_str()) ;
    }
