@@ -8,6 +8,7 @@
 #include "rotations.h"
 #include "canon.h"
 #include "unrotate.h"
+#include "shorten.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
 int compact ;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
@@ -201,6 +202,19 @@ void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
       auto res = canonicalize(pd, movelist) ;
       for (auto mvind: res)
          cout << " " << pd.moves[mvind].name ;
+   }
+   cout << endl ;
+}
+void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
+   if (movelist.size() == 0) {
+      cout << " " ;
+   } else {
+      auto res = shorten(pd, movelist) ;
+      for (auto mvind: res)
+         if (mvind < (int)pd.moves.size())
+            cout << " " << pd.moves[mvind].name ;
+         else
+            cout << " " << pd.rotations[mvind-pd.moves.size()].name ;
    }
    cout << endl ;
 }

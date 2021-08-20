@@ -5,22 +5,10 @@
 #include "canon.h"
 #include "util.h"
 #include "index.h"
-#include "city.h"
 vector<ull> canonmask ;
 vector<vector<int> > canonnext ;
 vector<ull> canonseqcnt ;
 vector<ull> canontotcnt ;
-template<typename T>
-struct hashvector {
-   size_t operator()(const vector<T>&v) const {
-      return CityHash64((const char *)v.data(), sizeof(T)*v.size()) ;
-   }
-} ;
-template<typename T>
-void freeContainer(T& c) {
-   T empty;
-   swap(c, empty);
-}
 void makecanonstates(puzdef &pd) {
    int nbase = pd.basemoves.size() ;
    if (quarter) { // rewrite base

@@ -5,18 +5,6 @@
 #include "unrotate.h"
 #include "util.h"
 #include "index.h"
-#include "city.h"
-template<typename T>
-struct hashvector {
-   size_t operator()(const vector<T>&v) const {
-      return CityHash64((const char *)v.data(), sizeof(T)*v.size()) ;
-   }
-} ;
-template<typename T>
-void freeContainer(T& c) {
-   T empty;
-   swap(c, empty);
-}
 vector<loosetype> urenc ;
 unordered_map<vector<loosetype>, pair<int, int>, hashvector<loosetype>> urseen ;
 void urinsert(const puzdef &pd, int m1, int m2) {

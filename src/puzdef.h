@@ -108,6 +108,9 @@ struct puzdef {
             return 0 ;
       return 1 ;
    }
+   int invertible() const {
+      return canpackdense() ;
+   }
    void assignpos(setval a, const setval b) const {
       memcpy(a.dat, b.dat, totsize) ;
    }
@@ -271,6 +274,13 @@ struct puzdef {
             return 0 ;
       }
       return 1 ;
+   }
+   int invmove(int mvind) const {
+      const moove &mv = moves[mvind] ;
+      int b = mv.base ;
+      int o = basemoveorders[b] ; 
+      int twist = (o - mv.twist) % o ;
+      return mvind-mv.twist+twist ;
    }
    void addillegal(const char *setname, int pos, int val) ;
    void pow(const setval a, setval b, ll cnt) const ;
