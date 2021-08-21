@@ -16,7 +16,7 @@ int shortencb(setval &, const vector<int> &moves, int d, int) {
    solseen = 1 ;
    release_global_lock() ;
    return 1 ;
-} ;
+}
 int shortencbf(int) {
    return 0 ;
 }
@@ -24,7 +24,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
    if (!pd.invertible())
       error("! can only shorten invertible positions") ;
    shenc.resize(looseiper) ;
-   prunetable pt(pd, maxmem) ;
+   static prunetable pt(pd, maxmem) ;
    setsolvecallback(shortencb, shortencbf) ;
    vector<int> seq = orig ;
    stacksetval pos(pd) ;
