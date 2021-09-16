@@ -215,6 +215,9 @@ ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) {
    return r ;
 }
 void calclooseper(const puzdef &pd) {
+   // don't do this more than once.
+   if (looseper)
+      return ;
    int bits = 0, ibits = 0 ;
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       const setdef &sd = pd.setdefs[i] ;

@@ -1,5 +1,7 @@
 #include "rotations.h"
+#include "index.h"
 #include <set>
+#include <map>
 #include <vector>
 #include <iostream>
 // so we can use STL we wrap setvals in a vector.
@@ -7,16 +9,19 @@ vector<uchar> setvaltovec(puzdef &pd, setval v) {
    return vector<uchar>(v.dat, v.dat+pd.totsize) ;
 }
 void calcrotinvs(puzdef &pd) {
+   calclooseper(pd) ;
    stacksetval pw(pd) ;
    pd.rotinv.clear() ;
-   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
-      for (int m2=0; m2<(int)pd.rotgroup.size(); m2++) {
-         pd.mul(pd.rotgroup[m1].pos, pd.rotgroup[m2].pos, pw) ;
-         if (pd.comparepos(pd.id, pw) == 0) {
-            pd.rotinv.push_back(m2) ;
-            break ;
-         }
-      }
+   map<vector<loosetype>, int> rotlook ;
+   vector<loosetype> enc(looseiper) ;
+   for (int m=0; m<(int)pd.rotgroup.size(); m++) {
+      loosepack(pd, pd.rotgroup[m].pos, enc.data(), 1) ;
+      rotlook[enc] = m ;
+   }
+   for (int m=0; m<(int)pd.rotgroup.size(); m++) {
+      pd.inv(pd.rotgroup[m].pos, pw) ;
+      loosepack(pd, pw, enc.data(), 1) ;
+      pd.rotinv.push_back(rotlook[enc]) ;
    }
    // rotinvmap is used as follows:
    //   If pd.rotgroup[i] * pd.solved * p1 == p2, then
