@@ -277,51 +277,14 @@ int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
 //  This should generally work on pusitions.
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
    int cnt = 1 ;
-   int v0 = 1000, v1=1000 ;
-   int lowm = 0 ;
-   for (int m1=0; m1<(int)pd.rotgroup.size(); m1++) {
-      int t = pd.rotinvmap[m1].dat[p1.dat[pd.rotgroup[m1].pos.dat[0]]] ;
-      if (t <= v0) {
-         if (pd.setdefs[0].size == 1) {
-            if (t < v0) {
-               lowm = m1 ;
-               v0 = t ;
-            }
-         } else {
-            int t2 = pd.rotinvmap[m1].dat[p1.dat[pd.rotgroup[m1].pos.dat[1]]] ;
-            if (t < v0 || t2 < v1) {
-               v0 = t ;
-               v1 = t2 ;
-               lowm = m1 ;
-            }
-         }
-      }
-   }
-   pd.mul3(pd.rotinvmap[lowm], p1, pd.rotgroup[lowm].pos, p2) ;
-   for (int m1=lowm+1; m1<(int)pd.rotgroup.size(); m1++) {
-      int t = pd.rotinvmap[m1].dat[p1.dat[pd.rotgroup[m1].pos.dat[0]]] - v0 ;
-      if (t > 0)
-         continue ;
-      if (t == 0 && pd.setdefs[0].size > 1) {
-         t = pd.rotinvmap[m1].dat[p1.dat[pd.rotgroup[m1].pos.dat[1]]] - v1 ;
-         if (t > 0)
-            continue ;
-      }
-      if (t < 0) {
-         pd.mul3(pd.rotinvmap[m1], p1, pd.rotgroup[m1].pos, p2) ;
-         cnt = 1 ;
-         v0 = p2.dat[0] ;
-         v1 = p2.dat[1] ;
-      } else {
-         t = pd.mulcmp3(pd.rotinvmap[m1], p1, pd.rotgroup[m1].pos, p2) ;
-         if (t <= 0) {
-            if (t < 0) {
-               cnt = 1 ;
-               v0 = p2.dat[0] ;
-               v1 = p2.dat[1] ;
-            } else
-               cnt++ ;
-         }
+   pd.mul3(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2) ;
+   for (int m=1; m<(int)pd.rotgroup.size(); m++) {
+      int t = pd.mulcmp3(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2) ;
+      if (t <= 0) {
+         if (t < 0) {
+            cnt = 1 ;
+         } else
+            cnt++ ;
       }
    }
    return cnt ;
