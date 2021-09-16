@@ -31,12 +31,12 @@ void dotwobitgod(puzdef &pd) {
       resetantipodes() ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
-      if (cnts[d] == 0 || tot == pd.llstates)
+      if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       ull newseen = 0 ;
 // don't be too aggressive, because we might see parity and this might slow
 // things down dramatically; only go backwards after more than 50% full.
-      int back = (tot * 2 > pd.llstates) ;
+      int back = (pd.logstates <= 62 && tot * 2 > pd.llstates) ;
       int seek = d % 3 ;
       int newv = (d + 1) % 3 ;
       if (back) {
@@ -329,12 +329,12 @@ void dotwobitgod2(puzdef &pd) {
       resetantipodes() ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
-      if (cnts[d] == 0 || tot == pd.llstates)
+      if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       newseen = 0 ;
 // don't be too aggressive, because we might see parity and this might slow
 // things down dramatically; only go backwards after more than 50% full.
-      int back = (tot * 2 > pd.llstates) ;
+      int back = (pd.logstates <= 62 && tot * 2 > pd.llstates) ;
       int seek = d % 3 ;
       int newv = (d + 1) % 3 ;
       vector<ull> muld(nmoves) ;
@@ -509,7 +509,7 @@ void doarraygod(const puzdef &pd) {
    for (int d = 0; ; d++) {
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
            << duration() << endl << flush ;
-      if (cnts[d] == 0 || tot == pd.llstates)
+      if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       ull newseen = 0 ;
       loosetype *levend = writer ;
@@ -605,7 +605,7 @@ void doarraygod2(const puzdef &pd) {
            << duration() << endl << flush ;
       if (cnts[d] > 0)
          stashantipodesloose(levend, writer) ;
-      if (cnts[d] == 0 || tot == pd.llstates)
+      if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       if (levend != s_2)
          mqsort(s_2, (levend-s_2)/looseper, looseper*sizeof(loosetype)) ;
@@ -669,7 +669,7 @@ void doarraygodsymm(const puzdef &pd) {
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot
            << " scnt " << scnts[d] << " stot " << stot << " in "
            << duration() << endl << flush ;
-      if (cnts[d] == 0 || tot == pd.llstates)
+      if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       ull newseen = 0 ;
       loosetype *levend = writer ;
