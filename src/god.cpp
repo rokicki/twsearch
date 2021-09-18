@@ -642,6 +642,84 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
    }
    return r ;
 }
+#ifdef USE_PTHREADS
+/*
+ *   Basic code for doing a section of the input to a buffer.
+ *   Returns the number of positions written.
+ */
+static int doarraygodchunk(const puzdef *pd, loosetype *reader,
+                           loosetype *writer, int cnt) {
+   int r = 0 ;
+   const loosetype *levend = reader + cnt * looseper ;
+   stacksetval p1(*pd), p2(*pd), p3(*pd) ;
+   for (loosetype *pr=reader; pr<levend; pr += looseper) {
+      looseunpack(*pd, p1, pr) ;
+      for (int i=0; i<(int)pd->moves.size(); i++) {
+         if (quarter && pd->moves[i].cost > 1)
+            continue ;
+         pd->mul(p1, pd->moves[i].pos, p2) ;
+         if (!pd->legalstate(p2))
+            continue ;
+         int sym = slowmodm2(*pd, p2, p3) ;
+         loosepack(*pd, p3, writer, 0, 1+(sym>1)) ;
+         writer += looseper ;
+         r++ ;
+      }
+   }
+   return r ;
+}
+const size_t BUFSIZE = 1<<18 ;
+static ll maxcnt, wavail ;
+void setupgwork(const puzdef &pd) {
+   maxcnt = BUFSIZE / (sizeof(loosetype) * looseper * pd.moves.size()) ;
+   maxcnt = min(maxcnt, (ll)(1 + (levend - reader) / (looseper * numthreads))) ;
+   wavail = (lim - writer) / looseper ;
+}
+static struct gworker {
+   void init(const puzdef *_pd) {
+      pd = _pd ;
+      if (buf == 0)
+         buf = (loosetype *)malloc(BUFSIZE) ;
+   }
+   int getwork(loosetype* &reader, ll &cnt) {
+      reader = ::reader ;
+      cnt = maxcnt ;
+      ll rlim = (levend - reader) / looseper ;
+      ll wlim = wavail / (looseper * pd->moves.size()) ;
+      cnt = min(cnt, min(rlim, wlim)) ;
+      if (cnt <= 0)
+         return 0 ;
+      wavail -= cnt ;
+      ::reader += cnt * looseper ;
+      return 1 ;
+   }
+   void work() {
+      while (1) {
+         get_global_lock() ;
+         loosetype *reader ;
+         ll cnt ;
+         int r = getwork(reader, cnt) ;
+         release_global_lock() ;
+         if (r <= 0)
+            return ;
+         ll ncnt = doarraygodchunk(pd, reader, buf, cnt) ;
+         wavail += cnt - ncnt ;
+         get_global_lock() ;
+         memcpy(writer, buf, sizeof(loosetype)*looseper*ncnt) ;
+         writer += looseper*ncnt ;
+         wavail = (lim - writer) / looseper ;
+         release_global_lock() ;
+      }
+   }
+   loosetype *buf ;
+   const puzdef *pd ;
+} gworkers[MAXTHREADS] ;
+static void *dogodwork(void *o) {
+   gworker *gw = (gworker *)o ;
+   gw->work() ;
+   return 0 ;
+}
+#endif
 /*
  *   God's algorithm using symmetry reduction.
  */
@@ -660,9 +738,9 @@ void doarraygodsymm(const puzdef &pd) {
    scnts.push_back(1) ;
    ull tot = 1 ;
    ull stot = 1 ;
-   loosetype *lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
-   loosetype *reader = mem ;
-   loosetype *writer = mem + looseper ;
+   lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper ;
+   reader = mem ;
+   writer = mem + looseper ;
    loosetype *s_1 = mem ;
    loosetype *s_2 = mem ;
    for (int d = 0; ; d++) {
@@ -672,22 +750,41 @@ void doarraygodsymm(const puzdef &pd) {
       if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
          break ;
       ull newseen = 0 ;
-      loosetype *levend = writer ;
-      for (loosetype *pr=reader; pr<levend; pr += looseper) {
-         looseunpack(pd, p1, pr) ;
-         for (int i=0; i<(int)pd.moves.size(); i++) {
-            if (quarter && pd.moves[i].cost > 1)
-               continue ;
-            pd.mul(p1, pd.moves[i].pos, p2) ;
-            if (!pd.legalstate(p2))
-               continue ;
-            sym = slowmodm2(pd, p2, p3) ;
-            loosepack(pd, p3, writer, 0, 1+(sym>1)) ;
-            writer += looseper ;
-            if (writer + looseper >= lim)
-               writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
+      levend = writer ;
+#ifdef USE_PTHREADS
+      if (numthreads > 1) {
+         while (1) {
+            setupgwork(pd) ;
+            for (int i=0; i<numthreads; i++)
+               gworkers[i].init(&pd) ;
+            for (int i=0; i<numthreads; i++)
+               spawn_thread(i, dogodwork, gworkers+i) ;
+            for (int i=0; i<numthreads; i++)
+               join_thread(i) ;
+            if (reader == levend)
+               break ;
+            writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
          }
+      } else {
+#endif
+         for (loosetype *pr=reader; pr<levend; pr += looseper) {
+            looseunpack(pd, p1, pr) ;
+            for (int i=0; i<(int)pd.moves.size(); i++) {
+               if (quarter && pd.moves[i].cost > 1)
+                  continue ;
+               pd.mul(p1, pd.moves[i].pos, p2) ;
+               if (!pd.legalstate(p2))
+                  continue ;
+               sym = slowmodm2(pd, p2, p3) ;
+               loosepack(pd, p3, writer, 0, 1+(sym>1)) ;
+               writer += looseper ;
+               if (writer + looseper >= lim)
+                  writer = sortuniq(s_2, s_1, levend, writer, 1, lim) ;
+            }
+         }
+#ifdef USE_PTHREADS
       }
+#endif
       writer = sortuniq(s_2, s_1, levend, writer, 0, lim) ;
       newseen = (writer - levend) / looseper ;
       cnts.push_back(newseen) ;
