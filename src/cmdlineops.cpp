@@ -11,6 +11,7 @@
 #include "shorten.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
 int compact ;
+int maxwrong ;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
    stacksetval p1(pd) ;
    pd.assignpos(p1, pd.solved) ;
@@ -140,6 +141,15 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
    loosepack(pd, p, &uniqwork[0]) ;
    if (uniqseen.find(uniqwork) == uniqseen.end()) {
       uniqseen.insert(uniqwork) ;
+      cout << s << endl << flush ;
+      proclim-- ;
+      if (proclim == 0)
+         exit(0) ;
+   }
+}
+void wrongit(const puzdef &pd, setval p, const char *s) {
+   int t = pd.numwrong(p, pd.solved) ;
+   if (t <= maxwrong) {
       cout << s << endl << flush ;
       proclim-- ;
       if (proclim == 0)

@@ -56,7 +56,7 @@ int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
     dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
     checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
     domergeseqs, dounrotateseqs, doshortenseqs, docoset, douniqsymm,
-    dodescsets, doordertree ;
+    dodescsets, doordertree, dowrong ;
 const char *scramblealgo = 0 ;
 const char *legalmovelist = 0 ;
 static int initialized = 0 ;
@@ -163,6 +163,11 @@ void processargs(int &argc, argvtype &argv) {
             dodescsets++ ;
          } else if (strcmp(argv[0], "--ordertree") == 0) {
             doordertree++ ;
+         } else if (strcmp(argv[0], "--maxwrong") == 0) {
+            dowrong++ ;
+            maxwrong = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else {
             error("! Argument not understood ", argv[0]) ;
          }
@@ -390,6 +395,8 @@ int main(int argc, const char **argv) {
       solvecmdline(pd, scramblealgo, gs) ;
    if (douniq)
       processlines(pd, uniqit) ;
+   if (dowrong)
+      processlines(pd, wrongit) ;
    if (douniqsymm)
       processlines2(pd, uniqitsymm) ;
    if (doinv)
