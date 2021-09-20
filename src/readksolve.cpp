@@ -3,7 +3,14 @@
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori, distinguishall ;
 set<string> omitsets ;
+static int lineno ;
+void inerror(const string s, const string x = "") {
+   if (lineno)
+      cerr << lineno << ": " ;
+   error(s, x) ;
+}
 vector<string> getline(istream *f, ull &checksum) {
+   lineno++ ;
    string s ;
    int c ;
    while (1) {
@@ -50,7 +57,7 @@ vector<string> getline(istream *f, ull &checksum) {
 }
 void expect(const vector<string> &toks, int cnt) {
    if (cnt != (int)toks.size())
-      error("! wrong number of tokens on line") ;
+      inerror("! wrong number of tokens on line") ;
 }
 // must be a number under 256.
 int getnumber(int minval, const string &s) {
@@ -59,10 +66,10 @@ int getnumber(int minval, const string &s) {
       if ('0' <= s[i] && s[i] <= '9')
          r = r * 10 + s[i] - '0' ;
       else
-         error("! bad character while parsing number in ", s) ;
+         inerror("! bad character while parsing number in ", s) ;
    }
    if (r < minval || r > 255)
-      error("! value out of range in ", s) ;
+      inerror("! value out of range in ", s) ;
    return r ;
 }
 // permits a ? for undefined.
@@ -74,10 +81,10 @@ int getnumberorneg(int minval, const string &s) {
       if ('0' <= s[i] && s[i] <= '9')
          r = r * 10 + s[i] - '0' ;
       else
-         error("! bad character while parsing number in ", s) ;
+         inerror("! bad character while parsing number in ", s) ;
    }
    if (r < minval || r > 255)
-      error("! value out of range in ", s) ;
+      inerror("! value out of range in ", s) ;
    return r ;
 }
 int isnumber(const string &s) {
@@ -122,10 +129,10 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
    while (1) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
-         error("! premature end while reading position") ;
+         inerror("! premature end while reading position") ;
       if (toks[0] == "End") {
          if (curset >= 0 && numseq == 0 && ignore == 0)
-            error("! empty set def?") ;
+            inerror("! empty set def?") ;
          expect(toks, 1) ;
          ignore = 0 ;
          break ;
@@ -134,7 +141,7 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
          if (ignore)
             continue ;
          if (curset < 0 || numseq > 1)
-            error("! unexpected number sequence") ;
+            inerror("! unexpected number sequence") ;
          int n = pz.setdefs[curset].size ;
          expect(toks, n) ;
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
@@ -151,7 +158,7 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
          numseq++ ;
       } else {
          if (curset >= 0 && numseq == 0)
-            error("! empty set def?") ;
+            inerror("! empty set def?") ;
          expect(toks, 1) ;
          ignore = 0 ;
          if (omitset(toks[0])) {
@@ -165,9 +172,9 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
                break ;
             }
          if (curset < 0)
-            error("Bad set name?") ;
+            inerror("Bad set name?") ;
          if (r.dat[pz.setdefs[curset].off])
-            error("! redefined set name?") ;
+            inerror("! redefined set name?") ;
          numseq = 0 ;
       }
    }
@@ -198,13 +205,13 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
             pz.setdefs[i].psum = sum ;
          for (int j=0; j<(int)cnts.size(); j++)
             if (cnts[j] == 0)
-               error("! values are not contiguous") ;
+               inerror("! values are not contiguous") ;
          if ((int)cnts.size() != n) {
             if (typ == 'S') {
                if (!(cnts == pz.setdefs[i].cnts))
-                  error("! scramble position permutation doesn't match solved") ;
+                  inerror("! scramble position permutation doesn't match solved") ;
             } else if (typ != 's')
-               error("! expected, but did not see, a proper permutation") ;
+               inerror("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
                pz.setdefs[i].cnts = cnts ;
@@ -229,7 +236,7 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
                pz.setdefs[i].oparity = 0 ;
             }
          } else if (p[j] >= pz.setdefs[i].omod)
-            error("! modulo value too large") ;
+            inerror("! modulo value too large") ;
          s += p[j] ;
       }
       if (s % pz.setdefs[i].omod != 0)
@@ -249,13 +256,14 @@ puzdef readdef(istream *f) {
    int state = 0 ;
    ull checksum = 0 ;
    pz.optionssum = 0;
+   lineno = 0 ;
    while (1) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          break ;
       if (toks[0] == "Name") {
          if (state != 0)
-            error("! Name in wrong place") ;
+            inerror("! Name in wrong place") ;
          state++ ;
          expect(toks, 2) ;
          pz.name = twstrdup(toks[1].c_str()) ; ;
@@ -265,7 +273,7 @@ puzdef readdef(istream *f) {
             state++ ;
          }
          if (state != 1)
-            error("! Set in wrong place") ;
+            inerror("! Set in wrong place") ;
          expect(toks, 4) ;
          if (omitset(toks[1]))
             continue ;
@@ -297,20 +305,20 @@ puzdef readdef(istream *f) {
          }
       } else if (toks[0] == "Illegal") {
          if (state < 2)
-            error("! Illegal must be after solved") ;
+            inerror("! Illegal must be after solved") ;
          // set name, position, value, value, value, value ...
          for (int i=3; i<(int)toks.size(); i++)
             pz.addillegal(toks[1].c_str(),
                           getnumber(1, toks[2]), getnumber(1, toks[i])) ;
       } else if (toks[0] == "Solved") {
          if (state != 1)
-            error("! Solved in wrong place") ;
+            inerror("! Solved in wrong place") ;
          state++ ;
          expect(toks, 1) ;
          pz.solved = readposition(pz, 's', f, checksum) ;
       } else if (toks[0] == "Move") {
          if (state != 2)
-            error("! Move in wrong place") ;
+            inerror("! Move in wrong place") ;
          expect(toks, 2) ;
          moove m ;
          m.name = twstrdup(toks[1].c_str()) ;
@@ -326,20 +334,20 @@ puzdef readdef(istream *f) {
          }
       } else if (toks[0] == "SwizzleSet") {
          if (toks.size() < 3)
-            error("Too few tokens in SwizzleSet definition") ;
+            inerror("Too few tokens in SwizzleSet definition") ;
          for (int i=1; i<(int)toks.size(); i++)
             pz.swizzlenames.push_back(twstrdup(toks[i].c_str())) ;
       } else if (toks[0] == "MoveAlias") {
          if (state != 2)
-            error("! MoveAlias in wrong place") ;
+            inerror("! MoveAlias in wrong place") ;
          expect(toks, 3) ;
          pz.aliases.push_back(
                       {twstrdup(toks[1].c_str()), twstrdup(toks[2].c_str())}) ;
       } else if (toks[0] == "MoveSequence") {
          if (state != 2)
-            error("! MoveSequence in wrong place") ;
+            inerror("! MoveSequence in wrong place") ;
          if (toks.size() < 3)
-            error("Too few tokens in MoveSequence definition") ;
+            inerror("Too few tokens in MoveSequence definition") ;
          string seq ;
          for (int i=2; i<(int)toks.size(); i++) {
             if (i != 2)
@@ -349,17 +357,18 @@ puzdef readdef(istream *f) {
          pz.moveseqs.push_back(
                       {twstrdup(toks[1].c_str()), twstrdup(seq.c_str())}) ;
       } else {
-         error("! unexpected first token on line ", toks[0]) ;
+         inerror("! unexpected first token on line ", toks[0]) ;
       }
    }
    if (pz.name == 0)
-      error("! puzzle must be given a name") ;
+      inerror("! puzzle must be given a name") ;
    if (pz.setdefs.size() == 0)
-      error("! puzzle must have set definitions") ;
+      inerror("! puzzle must have set definitions") ;
    if (pz.solved.dat == 0)
-      error("! puzzle must have a solved position") ;
+      inerror("! puzzle must have a solved position") ;
    if (pz.moves.size() == 0)
-      error("! puzzle must have moves") ;
+      inerror("! puzzle must have moves") ;
+   lineno = 0 ;
    pz.id = setval((uchar *)calloc(pz.totsize, 1)) ;
    uchar *p = pz.id.dat ;
    for (int i=0; i<(int)pz.setdefs.size(); i++) {
