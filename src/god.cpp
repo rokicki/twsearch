@@ -739,13 +739,54 @@ void doarraygod2(const puzdef &pd) {
    }
    showantipodesloose(pd) ;
 }
+ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
+   int symoff = basebits / (sizeof(loosetype) * 8) ;
+   loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1))) ;
+   int rots = pd.rotgroup.size() ;
+   ull r = cnt * rots ;
+   stacksetval p1(pd), p2(pd) ;
+   for (ull i=0; i<cnt; i++, p+=looseper) {
+      if (p[symoff] & symbit) {
+         looseunpack(pd, p1, p) ;
+         int sym = slowmodm2(pd, p1, p2) ;
+         if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots)
+            error("! bad symmetry calculation") ;
+         r += (*rotmul)[sym] - rots ;
+      }
+   }
+   return r ;
+}
+#ifdef USE_PTHREADS
+static struct csworker {
+   void init(const puzdef *_pd, loosetype *_start, ll _cnt, vector<int> *_rotmul) {
+      pd = _pd ;
+      start = _start ;
+      cnt = _cnt ;
+      rotmul = _rotmul ;
+      tot = 0 ;
+   }
+   void work() {
+      ull t = calcsymseen(*pd, start, cnt, rotmul) ;
+      get_global_lock() ;
+      tot = t ;
+      release_global_lock() ;
+   }
+   const puzdef *pd ;
+   loosetype *start ;
+   ll cnt, tot ;
+   vector<int> *rotmul ;
+} csworkers[MAXTHREADS] ;
+static void *docswork(void *o) {
+   csworker *csw = (csworker *)o ;
+   csw->work() ;
+   return 0 ;
+}
+#endif
 /*
  *   Given a sequence of loosepacked states, calculate the total number
  *   of states represented by these, unpacking the symmetry.
  */
 ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
-   int symoff = basebits / (sizeof(loosetype) * 8) ;
-   loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1))) ;
    int rots = pd.rotgroup.size() ;
    vector<int> rotmul(rots+1) ;
    for (int i=1; i*i<=rots; i++)
@@ -753,19 +794,28 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
          rotmul[i] = rots / i ;
          rotmul[rots/i] = i ;
       }
-   ull r = cnt * rots ;
-   stacksetval p1(pd), p2(pd) ;
-   for (ull i=0; i<cnt; i++, p+=looseper) {
-      if (p[symoff] & symbit) {
-         looseunpack(pd, p1, p) ;
-         int sym = slowmodm2(pd, p1, p2) ;
-// cout << "Sym is " << sym << endl ;
-         if (rotmul[sym] == 0 || rotmul[sym] > rots)
-            error("! bad symmetry calculation") ;
-         r += rotmul[sym] - rots ;
+#ifdef USE_PTHREADS
+   if (numthreads > 1) {
+      for (int i=0; i<numthreads; i++) {
+         ull me = cnt / (numthreads - i) ;
+         csworkers[i].init(&pd, p, me, &rotmul) ;
+         cnt -= me ;
+         p += me * looseper ;
       }
+      for (int i=0; i<numthreads; i++)
+         spawn_thread(i, docswork, csworkers+i) ;
+      for (int i=0; i<numthreads; i++)
+         join_thread(i) ;
+      ull r = 0 ;
+      for (int i=0; i<numthreads; i++)
+         r += csworkers[i].tot ;
+      return r ;
+   } else {
+#endif
+      return calcsymseen(pd, p, cnt, &rotmul) ;
+#ifdef USE_PTHREADS
    }
-   return r ;
+#endif
 }
 /*
  *   God's algorithm using symmetry reduction.
