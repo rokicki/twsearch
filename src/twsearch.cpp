@@ -189,6 +189,8 @@ case 'd':
             break ;
 case 'r':
             genrand = 1 ;
+            if (argv[0][2] != 0)
+               genrand = atol(argv[0]+2) ;
             break ;
 case 'R':
             seed = atol(argv[1]) ;
@@ -253,14 +255,16 @@ case 'a':
             argv++ ;
             break ;
 case 'A':
-            if (argv[0][2] == '1')
-               doalgo = 1 ;
-            else if (argv[0][2] == '2')
-               doalgo = 2 ;
-            else if (argv[0][2] == '3')
-               doalgo = 3 ;
-            else
-               doalgo = -1 ;
+            doalgo = -1 ;
+            for (int pp=2; argv[0][pp]; pp++)
+               if (argv[0][pp] == '1')
+                  doalgo = 1 ;
+               else if (argv[0][pp] == '2')
+                  doalgo = 2 ;
+               else if (argv[0][pp] == '3')
+                  doalgo = 3 ;
+               else if (argv[0][pp] == 's')
+                  algostrict = 1 ;
             break ;
 case 'T':
             dotimingtest++ ;
@@ -361,7 +365,8 @@ int main(int argc, const char **argv) {
       ordertree(pd) ;
    }
    if (genrand) {
-      showrandompos(pd) ;
+      for (int i=0; i<genrand; i++)
+         showrandompos(pd) ;
       return 0 ;
    }
    if (dogod) {

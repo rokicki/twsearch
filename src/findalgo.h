@@ -9,5 +9,6 @@
  *   consideration of support.
  */
 void findalgos(const puzdef &pd, int which) ;
+extern int algostrict ;
 #define FINDALGO_H
 #endif

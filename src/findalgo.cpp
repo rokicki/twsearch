@@ -6,8 +6,15 @@
 #include "solve.h"
 map<ll, ll> bestsofar ;
 const int HIWR = 4 ;
+int algostrict ;
 ll extendkey(ll k, int nwr, int npwr) {
    return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
+}
+static int algocmp(int oldlen, int newlen) {
+   if (algostrict)
+      return newlen < oldlen ;
+   else
+      return newlen <= oldlen ;
 }
 void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
    while (setnum >= 0) {
@@ -49,7 +56,7 @@ struct algo1worker {
          }
          int mvs = sp ;
          get_global_lock() ;
-         if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
+         if (bestsofar.find(key) == bestsofar.end() || algocmp(bestsofar[key], mvs)) {
             bestsofar[key] = mvs ;
             cout << keydesc(pd, key) << " " << mvs << " (" ;
             for (int i=0; i<sp; i++) {
@@ -110,7 +117,7 @@ struct algo2worker {
                }
                ll mvs = o / pp * sp ;
                get_global_lock() ;
-               if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
+               if (bestsofar.find(key) == bestsofar.end() || algocmp(bestsofar[key],  mvs)) {
                   bestsofar[key] = mvs ;
                   cout << keydesc(pd, key) << " " << mvs << " (" ;
                   for (int i=0; i<sp; i++) {
@@ -181,7 +188,7 @@ struct algo3worker {
          }
          int mvs = 2 * (fp + (sp - (fp + 2))) ;
          get_global_lock() ;
-         if (bestsofar.find(key) == bestsofar.end() || bestsofar[key] >= mvs) {
+         if (bestsofar.find(key) == bestsofar.end() || algocmp(bestsofar[key], mvs)) {
             bestsofar[key] = mvs ;
             cout << keydesc(pd, key) << " " << mvs << " [" ;
             for (int i=0; i<fp; i++) {
