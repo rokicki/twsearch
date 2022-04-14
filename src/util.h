@@ -1,6 +1,8 @@
 #ifndef UTIL_H
 #include <string>
 #include <cstring>
+#include <cstdlib>   // for drand48 and friends
+#include <strings.h> // for ffsll
 using namespace std ;
 /*
  *   A bunch of silly utility routines to make our life easier, and a few
