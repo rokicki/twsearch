@@ -3,6 +3,7 @@
 #include <set>
 #include "prunetable.h"
 #include "city.h"
+#define USECOMPRESSION
 fillworker fillworkers[MAXTHREADS] ;
 struct ioqueue ioqueue ;
 string inputbasename = "unknownpuzzle" ;
@@ -362,7 +363,11 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd) const {
+#ifdef USECOMPRESSION
    string filename = "tws5-" + inputbasename + "-" ;
+#else
+   string filename = "tws6-" + inputbasename + "-" ;
+#endif
    if (quarter)
       filename += "q-" ;
    ull bytes = size >> 2 ;
@@ -503,6 +508,7 @@ void prunetable::writept(const puzdef &pd) {
    ll longcnt = (size + 31) >> 5 ;
    if (longcnt % BLOCKSIZE != 0)
       return ; // too small
+#ifdef USECOMPRESSION
    // this *could* be calculated more efficiently, but the runtime is
    // dominated by scanning the array so we use simple code.
    // We use optimal huffman coding; for tables that fit on real
@@ -586,6 +592,7 @@ void prunetable::writept(const puzdef &pd) {
          codevals[i] = widthbases[codewidths[i]] ;
          widthbases[codewidths[i]]++ ;
       }
+#endif
    string filename = makefilename(pd) ;
    cout << "Writing " << filename << " " << flush ;
    ofstream w;
@@ -604,13 +611,18 @@ void prunetable::writept(const puzdef &pd) {
    w.write((char *)&baseval, sizeof(baseval)) ;
    w.write((char *)&hibase, sizeof(hibase)) ;
    w.write((char *)&wval, sizeof(wval)) ;
-   w.write((char *)codewidths, sizeof(codewidths[0]) * 256) ;
    if (longcnt % BLOCKSIZE != 0)
       error("Size must be a multiple of block size") ;
+#ifdef USECOMPRESSION
+   w.write((char *)codewidths, sizeof(codewidths[0]) * 256) ;
    ioqueue.initout(this, &w) ;
    for (ll i=0; i<longcnt; i += BLOCKSIZE)
       writeblock(mem+i, BLOCKSIZE) ;
    ioqueue.finishall() ;
+#else
+   for (ll i=0; i<longcnt; i += BLOCKSIZE)
+      w.write((char *)(mem+i), BLOCKSIZE*sizeof(ull)) ;
+#endif
    w.put(SIGNATURE);
    w.close() ;
    if (w.fail())
@@ -618,10 +630,12 @@ void prunetable::writept(const puzdef &pd) {
    cout << "written in " << duration() << endl << flush ;
 }
 int prunetable::readpt(const puzdef &pd) {
+#ifdef USECOMPRESSION
    for (int i=0; i<256; i++) {
       codewidths[i] = 0 ;
       codevals[i] = 0 ;
    }
+#endif
    string filename = makefilename(pd) ;
    ifstream r ;
    r.open(filename, ifstream::in);
@@ -661,6 +675,7 @@ int prunetable::readpt(const puzdef &pd) {
    r.read((char *)&baseval, sizeof(baseval));
    r.read((char *)&hibase, sizeof(hibase));
    r.read((char *)&wval, sizeof(wval));
+#ifdef USECOMPRESSION
    r.read((char *)codewidths, sizeof(codewidths[0]) * 256);
    if (r.fail()) {
       warn("I/O error in reading pruning table") ;
@@ -733,11 +748,18 @@ int prunetable::readpt(const puzdef &pd) {
    }
    ll longcnt = (size + 31) >> 5 ;
    if (longcnt % BLOCKSIZE != 0)
-      error("! when reading, expected multiple of longcnt") ;
+      error("! when reading, expected multiple of BLOCKSIZE") ;
    ioqueue.initin(this, &r) ;
    for (ll i=0; i<longcnt; i += BLOCKSIZE)
       readblock(mem+i, BLOCKSIZE, &r) ;
    ioqueue.finishall() ;
+#else
+   ll longcnt = (size + 31) >> 5 ;
+   if (longcnt % BLOCKSIZE != 0)
+      error("! when reading, expected multiple of BLOCKSIZE") ;
+   for (ll i=0; i<longcnt; i += BLOCKSIZE)
+      r.read((char *)(mem+i), BLOCKSIZE*sizeof(ull)) ;
+#endif
    int tv = r.get() ;
    if (tv != SIGNATURE)
       error("! I/O error reading final signature") ;
