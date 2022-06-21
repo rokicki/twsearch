@@ -18,7 +18,8 @@
  *   The hash table permits collisions (stores the minimum).
  */
 const int CACHELINESIZE = 64 ;
-const int SIGNATURE = 22 ; // start and end of data files
+const int COMPSIGNATURE = 23 ; // start and end of data files
+const int UNCOMPSIGNATURE = 24 ; // start and end of data files
 extern string inputbasename ;
 extern int nowrite ;
 ull fasthash(int n, const setval sv) ;
@@ -139,8 +140,8 @@ struct prunetable {
    int shardshift ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
    int wval, wbval ;
-   uchar codewidths[512] ;
-   ull codevals[512] ;
+   uchar codewidths[544] ;
+   ull codevals[544] ;
    short *tabs[7] ;
    char justread ;
 } ;

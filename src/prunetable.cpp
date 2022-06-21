@@ -4,6 +4,11 @@
 #include "prunetable.h"
 #include "city.h"
 #define USECOMPRESSION
+#ifdef USECOMPRESSION
+#define SIGNATURE COMPSIGNATURE
+#else
+#define SIGNATURE UNCOMPSIGNATURE
+#endif
 fillworker fillworkers[MAXTHREADS] ;
 struct ioqueue ioqueue ;
 string inputbasename = "unknownpuzzle" ;
@@ -281,7 +286,6 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
       filltable(pd, 2) ;
       checkextend(pd, 1) ;
    }
-   writept(pd) ;
 }
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
@@ -364,7 +368,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
 }
 string prunetable::makefilename(const puzdef &pd) const {
 #ifdef USECOMPRESSION
-   string filename = "tws5-" + inputbasename + "-" ;
+   string filename = "tws7-" + inputbasename + "-" ;
 #else
    string filename = "tws6-" + inputbasename + "-" ;
 #endif
@@ -400,9 +404,13 @@ ull prunetable::calcblocksize(ull *mem, ull longcnt) {
    ull bits = 0 ;
    for (ull i=0; i<longcnt; i++) {
       ull v = mem[i] ;
-      for (int j=0; j<8; j++) {
-         bits += codewidths[v & 255] ;
-         v >>= 8 ;
+      if (v < 16) {
+         bits += codewidths[v + 256] ;
+      } else {
+         for (int j=0; j<8; j++) {
+            bits += codewidths[v & 255] ;
+            v >>= 8 ;
+         }
       }
    }
    return ((bits + 7) >> 3) ;
@@ -413,8 +421,8 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
    ull bytectr = 0 ;
    for (ull i=0; i<longcnt; i++) {
       ull v = mem[i] ;
-      for (int j=0; j<8; j++) {
-         int cp = v & 255 ;
+      if (v < 16) {
+         int cp = v + 256 ;
          int cpw = codewidths[cp] ;
          if (cpw == 0)
             error("! internal error in Huffman encoding") ;
@@ -426,7 +434,22 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
          }
          accum = (accum << cpw) + codevals[cp] ;
          havebits += cpw ;
-         v >>= 8 ;
+      } else {
+         for (int j=0; j<8; j++) {
+            int cp = v & 255 ;
+            int cpw = codewidths[cp] ;
+            if (cpw == 0)
+               error("! internal error in Huffman encoding") ;
+            while (havebits + cpw > 64) {
+               buf[bytectr++] = accum >> (havebits - 8) ;
+               if (bytectr > bytecnt)
+                  error("! packing issue") ;
+               havebits -= 8 ;
+            }
+            accum = (accum << cpw) + codevals[cp] ;
+            havebits += cpw ;
+            v >>= 8 ;
+         }
       }
    }
    int extra = (8 - havebits) & 7 ;
@@ -460,12 +483,21 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
             }
             int cp = tabs[k][accum >> (havebits - bitsneeded)] ;
             if (cp >= 0) {
-               v += ((ull)cp) << (8 * j) ;
-               havebits -= codewidths[cp] ;
-               if (havebits > 14)
-                  error("! oops; should not have this many bits left") ;
-               accum &= ((1LL << havebits) - 1) ;
-               break ;
+               if (cp >= 256) {
+                  if (j != 0)
+                     error("! unexpected high code") ;
+                  v = cp - 256 ;
+                  havebits -= codewidths[cp] ;
+                  accum &= ((1LL << havebits) - 1) ;
+                  goto setval ;
+               } else {
+                  v += ((ull)cp) << (8 * j) ;
+                  havebits -= codewidths[cp] ;
+                  if (havebits > 14)
+                     error("! oops; should not have this many bits left") ;
+                  accum &= ((1LL << havebits) - 1) ;
+                  break ;
+               }
             }
             bitsneeded += 8 ;
             k++ ;
@@ -473,6 +505,7 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
                error("! failure while decoding") ;
          }
       }
+setval:
       mem[i] = v ;
    }
    if (bytecnt != bytectr)
@@ -529,18 +562,14 @@ void *cntthreadworker(void *o) {
       }
    }
    get_global_lock() ;
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       bytecnts[i] += lbc[i] ;
-   for (int i=0; i<16; i++) {
-      bytecnts[i] += lbc[256+i] ;
-      bytecnts[0] += 7 ;
-   }
    release_global_lock() ;
    return 0 ;
 }
 void prunetable::writept(const puzdef &pd) {
-   // only write the table if at least 1 in 100 elements has a value
-   if (nowrite || justread || fillcnt * 100 < size)
+   // only write the table if at least 1 in 700 elements has a value
+   if (nowrite || justread || fillcnt < size / 700)
       return ;
    ll longcnt = (size + 31) >> 5 ;
    if (longcnt % BLOCKSIZE != 0)
@@ -554,7 +583,7 @@ void prunetable::writept(const puzdef &pd) {
    // coding.  We use 56-bits so we can use a 64-bit accumulator and
    // still shift things out in byte-sized chunks.
    cout << "Scanning memory for compression information" << flush ;
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       bytecnts[i] = 0 ;
 #ifdef USE_PTHREADS
    for (int i=0; i<numthreads; i++) {
@@ -573,10 +602,10 @@ void prunetable::writept(const puzdef &pd) {
    set<pair<ll, int> > codes ;
    vector<pair<int, int> > tree ; // binary tree
    vector<int> depths ; // max depths
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       if (bytecnts[i])
          codes.insert(make_pair(bytecnts[i], i)) ;
-   int nextcode = 256 ;
+   int nextcode = 272 ;
    int maxwidth = 0 ;
    ull bitcost = 0 ;
    while (codes.size() > 1) { // take out least two and insert sum
@@ -586,10 +615,10 @@ void prunetable::writept(const puzdef &pd) {
       codes.erase(b) ;
       tree.push_back(make_pair(a.second, b.second)) ;
       int dep = 1 ;
-      if (a.second >= 256)
-         dep = 1 + depths[a.second-256] ;
-      if (b.second >= 256)
-         dep = max(dep, 1 + depths[b.second-256]) ;
+      if (a.second >= 272)
+         dep = 1 + depths[a.second-272] ;
+      if (b.second >= 272)
+         dep = max(dep, 1 + depths[b.second-272]) ;
       maxwidth = max(maxwidth, dep) ;
       if (maxwidth >= 56)
          error("! exceeded maxwidth in Huffman encoding; fix the code") ;
@@ -603,7 +632,7 @@ void prunetable::writept(const puzdef &pd) {
       << " in " << duration() << endl ;
    codewidths[nextcode-1] = 0 ;
    codevals[nextcode-1] = 0 ;
-   for (int i=0; i<256; i++) {
+   for (int i=0; i<272; i++) {
       codewidths[i] = 0 ;
       codevals[i] = 0 ;
    }
@@ -611,13 +640,13 @@ void prunetable::writept(const puzdef &pd) {
    for (int i=0; i<64; i++)
       widthcounts[i] = 0 ;
    codewidths[nextcode-1] = 0 ;
-   for (int i=nextcode-1; i>=256; i--) {
-      int a = tree[i-256].first ;
-      int b = tree[i-256].second ;
+   for (int i=nextcode-1; i>=272; i--) {
+      int a = tree[i-272].first ;
+      int b = tree[i-272].second ;
       codewidths[a] = codewidths[i] + 1 ;
       codewidths[b] = codewidths[i] + 1 ;
    }
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       widthcounts[codewidths[i]]++ ;
    ull widthbases[64] ;
    ull at = 0 ;
@@ -629,7 +658,7 @@ void prunetable::writept(const puzdef &pd) {
    }
    if (at != (1ULL << maxwidth))
       error("! Bad calculation in codes") ;
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       if (codewidths[i]) {
          codevals[i] = widthbases[codewidths[i]] ;
          widthbases[codewidths[i]]++ ;
@@ -656,7 +685,7 @@ void prunetable::writept(const puzdef &pd) {
    if (longcnt % BLOCKSIZE != 0)
       error("Size must be a multiple of block size") ;
 #ifdef USECOMPRESSION
-   w.write((char *)codewidths, sizeof(codewidths[0]) * 256) ;
+   w.write((char *)codewidths, sizeof(codewidths[0]) * 272) ;
    ioqueue.initout(this, &w) ;
    for (ll i=0; i<longcnt; i += BLOCKSIZE)
       writeblock(mem+i, BLOCKSIZE) ;
@@ -673,7 +702,7 @@ void prunetable::writept(const puzdef &pd) {
 }
 int prunetable::readpt(const puzdef &pd) {
 #ifdef USECOMPRESSION
-   for (int i=0; i<256; i++) {
+   for (int i=0; i<272; i++) {
       codewidths[i] = 0 ;
       codevals[i] = 0 ;
    }
@@ -718,7 +747,7 @@ int prunetable::readpt(const puzdef &pd) {
    r.read((char *)&hibase, sizeof(hibase));
    r.read((char *)&wval, sizeof(wval));
 #ifdef USECOMPRESSION
-   r.read((char *)codewidths, sizeof(codewidths[0]) * 256);
+   r.read((char *)codewidths, sizeof(codewidths[0]) * 272);
    if (r.fail()) {
       warn("I/O error in reading pruning table") ;
       r.close() ;
@@ -728,7 +757,7 @@ int prunetable::readpt(const puzdef &pd) {
    for (int i=0; i<64; i++)
       widthcounts[i] = 0 ;
    int maxwidth = 1 ;
-   for (int i=0; i<256; i++) {
+   for (int i=0; i<272; i++) {
       if (codewidths[i] >= 56)
          error("! bad code widths in pruning table file") ;
       maxwidth = max(maxwidth, (int)codewidths[i]) ;
@@ -744,7 +773,7 @@ int prunetable::readpt(const puzdef &pd) {
    }
    if (at != (1ULL << maxwidth))
       error("! Bad codewidth sum in codes") ;
-   for (int i=0; i<256; i++)
+   for (int i=0; i<272; i++)
       if (codewidths[i]) {
          codevals[i] = widthbases[codewidths[i]] ;
          widthbases[codewidths[i]]++ ;
@@ -774,7 +803,7 @@ int prunetable::readpt(const puzdef &pd) {
    int twidth = (maxwidth + 7) & -8 ;
    for (int i=63; i>0; i--) {
       if (widthcounts[i]) {
-         for (int cp=0; cp<256; cp++)
+         for (int cp=0; cp<272; cp++)
             if (codewidths[cp] == i) {
                int k = (i - 1) >> 3 ;
                int incsh = twidth-8*k-8 ;
