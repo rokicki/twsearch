@@ -501,6 +501,43 @@ void prunetable::readblock(ull *mem, ull explongcnt, istream *inf) {
       error("! I/O error while reading block") ;
    ioqueue.queueunpackwork(mem, longcnt, buf, bytecnt) ;
 }
+static ll bytecnts[272] ;
+struct cntparam {
+   ll s, e ;
+   ull *mem ;
+} cntparams[MAXTHREADS] ;
+void *cntthreadworker(void *o) {
+   cntparam *wp = (cntparam *)o ;
+   ll s = wp->s ;
+   ll e = wp->e ;
+   ll lbc[272] ;
+   for (int i=0; i<272; i++)
+      lbc[i] = 0 ;
+   for (ll i=s; i<e; i++) {
+      ull v = wp->mem[i] ;
+      if (v < 16)
+         lbc[256 + v]++ ;
+      else {
+         lbc[(unsigned char)v]++ ;
+         lbc[(unsigned char)(v>>8)]++ ;
+         lbc[(unsigned char)(v>>16)]++ ;
+         lbc[(unsigned char)(v>>24)]++ ;
+         lbc[(unsigned char)(v>>32)]++ ;
+         lbc[(unsigned char)(v>>40)]++ ;
+         lbc[(unsigned char)(v>>48)]++ ;
+         lbc[(unsigned char)(v>>56)]++ ;
+      }
+   }
+   get_global_lock() ;
+   for (int i=0; i<256; i++)
+      bytecnts[i] += lbc[i] ;
+   for (int i=0; i<16; i++) {
+      bytecnts[i] += lbc[256+i] ;
+      bytecnts[0] += 7 ;
+   }
+   release_global_lock() ;
+   return 0 ;
+}
 void prunetable::writept(const puzdef &pd) {
    // only write the table if at least 1 in 100 elements has a value
    if (nowrite || justread || fillcnt * 100 < size)
@@ -516,17 +553,22 @@ void prunetable::writept(const puzdef &pd) {
    // 56-bits, so we don't use the more complicated length-limited
    // coding.  We use 56-bits so we can use a 64-bit accumulator and
    // still shift things out in byte-sized chunks.
-   ll bytecnts[256] ;
+   cout << "Scanning memory for compression information" << flush ;
    for (int i=0; i<256; i++)
       bytecnts[i] = 0 ;
-   cout << "Scanning memory for compression information " << flush ;
-   for (ll i=0; i<longcnt; i++) {
-      ull v = mem[i] ;
-      for (int j=0; j<8; j++) {
-         bytecnts[v & 255]++ ;
-         v >>= 8 ;
-      }
+#ifdef USE_PTHREADS
+   for (int i=0; i<numthreads; i++) {
+      ll s = longcnt * i / numthreads ;
+      ll e = longcnt * (i + 1) / numthreads ;
+      cntparams[i] = {s, e, mem} ;
+      spawn_thread(i, cntthreadworker, cntparams+i) ;
    }
+   for (int i=0; i<numthreads; i++)
+      join_thread(i) ;
+#else
+   cntparams[0] = {0, longcnt, mem} ;
+   cntthreadworker((void *)&cntparams[0]) ;
+#endif
    cout << "in " << duration() << endl << flush ;
    set<pair<ll, int> > codes ;
    vector<pair<int, int> > tree ; // binary tree
