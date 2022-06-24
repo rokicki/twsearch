@@ -33,7 +33,7 @@ struct workerparam {
 } ;
 extern vector<workerparam> workerparams ;
 int setupthreads(const puzdef &pd, prunetable &pt) ;
-const int BLOCKSIZE = 8192 ; // in long longs
+const int BLOCKSIZE = 32768 ; // in long longs
 const int FILLCHUNKS = 256 ; // long longs
 struct fillbuf {
    int nchunks ;
