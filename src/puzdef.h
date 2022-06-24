@@ -177,6 +177,25 @@ struct puzdef {
          dp += n ;
       }
    }
+   // get a guess at the lowest symmetry by only looking at the
+   // very first value.
+   int lowsymmguess(const setval b) const {
+      int r = 0 ;
+      const uchar *bp = b.dat ;
+      int rv = rotinvmap[0].dat[bp[rotgroup[0].pos.dat[0]]] ;
+      if (rv == 0)
+         return 0 ;
+      for (int m=1; m<(int)rotgroup.size(); m++) {
+         int t = rotinvmap[m].dat[bp[rotgroup[0].pos.dat[m]]] ;
+         if (t < rv) {
+            r = m ;
+            rv = t ;
+            if (rv == 0)
+               return m ;
+         }
+      }
+      return r ;
+   }
    // does a multiplication and a comparison at the same time.
    // c must be initialized already.
    int mulcmp3(const setval a, const setval b, const setval c, setval d) const {

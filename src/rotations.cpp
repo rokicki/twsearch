@@ -277,8 +277,11 @@ int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
 //  This should generally work on pusitions.
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
    int cnt = 1 ;
-   pd.mul3(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2) ;
-   for (int m=1; m<(int)pd.rotgroup.size(); m++) {
+   int g = pd.lowsymmguess(p1) ;
+   pd.mul3(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2) ;
+   for (int m=g+1; m<(int)pd.rotgroup.size(); m++) {
+      if (p1.dat[0] != pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
+         continue ;
       int t = pd.mulcmp3(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2) ;
       if (t <= 0) {
          if (t < 0) {
