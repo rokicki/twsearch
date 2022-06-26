@@ -95,13 +95,12 @@ struct algo1worker {
 } algo1worker ;
 void *doalgo1work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   for (int d=max(1, optmindepth); ; d++) {
+   for (int d=max(1, optmindepth); ; d++)
       algo1worker.findalgos1(*pd, d) ;
-   }
    return 0 ;
 }
 struct algo2worker {
-   void recurfindalgo2(const puzdef &pd, int togo, int sp, int st, int fm) {
+   void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
       if (togo == 0) {
          vector<int> cc = pd.cyccnts(posns[sp]) ;
          ll o = puzdef::order(cc) ;
@@ -145,20 +144,13 @@ struct algo2worker {
       }
       ull mask = canonmask[st] ;
       const vector<int> &ns = canonnext[st] ;
-      int tfm ;
-      if (fm == -1)
-         tfm = 0 ;
-      else
-         tfm = movehist[fm] ;
-      for (int m=tfm; m<(int)pd.moves.size(); m++) {
-         int nfm = fm + 1 ;
-         fm = -1 ;
+      for (int m=0; m<(int)pd.moves.size(); m++) {
          const moove &mv = pd.moves[m] ;
          if ((mask >> mv.cs) & 1)
             continue ;
          movehist[sp] = m ;
          pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-         recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs], nfm) ;
+         recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs]) ;
       }
    }
    void findalgos2(const puzdef &pd, int d) {
@@ -168,17 +160,15 @@ struct algo2worker {
          posns.push_back(allocsetval(pd, pd.id)) ;
          movehist.push_back(-1) ;
       }
-      recurfindalgo2(pd, d, 0, 0, -1) ;
+      recurfindalgo2(pd, d, 0, 0) ;
    }
    vector<int> movehist ;
    vector<allocsetval> posns ;
 } algo2worker ;
 void *doalgo2work(void *o) {
    const puzdef *pd = (const puzdef *)o ;
-   for (int d=max(1, optmindepth); ; d++) {
- cout << "Working at depth " << d << endl ;
+   for (int d=max(1, optmindepth); ; d++)
       algo2worker.findalgos2(*pd, d) ;
-   }
    return 0 ;
 }
 struct algo3worker {
