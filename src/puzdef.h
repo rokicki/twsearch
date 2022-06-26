@@ -186,7 +186,7 @@ struct puzdef {
       if (rv == 0)
          return 0 ;
       for (int m=1; m<(int)rotgroup.size(); m++) {
-         int t = rotinvmap[m].dat[bp[rotgroup[0].pos.dat[m]]] ;
+         int t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[0]]] ;
          if (t < rv) {
             r = m ;
             rv = t ;
