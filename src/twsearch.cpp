@@ -332,7 +332,7 @@ puzdef makepuzdef(string s) {
 }
 #ifndef ASLIBRARY
 int main(int argc, const char **argv) {
-   cout << "# This is twsearch 0.2 (C) 2020 Tomas Rokicki." << endl ;
+   cout << "# This is twsearch 0.3 (C) 2022 Tomas Rokicki." << endl ;
    cout << "#" ;
    for (int i=0; i<argc; i++)
       cout << " " << argv[i] ;
