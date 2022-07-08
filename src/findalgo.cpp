@@ -5,10 +5,10 @@
 #include "threads.h"
 #include "solve.h"
 map<ll, ll> bestsofar ;
-const int HIWR = 4 ;
+const int HIWR = 30 ;
 int algostrict ;
 ll extendkey(ll k, int nwr, int npwr) {
-   return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
+   return k * 100 + nwr * 2 + (npwr == 0 ? 0 : 1) ;
 }
 static int algocmp(int oldlen, int newlen) {
    if (algostrict)
@@ -18,13 +18,14 @@ static int algocmp(int oldlen, int newlen) {
 }
 void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
    while (setnum >= 0) {
-      int dig = key % 10 ;
+      int dig = key % 100 ;
       if (dig != 0) {
          if (s.size() > 0)
             s += " " ;
          s += pd.setdefs[setnum].name ;
          s += "/" ;
-         s += (char)('0'+(dig >> 1)) ;
+         s += (char)('0'+((dig >> 1) / 10)) ;
+         s += (char)('0'+((dig >> 1) % 10)) ;
          if (dig % 2 == 0) {
             s += "o" ;
          } else {
@@ -32,7 +33,7 @@ void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
          }
       }
       setnum-- ;
-      key /= 10 ;
+      key /= 100 ;
    }
 }
 string keydesc(const puzdef &pd, ll key) {
@@ -45,6 +46,11 @@ struct algo1worker {
    void recurfindalgo(const puzdef &pd, int togo, int sp, int st) {
       if (togo == 0) {
          bigcnt++ ;
+         int pr = pd.permwrong(posns[sp], pd.solved) ;
+         if (pr != 0)
+            return ;
+         if (pd.numwrong(posns[sp], pd.solved, 5) != 0)
+            return ;
          int wr = pd.numwrong(posns[sp], pd.solved) ;
          if (wr > HIWR || wr == 0)
             return ;
@@ -100,13 +106,20 @@ void *doalgo1work(void *o) {
    return 0 ;
 }
 struct algo2worker {
-   void recurfindalgo2(const puzdef &pd, int togo, int sp, int st) {
+   void recurfindalgo2(const puzdef &pd, int togo, int sp, int st, int first) {
       if (togo == 0) {
          vector<int> cc = pd.cyccnts(posns[sp]) ;
          ll o = puzdef::order(cc) ;
-         for (int pp=2; pp<=3; pp++) {
+         if (o > 20)
+            return ;
+         for (int pp=2; pp<3; pp++) {
             if (o % pp == 0) {
                pd.pow(posns[sp], posns[sp+1], o/pp) ;
+               int pr = pd.permwrong(posns[sp+1], pd.id) ;
+               if (pr != 0)
+                  continue ;
+               if (pd.numwrong(posns[sp+1], pd.id, 2) != 0)
+                  continue ;
                int wr = pd.numwrong(posns[sp+1], pd.id) ;
                if (wr > HIWR || wr == 0)
                   continue ;
@@ -150,7 +163,9 @@ struct algo2worker {
             continue ;
          movehist[sp] = m ;
          pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-         recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs]) ;
+         recurfindalgo2(pd, togo-1, sp+1, ns[mv.cs], 0) ;
+         if (first && m == 3)
+            break ;
       }
    }
    void findalgos2(const puzdef &pd, int d) {
@@ -160,7 +175,7 @@ struct algo2worker {
          posns.push_back(allocsetval(pd, pd.id)) ;
          movehist.push_back(-1) ;
       }
-      recurfindalgo2(pd, d, 0, 0) ;
+      recurfindalgo2(pd, d, 0, 0, 1) ;
    }
    vector<int> movehist ;
    vector<allocsetval> posns ;
@@ -178,6 +193,11 @@ struct algo3worker {
          pd.mul(posns[fp], posns[sp], posns[sp+2]) ;
          pd.mul(posns[sp+2], posns[fp+1], posns[sp+3]) ;
          pd.mul(posns[sp+3], posns[sp+1], posns[sp+2]) ;
+         int pr = pd.permwrong(posns[sp+2], pd.id) ;
+         if (pr != 0)
+            return ;
+         if (pd.numwrong(posns[sp], pd.solved, 5) != 0)
+            return ;
          int wr = pd.numwrong(posns[sp+2], pd.id) ;
          if (wr > HIWR || wr == 0)
             return ;

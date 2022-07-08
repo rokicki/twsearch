@@ -460,5 +460,28 @@ int main(int argc, const char **argv) {
       processscrambles(&scrambles, pd, gs) ;
       scrambles.close() ;
    }
+   double s = 0 ;
+   stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.id) ;
+   ll cnts[2521] ;
+   for (int i=0; i<2521; i++)
+      cnts[i] = 0 ;
+   for (ll trial=1; ; trial++) {
+      int rmv = myrand(pd.moves.size()) ;
+      pd.mul(p1, pd.moves[rmv].pos, p2) ;
+      pd.assignpos(p1, p2) ;
+      vector<int> cc = pd.cyccnts(p1) ;
+      ll o = puzdef::order(cc) ;
+      s += o ;
+      if (o <= 2520)
+         cnts[o]++ ;
+      if ((trial & (trial - 1)) == 0) {
+         double avg = s / trial ;
+         cout << trial << " " << avg << endl << flush ;
+         for (int i=0; i<=2520; i++)
+            if (cnts[i])
+               cout << i << " " << cnts[i] << " " << cnts[i]/(double)trial << endl ;
+      }
+   }
 }
 #endif

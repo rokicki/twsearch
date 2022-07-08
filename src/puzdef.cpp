@@ -81,9 +81,11 @@ int puzdef::permwrong(const setval a, const setval b, ull mask) const {
    }
    return r ;
 }
-vector<int> puzdef::cyccnts(const setval a, ull sets) const {
+static vector<int> ccbuf ;
+vector<int> &puzdef::cyccnts(const setval a, ull sets) const {
    const uchar *ap = a.dat ;
-   vector<int> r ;
+   vector<int> &r = ccbuf ;
+   ccbuf.clear() ;
    for (int i=0; i<(int)setdefs.size(); i++) {
       const setdef &sd = setdefs[i] ;
       int n = sd.size ;
@@ -100,7 +102,7 @@ vector<int> puzdef::cyccnts(const setval a, ull sets) const {
                }
                ori %= sd.omod ;
                if (ori != 0)
-                  cnt *= sd.omod / gcd(ori, sd.omod) ;
+                  cnt *= sd.omod ; // gcd(ori, sd.omod) ;
                if ((int)r.size() <= cnt)
                   r.resize(cnt+1) ;
                r[cnt]++ ;
@@ -111,7 +113,7 @@ vector<int> puzdef::cyccnts(const setval a, ull sets) const {
    }
    return r ;
 }
-ll puzdef::order(const vector<int> cc) {
+ll puzdef::order(const vector<int> &cc) {
    ll r = 1 ;
    for (int i=2; i<(int)cc.size(); i++)
       if (cc[i])
