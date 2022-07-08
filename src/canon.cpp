@@ -349,7 +349,6 @@ vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) {
    return r ;
 }
 void showcanon(const puzdef &pd, int show) {
-   cout.precision(16) ;
    int nstates = canonmask.size() ;
    vector<vector<double> > counts ;
    vector<double> zeros(nstates) ;
