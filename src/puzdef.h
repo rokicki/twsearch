@@ -196,6 +196,41 @@ struct puzdef {
       }
       return r ;
    }
+   // If the number of symmetry conjugations is <= 64, we can use this
+   // to quickly almost always get the single lowest state.
+   ull lowsymmbits(const setval b) const {
+      ull r = 1 ;
+      const uchar *bp = b.dat ;
+      int rv = rotinvmap[0].dat[bp[rotgroup[0].pos.dat[0]]] ;
+      for (int m=1; m<(int)rotgroup.size(); m++) {
+         int t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[0]]] ;
+         if (t < rv) {
+            r = 1LL << m ;
+            rv = t ;
+         } else if (t == rv)
+            r |= (1LL << m) ;
+      }
+      for (int o=1; o<setdefs[0].size; o++) {
+         if ((r & (r - 1)) == 0)
+            return r ;
+         int t = ffsll(r) - 1 ;
+         ull r2 = 1LL << t ;
+         int rv = rotinvmap[t].dat[bp[rotgroup[t].pos.dat[o]]] ;
+         r &= ~(1LL << t) ;
+         while (r) {
+            int m = ffsll(r) - 1 ;
+            r &= ~(1LL << m) ;
+            t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[o]]] ;
+            if (t < rv) {
+               r2 = 1LL << m ;
+               rv = t ;
+            } else if (t == rv)
+               r2 |= 1LL << m ;
+         }
+         r = r2 ;
+      }
+      return r ;
+   }
    // does a multiplication and a comparison at the same time.
    // c must be initialized already.
    int mulcmp3(const setval a, const setval b, const setval c, setval d) const {
