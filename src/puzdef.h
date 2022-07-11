@@ -130,22 +130,21 @@ struct puzdef {
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         for (int j=0; j<n; j++)
-            cp[j] = ap[bp[j]] ;
-         ap += n ;
-         bp += n ;
-         cp += n ;
          if (sd.omod > 1) {
             uchar *moda = gmoda[sd.omod] ;
-            for (int j=0; j<n; j++)
-               cp[j] = moda[ap[bp[j-n]]+bp[j]] ;
+            for (int j=0; j<n; j++) {
+               cp[j] = ap[bp[j]] ;
+               cp[j+n] = moda[ap[bp[j]+n]+bp[j+n]] ;
+            }
          } else {
-            for (int j=0; j<n; j++)
-               cp[j] = 0 ;
+            for (int j=0; j<n; j++) {
+               cp[j] = ap[bp[j]] ;
+               cp[j+n] = 0 ;
+            }
          }
-         ap += n ;
-         bp += n ;
-         cp += n ;
+         ap += 2*n ;
+         bp += 2*n ;
+         cp += 2*n ;
       }
    }
    void mul3(const setval a, const setval b, const setval c, setval d) const {
@@ -157,24 +156,22 @@ struct puzdef {
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
-         for (int j=0; j<n; j++)
-            dp[j] = ap[bp[cp[j]]] ;
-         ap += n ;
-         bp += n ;
-         cp += n ;
-         dp += n ;
          if (sd.omod > 1) {
             uchar *moda = gmoda[sd.omod] ;
-            for (int j=0; j<n; j++)
-               dp[j] = moda[ap[bp[cp[j-n]-n]]+moda[bp[cp[j-n]]+cp[j]]] ;
+            for (int j=0; j<n; j++) {
+               dp[j] = ap[bp[cp[j]]] ;
+               dp[j+n] = moda[ap[bp[cp[j]]+n]+moda[bp[cp[j]+n]+cp[j+n]]] ;
+            }
          } else {
-            for (int j=0; j<n; j++)
+            for (int j=0; j<n; j++) {
+               dp[j] = ap[bp[cp[j]]] ;
                dp[j] = 0 ;
+            }
          }
-         ap += n ;
-         bp += n ;
-         cp += n ;
-         dp += n ;
+         ap += 2*n ;
+         bp += 2*n ;
+         cp += 2*n ;
+         dp += 2*n ;
       }
    }
    // get a guess at the lowest symmetry by only looking at the
