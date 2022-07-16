@@ -714,6 +714,7 @@ void doarraygod2(const puzdef &pd) {
    s_1 = mem ;
    s_2 = mem ;
    for (int d=0; ; d++) {
+      resetantipodes() ;
       while ((int)posns.size() <= d + 1) {
          posns.push_back(allocsetval(pd, pd.solved)) ;
          movehist.push_back(-1) ;
