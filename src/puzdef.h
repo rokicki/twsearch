@@ -165,7 +165,7 @@ struct puzdef {
          } else {
             for (int j=0; j<n; j++) {
                dp[j] = ap[bp[cp[j]]] ;
-               dp[j] = 0 ;
+               dp[j+n] = 0 ;
             }
          }
          ap += 2*n ;
