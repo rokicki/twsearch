@@ -9,6 +9,7 @@
 #include "canon.h"
 #include "unrotate.h"
 #include "shorten.h"
+#include "sloppy.h"
 ll proclim = 1'000'000'000'000'000'000LL ;
 int compact ;
 int maxwrong ;
@@ -168,6 +169,9 @@ void uniqitsymm(const puzdef &pd, setval p, const char *s) {
       if (proclim == 0)
          exit(0) ;
    }
+}
+void blocked(const puzdef &pd, setval p, const char *) {
+   unblocked(pd, p) ;
 }
 void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
    if (movelist.size() == 0) {
