@@ -380,7 +380,7 @@ int main(int argc, const char **argv) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
-         if (pd.rotations.size()) {
+         if (0 && pd.rotations.size()) {
             cout << "Using sorting bfs symm and arrays." << endl ;
             doarraygodsymm(pd) ;
          } else {

@@ -9,6 +9,7 @@
 #include "canon.h"
 #include "rotations.h"
 #include "threads.h"
+#include "sloppy.h"
 /*
  *   God's algorithm using two bits per state.
  */
@@ -500,8 +501,11 @@ static int doarraygodchunk(const puzdef *pd, loosetype *reader,
    stacksetval p1(*pd), p2(*pd), p3(*pd) ;
    for (loosetype *pr=reader; pr<levend; pr += looseper) {
       looseunpack(*pd, p1, pr) ;
+      int skip = unblocked(*pd, p1) ;
       for (int i=0; i<(int)pd->moves.size(); i++) {
          if (quarter && pd->moves[i].cost > 1)
+            continue ;
+         if ((skip >> i) & 1)
             continue ;
          pd->mul(p1, pd->moves[i].pos, p2) ;
          if (!pd->legalstate(p2))
@@ -523,8 +527,11 @@ static int doarraygodsymchunk(const puzdef *pd, loosetype *reader,
    stacksetval p1(*pd), p2(*pd), p3(*pd) ;
    for (loosetype *pr=reader; pr<levend; pr += looseper) {
       looseunpack(*pd, p1, pr) ;
+      int skip = unblocked(*pd, p1) ;
       for (int i=0; i<(int)pd->moves.size(); i++) {
          if (quarter && pd->moves[i].cost > 1)
+            continue ;
+         if ((skip >> i) & 1)
             continue ;
          pd->mul(p1, pd->moves[i].pos, p2) ;
          if (!pd->legalstate(p2))
@@ -867,8 +874,11 @@ void doarraygodsymm(const puzdef &pd) {
 #endif
          for (loosetype *pr=reader; pr<levend; pr += looseper) {
             looseunpack(pd, p1, pr) ;
+            int skip = unblocked(pd, p1) ;
             for (int i=0; i<(int)pd.moves.size(); i++) {
                if (quarter && pd.moves[i].cost > 1)
+                  continue ;
+               if ((skip >> i) & 1)
                   continue ;
                pd.mul(p1, pd.moves[i].pos, p2) ;
                if (!pd.legalstate(p2))
