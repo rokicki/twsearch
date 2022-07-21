@@ -93,6 +93,9 @@ void calcrotations(puzdef &pd) {
    for (int i=0; i<(int)q.size(); i++) {
       pd.mul(pd.solved, q[i].pos, pw) ;
       int good = 1 ;
+      // must map corners correctly.
+      if (pw.dat[1] != 1 && pw.dat[1] != 5)
+         good = 0 ;
       for (int j=0; good && j<(int)pd.setdefs.size(); j++) {
          setdef &sd = pd.setdefs[j] ;
          int n = sd.size ;
