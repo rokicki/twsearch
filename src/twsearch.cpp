@@ -376,11 +376,11 @@ int main(int argc, const char **argv) {
       int statesfitsa = forcearray ||
           (pd.logstates <= 50 &&
              ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
-      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
+      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotgroup.size() <= 1) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
-         if (pd.rotations.size()) {
+         if (pd.rotgroup.size() > 1) {
             cout << "Using sorting bfs symm and arrays." << endl ;
             doarraygodsymm(pd) ;
          } else {
