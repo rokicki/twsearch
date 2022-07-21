@@ -27,8 +27,8 @@ using namespace std ;
 int unblocked(const puzdef &pd, const setval &p) {
    int r = 0 ;
    stacksetval p2(pd) ;
-   for (int m=0; m<(int)pd.rotgroup.size(); m++) {
-      pd.mul(p, pd.rotgroup[m].pos, p2) ;
+   for (int m=0; m<(int)pd.blockgroup.size(); m++) {
+      pd.mul(p, pd.blockgroup[m].pos, p2) ;
       int leftc = p2.dat[3] * 3 + p2.dat[11] ;
       int rightc = p2.dat[0] * 3 + p2.dat[8] ;
       int me = p2.dat[16] * 2 + p2.dat[28] ;

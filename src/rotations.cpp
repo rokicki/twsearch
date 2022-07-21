@@ -81,6 +81,7 @@ void calcrotations(puzdef &pd) {
          }
       }
    }
+   pd.blockgroup = pd.rotgroup ;
    calcrotinvs(pd) ;
    /*
     *   Filter the rotgroup to preserve:
