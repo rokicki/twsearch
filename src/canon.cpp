@@ -46,7 +46,7 @@ void makecanonstates(puzdef &pd) {
       for (int j=0; j<i; j++) {
          pd.mul(pd.moves[i].pos, pd.moves[j].pos, p1) ;
          pd.mul(pd.moves[j].pos, pd.moves[i].pos, p2) ;
-         if (pd.comparepos(p1, p2) != 0) {
+         if (1 || pd.comparepos(p1, p2) != 0) {
             commutes[pd.moves[i].cs] &= ~(1LL << pd.moves[j].cs) ;
             commutes[pd.moves[j].cs] &= ~(1LL << pd.moves[i].cs) ;
          }

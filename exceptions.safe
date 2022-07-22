@@ -1,0 +1,133 @@
+ F2 L allows L
+ F2 L2 allows L
+ F2 L' allows L
+ F2 R allows R
+ F2 R' allows R
+ F D2 F allows F
+ F D2 B allows B
+ F2 R2 F allows F
+ F2 R2 F' allows F
+ F2 R2 B allows B
+ F2 R2 B2 allows B
+ F2 R2 B' allows B
+ F2 R2 L allows L
+ F2 R2 L2 allows L
+ F2 R2 L' allows L
+ F' B' D allows D
+ F' B' D' allows D
+ F' D2 F allows F
+ F' D2 F' allows F
+ F' D2 B allows B
+ F' D2 B' allows B
+ F' R2 F2 allows F L
+ F' R2 B2 allows B
+ F B2 D2 F allows F
+ F B2 D2 F' allows F
+ F B2 D2 B allows B
+ F B2 D2 B' allows B
+ F B' D2 F allows F
+ F B' D2 F' allows F
+ F B' D2 B allows B
+ F B' D2 B2 allows B
+ F B' D2 B' allows B
+ F D2 F2 B allows B
+ F D2 B2 F allows F
+ F2 R2 F2 B allows B
+ F2 R2 F2 B2 allows B
+ F2 R2 F2 B' allows B
+ F' B' D2 F allows F
+ F' B' D2 F' allows F
+ F' B' D2 B allows B
+ F' B' D2 B2 allows B
+ F' B' D2 B' allows B
+ F' D2 F2 B allows B
+ F' D2 F2 B' allows B
+ F' D2 B2 F allows F
+ F' D2 B2 F' allows F
+ F' D2 B2 D allows D
+ F' D2 B2 D' allows D
+ F' R2 F2 L' allows L
+ F' R2 F' L allows L
+ F' R2 F' L2 allows L
+ F' R2 F' L' allows L
+ F' R2 F' R allows R
+ F' R2 F' R' allows R
+ F' R2 B' R allows R
+ F' R2 B' R' allows R
+ F B2 D2 F2 B allows B
+ F B2 D2 F2 B' allows B
+ F B2 D2 B2 F allows F
+ F B2 D2 B2 F' allows F
+ F B' D2 F2 B allows B
+ F B' D2 F2 B2 allows B
+ F B' D2 F2 B' allows B
+ F D2 F' D L allows L
+ F D2 F' D L' allows L
+ F D2 B' D' F allows F
+ F D2 B' D' F' allows F
+ F2 R2 F2 R2 F allows F B
+ F2 R2 F2 R2 F' allows F B
+ F' B' D2 F2 B allows B
+ F' B' D2 F2 B2 allows B
+ F' B' D2 F2 B' allows B
+ F' B' D2 F2 D allows D
+ F' B' D2 F2 D' allows D
+ F' R2 F' R2 L allows L
+ F' R2 F' R2 L2 allows L
+ F' R2 F' R2 L' allows L
+ F D2 F2 D2 B2 D allows D
+ F D2 F2 D2 B2 D' allows D
+ F D2 F' D L2 D allows D
+ F D2 F' D L2 D' allows D
+ F D2 F' D L2 U allows U
+ F D2 F' D2 B2 D allows D
+ F D2 F' D2 B2 D' allows D
+ F D2 F' D2 B2 U allows U
+ F D2 F' D2 B2 U2 allows U
+ F D2 F' D2 B2 U' allows U
+ F D2 F' D' U' L allows L
+ F D2 F' D' U' L' allows L
+ F D2 F' U B2 D allows D
+ F D2 F' U B2 D' allows D
+ F D2 F' U B2 U allows U
+ F2 R2 F2 R2 F2 B' allows F B
+ F2 R2 F2 R2 F2 L2 allows L
+ F2 R2 F2 R2 F2 R allows R
+ F2 R2 F2 R2 F2 R' allows R
+ F' R2 B' R2 B2 R allows R
+ F' R2 B' R2 B2 R' allows R
+ F D2 F2 D2 F2 D2 B allows B
+ F D2 F2 D2 B2 D2 B allows B
+ F D2 F2 D2 B2 D2 B' allows B
+ F D2 F' D U' L2 D allows D
+ F D2 F' D U' L2 D' allows D
+ F D2 F' D U' L2 U allows U
+ F D2 F' D U' L2 U2 allows U
+ F D2 F' D U' L2 U' allows U
+ F D2 F' D L2 U2 D allows D
+ F D2 F' D L2 U2 D' allows D
+ F D2 F' D L2 U' D allows D
+ F D2 F' D L2 U' D' allows D
+ F D2 F' D2 B2 D2 F allows F
+ F D2 F' D2 B2 D2 F2 allows F
+ F D2 F' D2 B2 D2 F' allows F
+ F D2 F' D' U' L2 D allows D
+ F D2 F' D' U' L2 D' allows D
+ F D2 F' D' U' L2 U allows U
+ F D2 F' D' U' L2 U2 allows U
+ F D2 F' D' U' L2 U' allows U
+ F D2 B' D2 F2 D2 B allows B
+ F D2 B' D2 F2 D2 B2 allows B
+ F D2 B' D2 F2 D2 B' allows B
+ F D2 B' D' F2 D2 B2 allows B
+ F' R2 B' R2 B2 R2 F allows F
+ F' R2 B' R2 B2 R2 F2 allows F
+ F' R2 B' R2 B2 R2 F' allows F
+ F D2 F2 D2 F B' R2 F allows F
+ F D2 F2 D2 F B' R2 F' allows F
+ F D2 F2 D2 F B' R2 B allows B
+ F D2 F2 D2 F B' R2 B' allows B
+ F D2 F2 D2 F2 B2 D2 F allows F
+ F D2 F2 D2 F2 B2 D2 F' allows F
+ F D2 F2 D2 F2 B2 D2 B allows B
+ F D2 F2 D2 F2 B2 D2 B' allows B
