@@ -9,8 +9,9 @@
 #include "prunetable.h"
 #include "readksolve.h"
 ofstream logfile ;
-static ll levcnts = 0, shapecnts = 0 ;
+static ll levcnts = 0, thislev = 0, shapecnts = 0 ;
 static int globald ;
+static set<ll> seen ;
 static map<ll, int> world ;
 static map<ll, int> exc ;
 ll getshape(setval &sv) {
@@ -77,12 +78,13 @@ void regist(const puzdef &pd, setval &sv, int realskip) {
       for (int i=0; i<(int)pd.moves.size(); i++)
          if ((realskip >> i) & 1)
             rs |= 1<<movemap[m][i] ;
-      cout << "For shape " << sh << " setting " << rs << endl ;
+//    cout << "For shape " << sh << " setting " << rs << endl ;
       exc[sh] = rs ;
    }
 }
 void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
    if (togo == 0) {
+/*
       int skip = unblocked(pd, posns[sp]) ;
       if (pm >= 0 && ((skip >> pm) & 1) != 0)
          cout << "Fail; got back to bad place" << endl ;
@@ -101,7 +103,7 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
             }
          }
          cout << endl ;
-         if (globald > 1000 && cnt > 1 && exc.find(h) == exc.end()) {
+         if (0 && globald > 1000 && exc.find(h) == exc.end()) {
             string s ;
             getline(cin, s) ;
             if (s.size() > 0) {
@@ -123,6 +125,12 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
             }
          }
       }
+ */
+      ull h = fasthash(pd.totsize, posns[sp]) ;
+      if (seen.find(h) == seen.end()) {
+         seen.insert(h) ;
+         thislev++ ;
+      }
       levcnts++ ;
       return ;
    }
@@ -131,9 +139,9 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
    int skip = unblocked(pd, posns[sp]) ;
    ll sh = getshape(posns[sp]) ;
    if (exc.find(sh) != exc.end()) {
-      cout << "Noting the default skip of " << skip << " but really " ;
+//    cout << "Noting the default skip of " << skip << " but really " ;
       skip = exc[sh] ;
-      cout << skip << endl ;
+//    cout << skip << endl ;
    }
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
@@ -193,6 +201,7 @@ void ordertree(const puzdef &pd) {
       globald = d ;
       levcnts = 0 ;
       shapecnts = 0 ;
+      thislev = 0 ;
       posns.clear() ;
       movehist.clear() ;
       while ((int)posns.size() <= d + 1) {
@@ -200,6 +209,6 @@ void ordertree(const puzdef &pd) {
          movehist.push_back(-1) ;
       }
       recurorder(pd, d, 0, 0, -1) ;
-      cout << "At depth " << d << " levcnts " << levcnts << " shapecnts " << shapecnts << " world " << world.size() << endl << flush ;
+      cout << "At depth " << d << " levcnts " << levcnts << " thislev " << thislev << " world " << world.size() << endl << flush ;
    }
 }
