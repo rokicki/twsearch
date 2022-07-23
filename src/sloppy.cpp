@@ -71,7 +71,7 @@ static void makemovemap(const puzdef &pd) {
       }
    }
 }
-static void regist(const puzdef &pd, setval &sv, int realskip) {
+static void regist(const puzdef &pd, const setval &sv, int realskip) {
    stacksetval p2(pd) ;
    for (int m=0; m<(int)pd.rotgroup.size(); m++) {
       pd.mul3(pd.rotinvmap[m], sv, pd.rotgroup[m].pos, p2) ;
@@ -131,6 +131,9 @@ int unblocked(const puzdef &pd, const setval &p) {
       initslop(pd) ;
       inited = 1 ;
    }
+   ll sh = getshape(p) ;
+   if (exc.find(sh) != exc.end())
+      return exc[sh] ;
    for (int m=0; m<(int)pd.blockgroup.size(); m++) {
       pd.mul(p, pd.blockgroup[m].pos, p2) ;
       int leftc = p2.dat[3] * 3 + p2.dat[11] ;
@@ -149,8 +152,6 @@ int unblocked(const puzdef &pd, const setval &p) {
             r2 |= 1 << i ;
 //          cout << "Move " << pd.moves[i].name << " blocked." << endl ;
          }
-   ll sh = getshape(p) ;
-   if (exc.find(sh) != exc.end())
-      r2 = exc[sh] ;
+   regist(pd, p, r2) ;
    return r2 ;
 }
