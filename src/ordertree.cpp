@@ -8,10 +8,9 @@
 #include "sloppy.h"
 #include "prunetable.h"
 #include "readksolve.h"
-ofstream logfile ;
 static ll levcnts = 0, thislev = 0, shapecnts = 0 ;
 static int globald ;
-static set<ll> seen ;
+static map<ll, int> seen ;
 static map<ll, int> world ;
 static map<ll, int> exc ;
 ll getshape(setval &sv) {
@@ -107,9 +106,6 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
             string s ;
             getline(cin, s) ;
             if (s.size() > 0) {
-               for (int i=0; i<sp; i++)
-                  logfile << " " << pd.moves[movehist[i]].name ;
-               logfile << " allows " << s << endl << flush ;
                int realskip = skip ;
                for (int m=0; m<(int)pd.moves.size(); m++) {
                   if (((skip >> m) & 1) == 0) {
@@ -128,8 +124,14 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
  */
       ull h = fasthash(pd.totsize, posns[sp]) ;
       if (seen.find(h) == seen.end()) {
-         seen.insert(h) ;
+         seen[h] = globald ;
          thislev++ ;
+         int skip = unblocked(pd, posns[sp]) ;
+         if (skip == 0) {
+            for (int i=0; i<sp; i++)
+               cout << " " << pd.moves[movehist[i]].name ;
+            cout << endl ;
+         }
       }
       levcnts++ ;
       return ;
@@ -158,7 +160,6 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
 void ordertree(const puzdef &pd) {
    makemovemap(pd) ;
    ifstream safefile ;
-   logfile.open("exceptions.log") ;
    safefile.open("exceptions.safe") ;
    ull cs = 0 ;
    stacksetval p(pd) ;
@@ -169,8 +170,6 @@ void ordertree(const puzdef &pd) {
       if (toks.size() == 0)
          continue ;
       for (auto s: toks)
-         logfile << " " << s ;
-      logfile << endl ;
       pd.assignpos(p, pd.solved) ;
       int at = 0 ;
       while (1) {
