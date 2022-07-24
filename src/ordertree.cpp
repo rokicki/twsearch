@@ -124,7 +124,7 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
  */
       ull h = fasthash(pd.totsize, posns[sp]) ;
       if (seen.find(h) == seen.end()) {
-         seen[h] = globald ;
+         seen[h] = pm * 1000 + globald ;
          thislev++ ;
          int skip = unblocked(pd, posns[sp]) ;
          if (skip == 0) {
@@ -137,7 +137,7 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
       return ;
    }
    ull h = fasthash(pd.totsize, posns[sp]) ;
-   if (seen[h] < globald - togo)
+   if (seen[h] != (globald - togo) + pm * 1000)
       return ;
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
