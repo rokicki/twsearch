@@ -122,12 +122,15 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
          }
       }
  */
-      ull h = fasthash(pd.totsize, posns[sp]) ;
+//    ull h = fasthash(pd.totsize, posns[sp]) ;
+      ull h = lowshape(pd, posns[sp]) ;
       if (seen.find(h) == seen.end()) {
          seen[h] = pm * 1000 + globald ;
          thislev++ ;
          int skip = unblocked(pd, posns[sp]) ;
-         if (skip == 0) {
+         if (1 || skip == 0) {
+//          cout << h ;
+            cout << oct << skip << dec ;
             for (int i=0; i<sp; i++)
                cout << " " << pd.moves[movehist[i]].name ;
             cout << endl ;
@@ -136,7 +139,7 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int pm) {
       levcnts++ ;
       return ;
    }
-   ull h = fasthash(pd.totsize, posns[sp]) ;
+   ull h = lowshape(pd, posns[sp]) ;
    if (seen[h] != (globald - togo) + pm * 1000)
       return ;
    ull mask = canonmask[st] ;

@@ -2,6 +2,7 @@
 #include "threads.h"
 #include "canon.h"
 #include "rotations.h"
+#include "sloppy.h"
 #include <iostream>
 vector<ull> workchunks ;
 vector<int> workstates ;
@@ -13,7 +14,8 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
    workstates.clear() ;
    workchunks.push_back(1) ;
    workstates.push_back(0) ;
-   if (numthreads > 1 && d >= 3) {
+   if (0 && numthreads > 1 && d >= 3) {
+      cout << "Workchunks not supported yet." << endl ;
       if (pd.totsize != lastsize) {
          lastsize = pd.totsize ;
          seen.clear() ;

@@ -1,6 +1,7 @@
 #include <iostream>
 #include "solve.h"
 #include "cmdlineops.h"
+#include "sloppy.h"
 ull solutionsfound = 0 ;
 ull solutionsneeded = 1 ;
 int noearlysolutions ;
@@ -10,6 +11,16 @@ int optmindepth ;
 string lastsolution ;
 int didprepass ;
 solveworker solveworkers[MAXTHREADS] ;
+uchar *pt ;
+const ll PTSIZE = 1LL<<32 ;
+const ll PTMASK = PTSIZE - 1 ;
+int ptlookup(const puzdef &pd, const setval &pos, setval &w) {
+   slowmodm2(pd, pos, w) ;
+   ull h = (fasthash(pd.totsize, w.dat) & PTMASK) ;
+   if (pt[h] == 255)
+      cout << "Error in hash" << endl ;
+   return pt[h] ;
+}
 int (*callback)(setval &pos, const vector<int> &moves, int d, int id) ;
 int (*flushback)(int d) ;
 void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d, int id), 
@@ -41,7 +52,7 @@ void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
 }
 int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
    lookups++ ;
-   int v = pt.lookup(posns[sp], looktmp) ;
+   int v = ptlookup(pd, posns[sp], *looktmp) ;
    if (v > togo + 1)
       return -1 ;
    if (v > togo)
@@ -80,9 +91,12 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
    }
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
+   int skip = unblocked(pd, posns[sp]) ;
    for (int m=0; m<(int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m] ;
       if ((mask >> mv.cs) & 1)
+         continue ;
+      if ((skip >> m) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
@@ -135,6 +149,13 @@ void solveworker::dowork(const puzdef &pd, prunetable &pt) {
 }
 int maxdepth = 1000000000 ;
 int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
+   if (::pt == 0) {
+      ::pt = (uchar *)malloc(PTSIZE) ;
+      FILE *f = fopen("sloppy.dat", "rb") ;
+      if (f == 0 || fread(::pt, 1, PTSIZE, f) != PTSIZE)
+         error("! could not load pruning table") ;
+      fclose(f) ;
+   }
    solutionsfound = solutionsneeded ;
    if (gs && !gs->resolve(p)) {
       if (!phase2)
@@ -144,16 +165,19 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    stacksetval looktmp(pd) ;
    double starttime = walltime() ;
    ull totlookups = 0 ;
-   int initd = pt.lookup(p, &looktmp) ;
+   int initd = ptlookup(pd, p, looktmp) ;
+   cout << "Initd is " << initd << endl ;
    solutionsfound = 0 ;
    int hid = 0 ;
+ cout << "Outer loop" << endl ;
    for (int d=initd; d <= maxdepth; d++) {
+ cout << "Working from depth " << d << endl ;
       if (onlyimprovements && d >= globalinputmovecount)
          break ;
       if (d < optmindepth)
          continue ;
       hid = d ;
-      if (d - initd > 3)
+      if (0 && d - initd > 3)
          makeworkchunks(pd, d, 0) ;
       else
          makeworkchunks(pd, 0, 0) ;

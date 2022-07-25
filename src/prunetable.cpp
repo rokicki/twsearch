@@ -368,7 +368,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
 }
 string prunetable::makefilename(const puzdef &pd) const {
 #ifdef USECOMPRESSION
-   string filename = "tws7-" + inputbasename + "-" ;
+   string filename = "tws8-" + inputbasename + "-" ;
 #else
    string filename = "tws6-" + inputbasename + "-" ;
 #endif
