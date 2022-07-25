@@ -10,6 +10,13 @@
 #include "rotations.h"
 #include "threads.h"
 #include "sloppy.h"
+#include "cmdlineops.h"
+/*
+ *   Hacked to generate a 4GB pruning table for sloppycube.
+ */
+uchar *pt ;
+const ll PTSIZE = 1LL<<32 ;
+const ll PTMASK = PTSIZE - 1 ;
 /*
  *   God's algorithm using two bits per state.
  */
@@ -753,15 +760,27 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
    int rots = pd.rotgroup.size() ;
    ull r = cnt * rots ;
    stacksetval p1(pd), p2(pd) ;
+   pd.assignpos(p1, pd.solved) ;
+   ll ss = getshape(p1) ;
+   ll cubeshape = 0 ;
    for (ull i=0; i<cnt; i++, p+=looseper) {
-      if (p[symoff] & symbit) {
+      if (1) {
          looseunpack(pd, p1, p) ;
          int sym = slowmodm2(pd, p1, p2) ;
+ if (sym == 6) {
+    get_global_lock() ;
+    cout << "See highly symmetrical position here" << endl ;
+    emitposition(pd, p1, 0) ;
+    release_global_lock() ;
+ }
          if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots)
             error("! bad symmetry calculation") ;
          r += (*rotmul)[sym] - rots ;
+         if (getshape(p1) == ss)
+            cubeshape += (*rotmul)[sym] ;
       }
    }
+   cout << "Cubeshape " << cubeshape << endl ;
    return r ;
 }
 #ifdef USE_PTHREADS
@@ -829,6 +848,9 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
  *   God's algorithm using symmetry reduction.
  */
 void doarraygodsymm(const puzdef &pd) {
+   pt = (uchar *)malloc(PTSIZE) ;
+   for (ll i=0; i<PTSIZE; i++)
+      pt[i] = 255 ;
    ull memneeded = maxmem ;
    loosetype *mem = (loosetype *)malloc(memneeded) ;
    if (mem == 0)
@@ -856,6 +878,12 @@ void doarraygodsymm(const puzdef &pd) {
          break ;
       ull newseen = 0 ;
       levend = writer ;
+      for (loosetype *pr=reader; pr<levend; pr += looseper) {
+         looseunpack(pd, p1, pr) ;
+         ull h = (fasthash(pd.totsize, p1.dat) & PTMASK) ;
+         if (pt[h] == 255)
+            pt[h] = d ;
+      }
 #ifdef USE_PTHREADS
       if (numthreads > 1) {
          while (1) {
@@ -918,4 +946,7 @@ void doarraygodsymm(const puzdef &pd) {
    } else {
       showantipodes(pd, s_1, writer) ;
    }
+   FILE *f = fopen("sloppy.dat", "wb") ;
+   fwrite(pt, 1, PTSIZE, f) ;
+   fclose(f) ;
 }
