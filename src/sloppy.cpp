@@ -28,7 +28,7 @@ static const char ecc[24] = {
 #include "readksolve.h"
 using namespace std ;
 static map<ll, int> exc ;
-static ll getshape(const setval &sv) {
+ll getshape(const setval &sv) {
    ll r = 0 ;
    for (int i=0; i<8; i++) {
       r *= 4 ;
