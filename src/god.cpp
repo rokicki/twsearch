@@ -14,9 +14,9 @@
 /*
  *   Hacked to generate a 4GB pruning table for sloppycube.
  */
-uchar *pt ;
-const ll PTSIZE = 1LL<<32 ;
-const ll PTMASK = PTSIZE - 1 ;
+static uchar *pt ;
+static const ll PTSIZE = 1LL<<32 ;
+static const ll PTMASK = PTSIZE - 1 ;
 /*
  *   God's algorithm using two bits per state.
  */

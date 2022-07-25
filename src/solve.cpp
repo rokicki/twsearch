@@ -11,9 +11,9 @@ int optmindepth ;
 string lastsolution ;
 int didprepass ;
 solveworker solveworkers[MAXTHREADS] ;
-uchar *pt ;
-const ll PTSIZE = 1LL<<32 ;
-const ll PTMASK = PTSIZE - 1 ;
+static uchar *pt ;
+static const ll PTSIZE = 1LL<<32 ;
+static const ll PTMASK = PTSIZE - 1 ;
 int ptlookup(const puzdef &pd, const setval &pos, setval &w) {
    slowmodm2(pd, pos, w) ;
    ull h = (fasthash(pd.totsize, w.dat) & PTMASK) ;
