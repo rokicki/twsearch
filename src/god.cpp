@@ -754,6 +754,7 @@ void doarraygod2(const puzdef &pd) {
    }
    showantipodesloose(pd) ;
 }
+static int thiscubeshape = 0 ;
 ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
    int symoff = basebits / (sizeof(loosetype) * 8) ;
    loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1))) ;
@@ -767,17 +768,23 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
       if (1) {
          looseunpack(pd, p1, p) ;
          int sym = slowmodm2(pd, p1, p2) ;
- if (sym == 6) {
+         ll tcs = getshape(p1) ;
+ int wc = pd.numwrong(p1, pd.solved, 1) ;
+ int we = pd.numwrong(p1, pd.solved, 2) ;
+ if (wc == 0 || we == 0 || wc + we <= 9 ||
+     (tcs == ss && thiscubeshape < 48)) {
     get_global_lock() ;
-    cout << "See highly symmetrical position here" << endl ;
+    cout << wc << " " << we << " " << sym << " " << (int)(tcs == ss) << " " ;
     emitposition(pd, p1, 0) ;
     release_global_lock() ;
+    if (tcs == ss)
+       thiscubeshape++ ;
  }
          if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots)
             error("! bad symmetry calculation") ;
          r += (*rotmul)[sym] - rots ;
-         if (getshape(p1) == ss)
-            cubeshape += (*rotmul)[sym] ;
+          if (tcs == ss)
+             cubeshape += (*rotmul)[sym] ;
       }
    }
    cout << "Cubeshape " << cubeshape << endl ;
@@ -871,6 +878,7 @@ void doarraygodsymm(const puzdef &pd) {
    loosetype *s_1 = mem ;
    loosetype *s_2 = mem ;
    for (int d = 0; ; d++) {
+      thiscubeshape = 0 ;
       cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot
            << " scnt " << scnts[d] << " stot " << stot << " in "
            << duration() << endl << flush ;
