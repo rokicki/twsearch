@@ -170,8 +170,8 @@ void uniqitsymm(const puzdef &pd, setval p, const char *s) {
          exit(0) ;
    }
 }
-void blocked(const puzdef &pd, setval p, const char *) {
-   unblocked(pd, p) ;
+void blocked(const puzdef &pd, setval p, const char *s) {
+   testblocked(s, pd, p) ;
 }
 void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
    if (movelist.size() == 0) {

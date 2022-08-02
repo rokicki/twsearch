@@ -124,6 +124,33 @@ static void initslop(const puzdef &pd) {
    }
    safefile.close() ;
 }
+int unblocked0(const puzdef &pd, const setval &p) {
+   int r = 0 ;
+   stacksetval p2(pd) ;
+   if (!inited) {
+      initslop(pd) ;
+      inited = 1 ;
+   }
+   for (int m=0; m<(int)pd.blockgroup.size(); m++) {
+      pd.mul(p, pd.blockgroup[m].pos, p2) ;
+      int leftc = p2.dat[3] * 3 + p2.dat[11] ;
+      int rightc = p2.dat[0] * 3 + p2.dat[8] ;
+      int me = p2.dat[16] * 2 + p2.dat[28] ;
+// cout << "At " << m << " cubies " << leftc << " " << me << " " << rightc << " vals " << 
+//(int)cec[leftc] << (int)cee[me] << " " <<
+//(int)ece[me] << (int)ecc[rightc] << endl ;
+      if (ece[me] != ecc[rightc] || cee[me] != cec[leftc])
+         r |= 1 << p2.dat[40] ;
+   }
+   int r2 = 0 ;
+   for (int i=0; i<(int)pd.moves.size(); i++)
+      for (int j=0; j<6; j++)
+         if (((r >> j) & 1) && pd.moves[i].pos.dat[46+j]) {
+            r2 |= 1 << i ;
+//          cout << "Move " << pd.moves[i].name << " blocked." << endl ;
+         }
+   return r2 ;
+}
 int unblocked(const puzdef &pd, const setval &p) {
    int r = 0 ;
    stacksetval p2(pd) ;
@@ -154,4 +181,20 @@ int unblocked(const puzdef &pd, const setval &p) {
          }
    regist(pd, p, r2) ;
    return r2 ;
+}
+int testblocked(const char *s, const puzdef &pd, const setval &p) {
+   int b1 = unblocked0(pd, p) ;
+   int b2 = unblocked(pd, p) ;
+   cout << s << " allows" ;
+   for (int i=0; i<(int)pd.moves.size(); i++)
+      if (pd.moves[i].twist == 1 && ((b2 >> i) & 1) == 0)
+         cout << " " << pd.moves[i].name ;
+   if (b1 != b2) {
+      cout << " but not" ;
+      for (int i=0; i<(int)pd.moves.size(); i++)
+         if (pd.moves[i].twist == 1 && ((b1 >> i) & 1) == 0 && ((b2 >> i) & 1) == 1)
+            cout << " " << pd.moves[i].name ;
+   }
+   cout << endl ;
+   return 0 ;
 }
