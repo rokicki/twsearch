@@ -47,8 +47,7 @@ build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp
 build/bin:
 	mkdir -p build/bin
 
-build/bin/twsearch: $(OBJ)
-	mkdir -p build/bin
+build/bin/twsearch: $(OBJ) build/bin
 	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
 
 # WASM
