@@ -55,6 +55,7 @@ build/bin/twsearch: $(OBJ) build/bin
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
 WASM_FLAGS = -DHAVE_FFSLL -DWASM -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
+WASM_RAW_FLAGS = -DWASMTEST
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
@@ -67,7 +68,7 @@ build/wasm-raw:
 	mkdir -p build/wasm-raw
 
 build/wasm-raw/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm-raw ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_RAW_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 
 build/wasm-wrapped:
 	mkdir -p build/wasm-wrapped
