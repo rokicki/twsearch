@@ -56,7 +56,7 @@ build/bin/twsearch: $(OBJ)
 
 WASM_CXX = wasic++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
-WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -Isrc -Isrc/cityhash/src
+WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src
 WASM_LDFLAGS = 
 
 build/wasm:
