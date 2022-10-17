@@ -60,7 +60,7 @@ WASM_LDFLAGS =
 build/wasm:
 	mkdir -p build/wasm
 
-build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm
+build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 
 emsdk: ${WASM_CXX}
