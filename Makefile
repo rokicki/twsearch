@@ -1,7 +1,11 @@
 # Filtered to contain only the C++ build.
 
 .PHONY: build
-build: twsearch
+build: build/bin/twsearch
+
+.PHONY: clean
+clean:
+	rm -rf ./build
 
 MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
@@ -40,27 +44,28 @@ build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) build/cpp
 build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-.PHONY: clean
-clean:
-	rm -rf ./build
-
 build/bin:
 	mkdir -p build/bin
-
-.PHONY: twsearch
-twsearch: build/bin/twsearch
 
 build/bin/twsearch: $(OBJ)
 	mkdir -p build/bin
 	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
 
-WASM_CXX = wasic++
-WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
-WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src
+# WASM
+
+WASM_CXX = emsdk/upstream/emscripten/em++
+WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
+WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src
 WASM_LDFLAGS = 
 
 build/wasm:
 	mkdir -p build/wasm
 
 build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o twsearch.wasm $(CSOURCE) $(WASM_LDFLAGS)
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+
+emsdk: ${WASM_CXX}
+${WASM_CXX}:
+	git clone https://github.com/emscripten-core/emsdk.git
+	cd emsdk && ./emsdk install latest
+	cd emsdk && ./emsdk activate latest
