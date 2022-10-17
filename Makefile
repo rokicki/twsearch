@@ -57,14 +57,14 @@ WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -Wsign
 WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src
 WASM_LDFLAGS = 
 
-build/wasm:
-	mkdir -p build/wasm
-
-build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
-
 emsdk: ${WASM_CXX}
 ${WASM_CXX}:
 	git clone https://github.com/emscripten-core/emsdk.git
 	cd emsdk && ./emsdk install latest
 	cd emsdk && ./emsdk activate latest
+
+build/wasm:
+	mkdir -p build/wasm
+
+build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
