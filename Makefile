@@ -4,42 +4,63 @@
 build: twsearch
 
 MAKEFLAGS += -j
-CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
+CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
 FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL
 LDFLAGS = -lpthread
 
-CSOURCE = src/antipode.cpp src/calcsymm.cpp src/canon.cpp src/cmdlineops.cpp \
-   src/filtermoves.cpp src/findalgo.cpp src/generatingset.cpp src/god.cpp \
-   src/index.cpp src/parsemoves.cpp src/prunetable.cpp src/puzdef.cpp \
-   src/readksolve.cpp src/solve.cpp src/test.cpp src/threads.cpp \
-   src/twsearch.cpp src/util.cpp src/workchunks.cpp src/rotations.cpp \
-   src/orderedgs.cpp src/wasmapi.cpp src/cityhash/src/city.cc src/coset.cpp \
-   src/descsets.cpp src/ordertree.cpp src/unrotate.cpp src/shorten.cpp
+CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cmdlineops.cpp \
+   src/cpp/filtermoves.cpp src/cpp/findalgo.cpp src/cpp/generatingset.cpp src/cpp/god.cpp \
+   src/cpp/index.cpp src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
+   src/cpp/readksolve.cpp src/cpp/solve.cpp src/cpp/test.cpp src/cpp/threads.cpp \
+   src/cpp/twsearch.cpp src/cpp/util.cpp src/cpp/workchunks.cpp src/cpp/rotations.cpp \
+   src/cpp/orderedgs.cpp src/cpp/wasmapi.cpp src/cpp/cityhash/src/city.cc src/cpp/coset.cpp \
+   src/cpp/descsets.cpp src/cpp/ordertree.cpp src/cpp/unrotate.cpp src/cpp/shorten.cpp
 
-OBJ = antipode.o calcsymm.o canon.o cmdlineops.o \
-   filtermoves.o findalgo.o generatingset.o god.o \
-   index.o parsemoves.o prunetable.o puzdef.o \
-   readksolve.o solve.o test.o threads.o \
-   twsearch.o util.o workchunks.o rotations.o \
-   orderedgs.o wasmapi.o city.o coset.o descsets.o \
-   ordertree.o unrotate.o shorten.o
+OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdlineops.o \
+   build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
+   build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/puzdef.o \
+   build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
+   build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
+   build/cpp/orderedgs.o build/cpp/wasmapi.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
+   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o
 
-HSOURCE = src/antipode.h src/calcsymm.h src/canon.h src/cmdlineops.h \
-   src/filtermoves.h src/findalgo.h src/generatingset.h src/god.h src/index.h \
-   src/parsemoves.h src/prunetable.h src/puzdef.h src/readksolve.h src/solve.h \
-   src/test.h src/threads.h src/util.h src/workchunks.h src/rotations.h \
-   src/orderedgs.h src/wasmapi.h src/twsearch.h src/coset.h src/descsets.h \
-   src/ordertree.h src/unrotate.h src/shorten.h
+HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineops.h \
+   src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
+   src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
+   src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
+   src/cpp/orderedgs.h src/cpp/wasmapi.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
+   src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h
 
-%.o: src/%.cpp $(HSOURCE)
-	$(CXX) -I./src/cityhash/src -c $(CXXFLAGS) $(FLAGS) $<
+build/cpp:
+	mkdir -p build/cpp
 
-%.o: src/cityhash/src/%.cc
-	$(CXX) -I./src/cityhash/src -c $(CXXFLAGS) $(FLAGS) $<
+build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) build/cpp
+	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
+
+build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp
+	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 .PHONY: clean
 clean:
-	rm -f *.o twsearch
+	rm -rf ./build
 
-twsearch: $(OBJ)
-	$(CXX) $(CXXFLAGS) -o twsearch $(OBJ) $(LDFLAGS)
+build/bin:
+	mkdir -p build/bin
+
+.PHONY: twsearch
+twsearch: build/bin/twsearch
+
+build/bin/twsearch: $(OBJ)
+	mkdir -p build/bin
+	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
+
+WASM_CXX = wasic++
+WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -march=native -Wsign-compare
+WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -Isrc -Isrc/cityhash/src
+WASM_LDFLAGS = 
+
+build/wasm:
+	mkdir -p build/wasm
+
+build/wasm/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o twsearch.wasm $(CSOURCE) $(WASM_LDFLAGS)
