@@ -1,3 +1,5 @@
+/build
+/emsdk
 /*.o
 /*.dSYM
 /twsearch
