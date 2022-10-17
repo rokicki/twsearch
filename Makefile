@@ -5,7 +5,7 @@ build: build/bin/twsearch
 
 .PHONY: clean
 clean:
-	rm -rf ./build
+	rm -rf ./build ./src/js/generated-wasm/twsearch.*
 
 MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
@@ -54,7 +54,7 @@ build/bin/twsearch: $(OBJ) build/bin
 
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
-WASM_FLAGS = -DHAVE_FFSLL -DWASM -DWASMTEST -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src
+WASM_FLAGS = -DHAVE_FFSLL -DWASM -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
@@ -74,3 +74,17 @@ build/wasm-wrapped:
 
 build/wasm-wrapped/twsearch.js: $(CSOURCE) $(HSOURCE) build/wasm-wrapped ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+
+build/wasm-wrapped/twsearch.wasm: build/wasm-wrapped/twsearch.js
+
+# JS
+
+src/js/generated-wasm/twsearch.esm-compatible.js: build/wasm-wrapped/twsearch.js
+	node ./script/generate-wasm-esm-wrapper.js
+
+src/js/generated-wasm/twsearch.wasm.serialized.js: build/wasm-wrapped/twsearch.wasm
+	node ./script/generate-wasm-serialized.js
+
+.PHONY: dev
+dev: src/js/generated-wasm/twsearch.esm-compatible.js src/js/generated-wasm/twsearch.wasm.serialized.js
+	npm run dev

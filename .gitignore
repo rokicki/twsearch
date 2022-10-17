@@ -1,5 +1,7 @@
+/.cache
 /build
 /emsdk
+/node_modules
 
 # Legacy top-level files
 # These are no longer produced, but we want to avoid commmiting them,
