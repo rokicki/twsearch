@@ -121,7 +121,7 @@ int omitset(string s) {
       return 1 ;
    return 0 ;
 }
-setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
+setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_indexed) {
    setval r((uchar *)calloc(pz.totsize, 1)) ;
    int curset = -1 ;
    int numseq = 0 ;
@@ -145,12 +145,21 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
          int n = pz.setdefs[curset].size ;
          expect(toks, n) ;
          uchar *p = r.dat + pz.setdefs[curset].off + numseq * n ;
+         int offset = (numseq == 0 && zero_indexed) ? 0 : 1;
          if (typ != 'm') {
-            for (int i=0; i<n; i++)
-               p[i] = getnumberorneg(1-numseq, toks[i]) ;
+            for (int i=0; i<n; i++) {
+               p[i] = getnumberorneg(offset-numseq, toks[i]) ;
+               if (p[i] != 255) {
+                  p[i] += 1 - offset;
+               }
+            }
          } else {
-            for (int i=0; i<n; i++)
-               p[i] = getnumber(1-numseq, toks[i]) ;
+            for (int i=0; i<n; i++) {
+               p[i] = getnumber(offset-numseq, toks[i]) ;
+               if (p[i] != 255) {
+                  p[i] += 1 - offset;
+               }
+            }
          }
          if (numseq == 1 && ignoreori)
             for (int i=0; i<n; i++)
@@ -235,13 +244,14 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum) {
                pz.wildo = 1 ;
                pz.setdefs[i].oparity = 0 ;
             }
-         } else if (p[j] >= pz.setdefs[i].omod)
+         } else if (p[j] >= pz.setdefs[i].omod) {
             inerror("! modulo value too large") ;
+         }
          s += p[j] ;
       }
       if (s % pz.setdefs[i].omod != 0)
          pz.setdefs[i].oparity = 0 ;
-      if (typ == 'm') { // fix moves
+      if (typ == 'm' && !zero_indexed) { // fix moves
          static uchar f[256] ;
          for (int j=0; j<n; j++)
             f[j] = p[j] ;
@@ -310,19 +320,19 @@ puzdef readdef(istream *f) {
          for (int i=3; i<(int)toks.size(); i++)
             pz.addillegal(toks[1].c_str(),
                           getnumber(1, toks[2]), getnumber(1, toks[i])) ;
-      } else if (toks[0] == "Solved") {
+      } else if (toks[0] == "Solved" || toks[0] == "StartState") {
          if (state != 1)
             inerror("! Solved in wrong place") ;
          state++ ;
          expect(toks, 1) ;
-         pz.solved = readposition(pz, 's', f, checksum) ;
-      } else if (toks[0] == "Move") {
+         pz.solved = readposition(pz, 's', f, checksum, toks[0] == "StartState") ;
+      } else if (toks[0] == "Move" || toks[0] == "MoveTransformation") {
          if (state != 2)
             inerror("! Move in wrong place") ;
          expect(toks, 2) ;
          moove m ;
          m.name = twstrdup(toks[1].c_str()) ;
-         m.pos = readposition(pz, 'm', f, checksum) ;
+         m.pos = readposition(pz, 'm', f, checksum, toks[0] == "MoveTransformation") ;
          m.cost = 1 ;
          m.twist = 1 ;
          if (isrotation(m.name)) {

@@ -75,63 +75,45 @@ extern "C" const char *w_solveposition(const char *s) {
 }
 #ifdef WASMTEST
 const char *twsfile = 
-"Name PuzzleGeometryPuzzle\n"
+"Name 2x2x2\n"
 "\n"
-"Set CORNER 8 3\n"
+"Set CORNERS 8 3\n"
 "\n"
-"Solved\n"
-"CORNER\n"
-"1 2 3 4 5 6 7 8\n"
+"StartState\n"
+"CORNERS\n"
+"0 1 2 3 4 5 6 7\n"
 "0 0 0 0 0 0 0 0\n"
 "End\n"
 "\n"
-"Move F\n"
-"CORNER\n"
-"7 1 3 2 5 6 4 8\n"
-"2 1 0 2 0 0 1 0\n"
-"End\n"
-"\n"
-"Move B\n"
-"CORNER\n"
-"1 2 5 4 8 3 7 6\n"
-"0 0 1 0 2 2 0 1\n"
-"End\n"
-"\n"
-"Move D\n"
-"CORNER\n"
-"1 4 3 8 2 6 7 5\n"
+"MoveTransformation U\n"
+"CORNERS\n"
+"1 2 3 0 4 5 6 7\n"
 "0 0 0 0 0 0 0 0\n"
 "End\n"
 "\n"
-"Move U\n"
-"CORNER\n"
-"3 2 6 4 5 7 1 8\n"
-"0 0 0 0 0 0 0 0\n"
+"MoveTransformation F\n"
+"CORNERS\n"
+"3 1 2 5 0 4 6 7\n"
+"1 0 0 2 2 1 0 0\n"
 "End\n"
 "\n"
-"Move L\n"
-"CORNER\n"
-"1 2 3 7 5 8 6 4\n"
-"0 0 0 1 0 1 2 2\n"
-"End\n"
-"\n"
-"Move R\n"
-"CORNER\n"
-"2 5 1 4 3 6 7 8\n"
-"1 2 2 0 1 0 0 0\n"
+"MoveTransformation R\n"
+"CORNERS\n"
+"4 0 2 3 7 5 6 1\n"
+"2 1 0 0 1 0 0 2\n"
 "End\n" ;
 const char *scrfile = 
-"Scramble CornerTwist\n"
-"CORNER\n"
-"1 2 3 4 5 6 7 8\n"
-"1 2 0 0 0 0 0 0\n"
+"ScrambleState wheee\n"
+"CORNERS\n"
+"0 3 5 4 1 7 6 2\n"
+"0 0 0 0 0 0 0 0\n"
 "End\n" ;
 int main() {
    w_args("--nowrite") ; // unnecessary if compiled with -DWASM
    w_setksolve(twsfile) ;
-   cout << w_solvescramble("U F R D B L U F R D B L U F R D B L") << endl ;
+   cout << w_solvescramble("U F R U F R U F R U F R") << endl ;
    cout << w_solveposition(scrfile) << endl ;
-   cout << w_solvescramble("U F R D B L U F R D B L U F R D B L") << endl ;
-   cout << w_solveposition(scrfile) << endl ;
+   // cout << w_solvescramble("U F R U F R U F R U F R") << endl ;
+   // cout << w_solveposition(scrfile) << endl ;
 }
 #endif
