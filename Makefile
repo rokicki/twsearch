@@ -88,4 +88,4 @@ src/js/generated-wasm/twsearch.wasm.serialized.js: build/wasm-wrapped/twsearch.w
 
 .PHONY: dev
 dev: src/js/generated-wasm/twsearch.esm-compatible.js src/js/generated-wasm/twsearch.wasm.serialized.js
-	npm run dev
+	npx esbuild --format=esm --target=es2020 --splitting --bundle --sourcemap --servedir=src/js --external:path --external:fs src/js/*.ts
