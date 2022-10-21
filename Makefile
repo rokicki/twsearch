@@ -68,7 +68,7 @@ ${WASM_CXX}:
 build/wasm-test:
 	mkdir -p build/wasm-test
 
-build/wasm-test/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test ${WASM_CXX}
+build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
 build/wasm-single-file:
