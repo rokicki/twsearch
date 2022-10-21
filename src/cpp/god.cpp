@@ -358,7 +358,9 @@ const int SPLIT = 32 ;
 template<typename T> int extract(const T &a) {
    return a[0]>>(32-SHIFT) ;
 }
+#ifdef USE_PTHREADS
 static int wi ;
+#endif
 static ll beg[SPLIT], endb[SPLIT] ;
 static pair<ll, int> bysize[SPLIT] ;
 template<typename T> void tmqsort(T *a, ll n) {

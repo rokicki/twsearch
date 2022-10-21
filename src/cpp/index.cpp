@@ -350,7 +350,7 @@ void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
          int lim = n ;
          int bitsper = sd.obits ;
          ull mask = (1 << bitsper) - 1 ;
-         int msum = 0 ;
+         // int msum = 0 ;
          for (int j=0; j<lim; j++) {
             if (storedbits < bitsper) {
                accum += ((ull)(*r++)) << storedbits ;
@@ -359,7 +359,7 @@ void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
             p[j] = accum & mask ;
             if (p[j] >= sd.omod)
                p[j] = 2*sd.omod ;
-            msum += sd.omod - p[j] ;
+            // msum += sd.omod - p[j] ;
             storedbits -= bitsper ;
             accum >>= bitsper ;
          }

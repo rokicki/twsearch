@@ -414,13 +414,13 @@ void runcoset(puzdef &pd) {
                moving.dat[off+j] = 1;
          }
       }
-      int stat = 0;
-      int mov = 0;
-      for (int j=0; j<sd.size; j++)
-         if (moving.dat[off+j])
-            mov++ ;
-         else
-            stat++ ;
+      // int stat = 0;
+      // int mov = 0;
+      // for (int j=0; j<sd.size; j++)
+      //    if (moving.dat[off+j])
+      //       mov++ ;
+      //    else
+      //       stat++ ;
       int stati = 0 ;
       for (int j=0; j<sd.size; j++) {
          if (moving.dat[j+off])
