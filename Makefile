@@ -35,19 +35,19 @@ HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineo
    src/cpp/orderedgs.h src/cpp/wasmapi.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h
 
-build/cpp:
-	mkdir -p build/cpp
+build/cpp/:
+	mkdir -p build/cpp/
 
-build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) build/cpp
+build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) build/cpp/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp
+build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/bin:
-	mkdir -p build/bin
+build/bin/:
+	mkdir -p build/bin/
 
-build/bin/twsearch: $(OBJ) build/bin
+build/bin/twsearch: $(OBJ) build/bin/
 	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
 
 # WASM
@@ -65,16 +65,16 @@ ${WASM_CXX}:
 	cd emsdk && ./emsdk install latest
 	cd emsdk && ./emsdk activate latest
 
-build/wasm-test:
-	mkdir -p build/wasm-test
+build/wasm-test/:
+	mkdir -p build/wasm-test/
 
-build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test ${WASM_CXX}
+build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
-build/wasm-single-file:
-	mkdir -p build/wasm-single-file
+build/wasm-single-file/:
+	mkdir -p build/wasm-single-file/
 
-build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file ${WASM_CXX}
+build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 
 # JS
