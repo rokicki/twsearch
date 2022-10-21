@@ -5,7 +5,7 @@ build: build/bin/twsearch
 
 .PHONY: clean
 clean:
-	rm -rf ./build ./src/js/generated-wasm/twsearch.*
+	rm -rf ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
 
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
