@@ -3,6 +3,9 @@
 /emsdk
 /node_modules
 
+# TODO
+/*.dwo
+
 # Legacy top-level files
 # These are no longer produced, but we want to avoid commmiting them,
 # in case they get left in the top dir around after testing old commits.
