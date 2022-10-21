@@ -55,8 +55,8 @@ build/bin/twsearch: $(OBJ) build/bin
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -gsplit-dwarf -Wsign-compare
 WASM_FLAGS = -DHAVE_FFSLL -DWASM -DASLIBRARY -sASSERTIONS -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
-WASM_NON_TEST_FLAGS = -sALLOW_MEMORY_GROWTH
 WASM_TEST_FLAGS = -DWASMTEST
+WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
@@ -71,22 +71,14 @@ build/wasm-test:
 build/wasm-test/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test ${WASM_CXX}
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
-build/wasm-wrapped:
-	mkdir -p build/wasm-wrapped
+build/wasm-single-file:
+	mkdir -p build/wasm-single-file
 
-build/wasm-wrapped/twsearch.js: $(CSOURCE) $(HSOURCE) build/wasm-wrapped ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_NON_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file ${WASM_CXX}
 
-build/wasm-wrapped/twsearch.wasm: build/wasm-wrapped/twsearch.js $(CSOURCE) $(HSOURCE) build/wasm-wrapped ${WASM_CXX}
-
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 # JS
 
-src/js/generated-wasm/twsearch.esm-compatible.js: build/wasm-wrapped/twsearch.js
-	node ./script/generate-wasm-esm-wrapper.js
-
-src/js/generated-wasm/twsearch.wasm.serialized.js: build/wasm-wrapped/twsearch.wasm
-	node ./script/generate-wasm-serialized.js
-
 .PHONY: dev
-dev: src/js/generated-wasm/twsearch.esm-compatible.js src/js/generated-wasm/twsearch.wasm.serialized.js
+dev: build/wasm-single-file/twsearch.mjs
 	npx esbuild --format=esm --target=es2020 --splitting --bundle --sourcemap --servedir=src/js --external:path --external:fs src/js/*.ts
