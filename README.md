@@ -12,15 +12,15 @@ Important options (you should specify these):
 
 Sample usage:
 
-    ./twsearch samples/3x3x3.tws samples/tperm.scr
+    ./build/bin/twsearch samples/main/3x3x3.tws samples/main/tperm.scr
 
-    ./twsearch -g samples/2x2x2.tws
+    ./build/bin/twsearch -g samples/main/2x2x2.tws
 
-    ./twsearch -c 20 --moves 2L,2R,U,F samples/4x4x4.tws samples/flip.tws
+    ./build/bin/twsearch -c 20 --moves 2L,2R,U,F samples/main/4x4x4.tws samples/main/flip.tws
 
-    ./twsearch --moves F,R,D,B,L --scramblealg U samples/3x3x3.tws
+    ./build/bin/twsearch --moves F,R,D,B,L --scramblealg U samples/main/3x3x3.tws
 
-    ./twsearch --moves U,R,F -q -g samples/kilominx.tws
+    ./build/bin/twsearch --moves U,R,F -q -g samples/main/kilominx.tws
 
 The maximum memory setting should be used carefully; on a machine running
 Windows or OS-X with heavy browser usage and other programs, you may want
@@ -140,7 +140,7 @@ Options:
                move "U D" (a clockwise turn of both the up and down faces)
                on the 3x3x3, use the command
 
-                  echo "U D" | ./twsearch --showmoves samples/3x3x3.tws
+                  echo "U D" | ./build/bin/twsearch --showmoves samples/main/3x3x3.tws
 
 `--showpositions`  Given a set of scrambles on standard input (one per line),
                  writes to standard output the scramble-format for those

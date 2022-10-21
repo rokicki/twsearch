@@ -73,10 +73,10 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt, generatingset *gs)
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          break ;
-      if (toks[0] == "Scramble") {
+      if (toks[0] == "Scramble" || toks[0] == "ScrambleState" || toks[0] == "StartState") {
          expect(toks, 2) ;
          scramblename = twstrdup(toks[1].c_str()) ; ;
-         setval p = readposition(pd, 'S', f, checksum) ;
+         setval p = readposition(pd, 'S', f, checksum, toks[0] == "ScrambleState" || toks[0] == "StartState") ;
          solveit(pd, pt, scramblename, p, gs) ;
       } else if (toks[0] == "ScrambleAlg") {
          expect(toks, 2) ;
@@ -109,10 +109,10 @@ void readfirstscramble(istream *f, puzdef &pd, setval sv) {
       vector<string> toks = getline(f, checksum) ;
       if (toks.size() == 0)
          break ;
-      if (toks[0] == "Scramble") {
+      if (toks[0] == "Scramble" || toks[0] == "StartState") {
          expect(toks, 2) ;
          scramblename = twstrdup(toks[1].c_str()) ; ;
-         setval p = readposition(pd, 'S', f, checksum) ;
+         setval p = readposition(pd, 'S', f, checksum, toks[0] == "StartState") ;
          pd.assignpos(sv, p) ;
          return ;
       } else if (toks[0] == "ScrambleAlg") {

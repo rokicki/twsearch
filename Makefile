@@ -7,7 +7,7 @@ build: build/bin/twsearch
 clean:
 	rm -rf ./build ./src/js/generated-wasm/twsearch.*
 
-MAKEFLAGS += -j
+# MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
 FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL
 LDFLAGS = -lpthread
@@ -53,9 +53,10 @@ build/bin/twsearch: $(OBJ) build/bin
 # WASM
 
 WASM_CXX = emsdk/upstream/emscripten/em++
-WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
-WASM_FLAGS = -DHAVE_FFSLL -DWASM -DASLIBRARY -s TOTAL_MEMORY=1024MB -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
-WASM_RAW_FLAGS = -DWASMTEST
+WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -gsplit-dwarf -Wsign-compare
+WASM_FLAGS = -DHAVE_FFSLL -DWASM -DASLIBRARY -sASSERTIONS -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
+WASM_NON_TEST_FLAGS = -sALLOW_MEMORY_GROWTH
+WASM_TEST_FLAGS = -DWASMTEST
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
@@ -64,19 +65,19 @@ ${WASM_CXX}:
 	cd emsdk && ./emsdk install latest
 	cd emsdk && ./emsdk activate latest
 
-build/wasm-raw:
-	mkdir -p build/wasm-raw
+build/wasm-test:
+	mkdir -p build/wasm-test
 
-build/wasm-raw/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm-raw ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_RAW_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+build/wasm-test/twsearch.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
 build/wasm-wrapped:
 	mkdir -p build/wasm-wrapped
 
 build/wasm-wrapped/twsearch.js: $(CSOURCE) $(HSOURCE) build/wasm-wrapped ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_NON_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 
-build/wasm-wrapped/twsearch.wasm: build/wasm-wrapped/twsearch.js
+build/wasm-wrapped/twsearch.wasm: build/wasm-wrapped/twsearch.js $(CSOURCE) $(HSOURCE) build/wasm-wrapped ${WASM_CXX}
 
 # JS
 
@@ -88,4 +89,4 @@ src/js/generated-wasm/twsearch.wasm.serialized.js: build/wasm-wrapped/twsearch.w
 
 .PHONY: dev
 dev: src/js/generated-wasm/twsearch.esm-compatible.js src/js/generated-wasm/twsearch.wasm.serialized.js
-	npm run dev
+	npx esbuild --format=esm --target=es2020 --splitting --bundle --sourcemap --servedir=src/js --external:path --external:fs src/js/*.ts
