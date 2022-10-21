@@ -75,8 +75,8 @@ build/wasm-single-file:
 	mkdir -p build/wasm-single-file
 
 build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file ${WASM_CXX}
-
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+
 # JS
 
 .PHONY: dev
