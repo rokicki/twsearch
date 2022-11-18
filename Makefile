@@ -67,7 +67,7 @@ WASM_LDFLAGS =
 
 emsdk: ${WASM_CXX}
 ${WASM_CXX}:
-	make emsdk-latest
+	make emsdk-tip-of-tree
 
 .PHONY: emsdk-latest
 emsdk-latest:
