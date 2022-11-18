@@ -105,6 +105,7 @@ ESBUILD_COMMON_ARGS = \
 		--bundle --splitting \
 		--sourcemap \
 		--external:path --external:fs --external:module \
+		--external:node:* \
 
 .PHONY: dev
 dev: build/wasm-single-file/twsearch.mjs node_modules
