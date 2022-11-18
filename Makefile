@@ -126,6 +126,10 @@ build/esm-test: build/wasm-single-file/twsearch.mjs node_modules
 		--outdir=build/esm-test \
 		src/js/dev/test.ts
 
+.PHONY: test-build-js
+test-build-js: build/esm-test
+	node build/esm-test/test.js
+
 .PHONY: lint-js
 lint-js:
 	npx rome check src/js/**/*.ts
