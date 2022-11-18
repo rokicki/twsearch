@@ -79,6 +79,9 @@ build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-fil
 
 # JS
 
+node_modules:
+	npm install
+
 .PHONY: dev
-dev: build/wasm-single-file/twsearch.mjs
+dev: build/wasm-single-file/twsearch.mjs node_modules
 	npx esbuild --format=esm --target=es2020 --splitting --bundle --sourcemap --servedir=src/js --external:path --external:fs src/js/*.ts
