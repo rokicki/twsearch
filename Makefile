@@ -7,6 +7,12 @@ build: build/bin/twsearch
 clean:
 	rm -rf ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
 
+.PHONY: lint
+lint: lint-js
+
+.PHONY: format
+format: format-js
+
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
 FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL
@@ -61,9 +67,21 @@ WASM_LDFLAGS =
 
 emsdk: ${WASM_CXX}
 ${WASM_CXX}:
+	make emsdk-latest
+
+.PHONY: emsdk-latest
+emsdk-latest:
+	rm -rf ./emsdk
 	git clone https://github.com/emscripten-core/emsdk.git
 	cd emsdk && ./emsdk install latest
 	cd emsdk && ./emsdk activate latest
+
+.PHONY: emsdk-tip-of-tree
+emsdk-tip-of-tree:
+	rm -rf ./emsdk
+	git clone https://github.com/emscripten-core/emsdk.git
+	cd emsdk && ./emsdk install tot
+	cd emsdk && ./emsdk activate tot
 
 build/wasm-test/:
 	mkdir -p build/wasm-test/
@@ -82,6 +100,35 @@ build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-fil
 node_modules:
 	npm install
 
+ESBUILD_COMMON_ARGS = \
+		--format=esm --target=es2020 \
+		--bundle --splitting \
+		--sourcemap \
+		--external:path --external:fs --external:module \
+
 .PHONY: dev
 dev: build/wasm-single-file/twsearch.mjs node_modules
-	npx esbuild --format=esm --target=es2020 --splitting --bundle --sourcemap --servedir=src/js --external:path --external:fs src/js/*.ts
+	npx esbuild ${ESBUILD_COMMON_ARGS} \
+		--servedir=src/js \
+		src/js/*.ts
+
+.PHONY: build/esm
+build/esm: build/wasm-single-file/twsearch.mjs node_modules
+	npx esbuild ${ESBUILD_COMMON_ARGS} \
+		--external:cubing \
+		--outdir=build/esm src/js/index.ts
+
+.PHONY: build/esm-test
+build/esm-test: build/wasm-single-file/twsearch.mjs node_modules
+	npx esbuild ${ESBUILD_COMMON_ARGS} \
+		--external:cubing \
+		--outdir=build/esm-test \
+		src/js/dev/test.ts
+
+.PHONY: lint-js
+lint-js:
+	npx rome check src/js/**/*.ts
+
+.PHONY: format-js
+format-js:
+	npx rome format src/js/**/*.ts
