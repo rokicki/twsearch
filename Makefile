@@ -5,7 +5,11 @@ build: build/bin/twsearch
 
 .PHONY: clean
 clean:
-	rm -rf ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
+	rm -rf ./.cache ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
+
+.PHONY: reset
+reset: clean
+	rm -rf ./emsdk ./node_modules
 
 .PHONY: lint
 lint: lint-js
