@@ -114,8 +114,8 @@ ESBUILD_COMMON_ARGS = \
 .PHONY: dev
 dev: build/wasm-single-file/twsearch.mjs node_modules
 	npx esbuild ${ESBUILD_COMMON_ARGS} \
-		--servedir=src/js \
-		src/js/*.ts
+		--servedir=src/js/dev \
+		src/js/dev/*.ts
 
 .PHONY: build/esm
 build/esm: build/wasm-single-file/twsearch.mjs node_modules
