@@ -2,6 +2,7 @@
 #include "threads.h"
 #include "canon.h"
 #include "rotations.h"
+#include "solve.h"
 #include <iostream>
 vector<ull> workchunks ;
 vector<int> workstates ;
@@ -80,6 +81,13 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
          if (mul >= (1ULL << 62) / nmoves) {
             cout << "Mul got too big." << endl ;
             break ;
+         }
+      }
+      if (randomstart) {
+         for (int i=0; i<(int)workchunks.size(); i++) {
+            int j = i + (int)((workchunks.size()-i)*drand48()) ;
+            swap(workchunks[i], workchunks[j]) ;
+            swap(workstates[i], workstates[j]) ;
          }
       }
    }

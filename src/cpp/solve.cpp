@@ -7,11 +7,13 @@ int noearlysolutions ;
 int onlyimprovements ;
 int phase2 ;
 int optmindepth ;
+int randomstart ;
 string lastsolution ;
 int didprepass ;
 solveworker solveworkers[MAXTHREADS] ;
 int (*callback)(setval &pos, const vector<int> &moves, int d, int id) ;
 int (*flushback)(int d) ;
+static vector<vector<int>> randomized ;
 void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d, int id), 
                       int (*g)(int)) {
    callback = f ;
@@ -80,8 +82,12 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
    }
    ull mask = canonmask[st] ;
    const vector<int> &ns = canonnext[st] ;
-   for (int m=0; m<(int)pd.moves.size(); m++) {
+   ull skipbase = 0 ;
+   for (int mi=0; mi<(int)pd.moves.size(); mi++) {
+      int m = randomstart ? randomized[togo][mi] : mi ;
       const moove &mv = pd.moves[m] ;
+      if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
+         continue ;
       if ((mask >> mv.cs) & 1)
          continue ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
@@ -92,9 +98,8 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
       if (v == 1)
          return 1 ;
       if (!quarter && v == -1) {
-         // skip similar rotations
-         while (m+1 < (int)pd.moves.size() && pd.moves[m].base == pd.moves[m+1].base)
-            m++ ;
+         if (mv.base < 64)
+            skipbase |= 1LL << mv.base ;
       }
    }
    return 0 ;
@@ -147,7 +152,21 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    int initd = pt.lookup(p, &looktmp) ;
    solutionsfound = 0 ;
    int hid = 0 ;
+   if (randomstart)
+      randomized.clear() ;
    for (int d=initd; d <= maxdepth; d++) {
+      if (randomstart) {
+         while ((int)randomized.size() <= d) {
+            randomized.push_back({}) ;
+            vector<int> &r = randomized[randomized.size()-1] ;
+            for (int i=0; i<(int)pd.moves.size(); i++)
+               r.push_back(i) ;
+            for (int i=0; i<(int)r.size(); i++) {
+               int j = i + (int)((r.size()-i)*drand48()) ;
+               swap(r[i], r[j]) ;
+            }
+         }
+      }
       if (onlyimprovements && d >= globalinputmovecount)
          break ;
       if (d < optmindepth)

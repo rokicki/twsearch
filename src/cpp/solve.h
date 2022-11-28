@@ -14,6 +14,7 @@ extern int noearlysolutions ;
 extern int phase2 ;
 extern int optmindepth ;
 extern int onlyimprovements ;
+extern int randomstart ;
 extern string lastsolution ;
 struct solveworker {
    vector<allocsetval> posns ;

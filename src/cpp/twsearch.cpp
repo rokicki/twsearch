@@ -139,6 +139,8 @@ void processargs(int &argc, argvtype &argv) {
             doshortenseqs++ ;
          } else if (strcmp(argv[0], "--cancelseqs") == 0) {
             docancelseqs++ ;
+         } else if (strcmp(argv[0], "--randomstart") == 0) {
+            randomstart++ ;
          } else if (strcmp(argv[0], "--mindepth") == 0) {
             optmindepth = atol(argv[1]) ;
             argc-- ;
