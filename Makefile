@@ -48,16 +48,16 @@ HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineo
 build/cpp/:
 	mkdir -p build/cpp/
 
-build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) build/cpp/
+build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/%.o: src/cpp/cityhash/src/%.cc build/cpp/
+build/cpp/%.o: src/cpp/cityhash/src/%.cc | build/cpp/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/bin/:
 	mkdir -p build/bin/
 
-build/bin/twsearch: $(OBJ) build/bin/
+build/bin/twsearch: $(OBJ) | build/bin/
 	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
 
 # WASM
