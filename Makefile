@@ -17,7 +17,7 @@ lint: lint-js
 .PHONY: format
 format: format-js
 
-TWSEARCH_VERSION=0.3.1
+TWSEARCH_VERSION=v0.0.0
 
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
@@ -126,7 +126,7 @@ build/esm: build/wasm-single-file/twsearch.mjs node_modules
 		--outdir=build/esm src/js/index.ts
 	mkdir -p ./.temp
 	mv build/esm/index.js ./.temp/index.js
-	echo "console.info(\"Loading twsearch v${TWSEARCH_VERSION}\");" > build/esm/index.js
+	echo "console.info(\"Loading twsearch ${TWSEARCH_VERSION}\");" > build/esm/index.js
 	cat "./.temp/index.js" >> build/esm/index.js
 
 .PHONY: build/esm-test
