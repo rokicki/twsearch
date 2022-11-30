@@ -7,8 +7,6 @@
 #include "index.h"
 vector<ull> canonmask ;
 vector<vector<int> > canonnext ;
-vector<ull> canonseqcnt ;
-vector<ull> canontotcnt ;
 void makecanonstates(puzdef &pd) {
    int nbase = pd.basemoves.size() ;
    if (quarter) { // rewrite base
@@ -364,9 +362,7 @@ void showcanon(const puzdef &pd, int show) {
       double sum = 0 ;
       for (int i=0; i<nstates; i++)
          sum += counts[d][i] ;
-      canonseqcnt.push_back((ull)sum) ;
       gsum += sum ;
-      canontotcnt.push_back((ull)gsum) ;
       if (show) {
          if (d == 0)
             cout << "D " << d << " this " << sum << " total " << gsum

@@ -15,8 +15,6 @@ using namespace std ;
 void makecanonstates(puzdef &pd) ;
 extern vector<ull> canonmask ;
 extern vector<vector<int> > canonnext ;
-extern vector<ull> canonseqcnt ;
-extern vector<ull> canontotcnt ;
 extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq) ;
 extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) ;
 extern int ccount, canonlim ;
