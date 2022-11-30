@@ -1,4 +1,5 @@
 /.cache
+/.temp
 /build
 /emsdk
 /node_modules

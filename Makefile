@@ -109,13 +109,13 @@ node_modules:
 ESBUILD_COMMON_ARGS = \
 		--format=esm --target=es2020 \
 		--bundle --splitting \
-		--sourcemap \
 		--external:path --external:fs --external:module \
 		--external:node:* \
 
 .PHONY: dev
 dev: build/wasm-single-file/twsearch.mjs node_modules
 	npx esbuild ${ESBUILD_COMMON_ARGS} \
+		--sourcemap \
 		--servedir=src/js/dev \
 		src/js/dev/*.ts
 
@@ -124,6 +124,10 @@ build/esm: build/wasm-single-file/twsearch.mjs node_modules
 	npx esbuild ${ESBUILD_COMMON_ARGS} \
 		--external:cubing \
 		--outdir=build/esm src/js/index.ts
+	mkdir -p ./.temp
+	mv build/esm/index.js ./.temp/index.js
+	echo "console.info(\"Loading twsearch v${TWSEARCH_VERSION}\");" > build/esm/index.js
+	cat "./.temp/index.js" >> build/esm/index.js
 
 .PHONY: build/esm-test
 build/esm-test: build/wasm-single-file/twsearch.mjs node_modules
