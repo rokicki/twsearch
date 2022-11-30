@@ -17,7 +17,7 @@ lint: lint-js
 .PHONY: format
 format: format-js
 
-TWSEARCH_VERSION=0.3.0
+TWSEARCH_VERSION=0.3.1
 
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
