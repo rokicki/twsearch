@@ -333,8 +333,10 @@ puzdef makepuzdef(string s) {
    return makepuzdef(&is) ;
 }
 #ifndef ASLIBRARY
+#define STR2(x) #x
+#define STRINGIZE(x) STR2(x)
 int main(int argc, const char **argv) {
-   cout << "# This is twsearch 0.3 (C) 2022 Tomas Rokicki." << endl ;
+   cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
    cout << "#" ;
    for (int i=0; i<argc; i++)
       cout << " " << argv[i] ;

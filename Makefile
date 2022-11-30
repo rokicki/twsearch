@@ -17,9 +17,11 @@ lint: lint-js
 .PHONY: format
 format: format-js
 
+TWSEARCH_VERSION=0.3.0
+
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Wextra -Wall -pedantic -std=c++14 -g -Wsign-compare
-FLAGS = -DUSE_PTHREADS -DHAVE_FFSLL
+FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DHAVE_FFSLL
 LDFLAGS = -lpthread
 
 CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cmdlineops.cpp \
@@ -64,7 +66,7 @@ build/bin/twsearch: $(OBJ) | build/bin/
 
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++14 -Wsign-compare
-WASM_FLAGS = -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
+WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
 WASM_TEST_FLAGS = -DWASMTEST -sASSERTIONS
 WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH
 WASM_LDFLAGS = 
