@@ -139,6 +139,7 @@ void solveworker::dowork(const puzdef &pd, prunetable &pt) {
    }
 }
 int maxdepth = 1000000000 ;
+const char *dummy = "" ;
 int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    solutionsfound = solutionsneeded ;
    if (gs && !gs->resolve(p)) {
@@ -152,8 +153,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
    int initd = pt.lookup(p, &looktmp) ;
    solutionsfound = 0 ;
    int hid = 0 ;
-   if (randomstart)
+   if (randomstart) {
+      cout << dummy ; // "See randomized start." << endl ;
       randomized.clear() ;
+   }
    for (int d=initd; d <= maxdepth; d++) {
       if (randomstart) {
          while ((int)randomized.size() <= d) {
