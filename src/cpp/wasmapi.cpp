@@ -14,12 +14,12 @@ struct wasmdata {
    prunetable *pt ;
    int havepd, havept ;
 } wasmdata ;
-extern "C" void w_args(const char *s_) {
+extern "C" void w_arg(const char *s_) {
    string s(s_) ;
    const char *argva[4] ;
    const char **argv = argva ;
    int argc = 0 ;
-   argv[0] = "w_args" ;
+   argv[0] = "w_arg" ;
    int space = 0 ;
    string scopy ;
    while (space < (int)s.size() && s[space] != ' ')
@@ -109,7 +109,7 @@ const char *scrfile =
 "0 0 0 0 0 0 0 0\n"
 "End\n" ;
 int main() {
-   w_args("--nowrite") ; // unnecessary if compiled with -DWASM
+   w_arg("--nowrite") ; // unnecessary if compiled with -DWASM
    w_setksolve(twsfile) ;
    cout << w_solvescramble("U F R U F R U F R U F R") << endl ;
    cout << w_solveposition(scrfile) << endl ;
