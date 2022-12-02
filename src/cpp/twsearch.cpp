@@ -141,6 +141,10 @@ void processargs(int &argc, argvtype &argv) {
             docancelseqs++ ;
          } else if (strcmp(argv[0], "--randomstart") == 0) {
             randomstart++ ;
+         } else if (strcmp(argv[0], "--startprunedepth") == 0) {
+            startprunedepth = atol(argv[1]) ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--mindepth") == 0) {
             optmindepth = atol(argv[1]) ;
             argc-- ;

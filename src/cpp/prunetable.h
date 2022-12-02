@@ -22,6 +22,7 @@ const int COMPSIGNATURE = 23 ; // start and end of data files
 const int UNCOMPSIGNATURE = 24 ; // start and end of data files
 extern string inputbasename ;
 extern int nowrite ;
+extern int startprunedepth ;
 ull fasthash(int n, const setval sv) ;
 struct prunetable ;
 struct workerparam {
