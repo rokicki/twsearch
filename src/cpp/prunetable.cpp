@@ -282,13 +282,13 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
       cout << "Initializing memory " << flush ;
       cout << "in " << duration() << endl << flush ;
       baseval = 1 ;
+      filltable(pd, 0) ;
+      filltable(pd, 1) ;
+      filltable(pd, 2) ;
       if (startprunedepth) {
-         for (int i=0; i<=startprunedepth; i++)
-            filltable(pd, i) ;
+         for (int i=3; i<=startprunedepth; i++)
+            checkextend(pd, 1) ;
       } else {
-         filltable(pd, 0) ;
-         filltable(pd, 1) ;
-         filltable(pd, 2) ;
          checkextend(pd, 1) ;
       }
    }
