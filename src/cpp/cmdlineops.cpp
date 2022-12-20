@@ -175,11 +175,22 @@ void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
    } else {
       for (int i=0; i<(int)movelist.size(); i++) {
          cout << " " ;
-         const moove &mv = pd.moves[movelist[movelist.size()-1-i]] ;
-         int b = mv.base ;
-         int o = pd.basemoveorders[b] ;
-         int twist = (o - mv.twist) % o ;
-         cout << pd.basemoves[b].name ;
+         int ind = movelist[movelist.size()-1-i] ;
+         const moove *mv = 0 ;
+         int o ;
+         if (ind < (int)pd.moves.size()) {
+            mv = &pd.moves[ind] ;
+            int b = mv->base ;
+            o = pd.basemoveorders[b] ;
+            cout << pd.basemoves[b].name ;
+         } else {
+            ind -= pd.moves.size() ;
+            mv = &pd.expandedrotations[ind] ;
+            int b = mv->base ;
+            o = pd.baserotorders[b] ;
+            cout << pd.rotations[b].name ;
+         }
+         int twist = (o - mv->twist) % o ;
          if (twist < 1) {
             cout << "?" ;
          } else if (twist == 1) {

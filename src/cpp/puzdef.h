@@ -82,12 +82,12 @@ struct puzdef {
    const char *name ;
    setdefs_t setdefs ;
    setval solved ;
-   vector<moove> basemoves, moves, parsemoves, rotations, rotgroup ;
+   vector<moove> basemoves, moves, parsemoves, rotations, expandedrotations, rotgroup ;
    vector<movealias> aliases ;
    vector<movealias> moveseqs ;
    vector<const char *> swizzlenames ;
    vector<setval> rotinvmap ;
-   vector<int> basemoveorders ;
+   vector<int> basemoveorders, baserotorders ;
    vector<int> rotinv ;
    vector<ull> commutes ;
    int totsize ;

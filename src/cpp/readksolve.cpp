@@ -396,13 +396,10 @@ puzdef readdef(istream *f) {
    pz.checksum = checksum ;
    return pz ;
 }
-void addmovepowers(puzdef &pd) {
-   vector<moove> newmoves ;
-   pd.basemoves = pd.moves ;
+void expandmoveset(const puzdef &pd, vector<moove> &moves, vector<moove> &newmoves, vector<string> &newnames, vector<int> &basemoveorders) {
    stacksetval p1(pd), p2(pd) ;
-   vector<string> newnames ;
-   for (int i=0; i<(int)pd.moves.size(); i++) {
-      moove &m = pd.moves[i] ;
+   for (int i=0; i<(int)moves.size(); i++) {
+      moove &m = moves[i] ;
       if (quarter && m.cost > 1)
          continue ;
       vector<setval> movepowers ;
@@ -417,7 +414,7 @@ void addmovepowers(puzdef &pd) {
          swap(p1.dat, p2.dat) ;
       }
       int order = movepowers.size() + 1 ;
-      pd.basemoveorders.push_back(order) ;
+      basemoveorders.push_back(order) ;
       for (int j=0; j<(int)movepowers.size(); j++) {
          int tw = j + 1 ;
          if (order - tw < tw)
@@ -438,6 +435,26 @@ void addmovepowers(puzdef &pd) {
          newmoves.push_back(m2) ;
       }
    }
+}
+void addmovepowers(puzdef &pd) {
+   vector<moove> newmoves ;
+   pd.basemoves = pd.moves ;
+   vector<string> newnames ;
+   expandmoveset(pd, pd.rotations, newmoves, newnames, pd.baserotorders) ;
+   if (newnames.size() > 0) {
+      pd.expandedrotations = newmoves ;
+      if (verbose) {
+         cout << "Created new rotations" ;
+         for (int i=0; i<(int)newnames.size(); i++)
+            cout << " " << newnames[i] ;
+         cout << endl << flush ;
+      }
+   } else {
+      pd.expandedrotations = pd.rotations ;
+   }
+   newmoves.clear() ;
+   newnames.clear() ;
+   expandmoveset(pd, pd.moves, newmoves, newnames, pd.basemoveorders) ;
    if (newnames.size() > 0) {
       pd.moves = newmoves ;
       if (verbose) {
