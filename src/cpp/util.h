@@ -2,7 +2,9 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>   // for drand48 and friends
+#ifndef __WIN64__
 #include <strings.h> // for ffsll
+#endif
 using namespace std ;
 /*
  *   A bunch of silly utility routines to make our life easier, and a few
