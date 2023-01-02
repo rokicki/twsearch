@@ -47,7 +47,9 @@ static uint32 UNALIGNED_LOAD32(const char *p) {
   return result;
 }
 
-#ifdef _MSC_VER
+//   the following used to be    #ifdef _MSC_VER
+//   but if we are on Win64 with *any* toolchain these should exist
+#ifdef _WIN64
 
 #include <stdlib.h>
 #define bswap_32(x) _byteswap_ulong(x)
