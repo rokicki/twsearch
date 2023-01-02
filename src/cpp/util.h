@@ -2,7 +2,7 @@
 #include <string>
 #include <cstring>
 #include <cstdlib>   // for drand48 and friends
-#ifndef __WIN64__
+#ifndef _WIN64
 #include <strings.h> // for ffsll
 #endif
 using namespace std ;
