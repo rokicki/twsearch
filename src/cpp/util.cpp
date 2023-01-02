@@ -42,8 +42,11 @@ const char *twstrdup(const char *s) {
    strcpy(r, s) ;
    return r ;
 }
+static mt19937 rng ;
+void mysrand(int n) {
+   rng.seed(n) ;
+}
 double myrand(int n) {
-   static mt19937 rng ;
    // the following double is exact
    static double mul = 1.0 / (rng.max() - rng.min() + 1.0) ;
    return (int)((rng()-rng.min()) * mul * n) ;

@@ -85,7 +85,7 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
       }
       if (randomstart) {
          for (int i=0; i<(int)workchunks.size(); i++) {
-            int j = i + (int)((workchunks.size()-i)*drand48()) ;
+            int j = i + myrand(workchunks.size()-i) ;
             swap(workchunks[i], workchunks[j]) ;
             swap(workstates[i], workstates[j]) ;
          }

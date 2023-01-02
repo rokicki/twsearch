@@ -133,9 +133,9 @@ void calcrotations(puzdef &pd) {
    pd.assignpos(pw, pd.id) ;
    stacksetval p2(pd), p3(pd), p4(pd) ;
    for (int i=0; i<1000; i++) {
-      int mv = (int)(pd.moves.size() * drand48()) ;
+      int mv = myrand(pd.moves.size()) ;
       domove(pd, pw, mv) ;
-      int r = (int)(pd.rotgroup.size() * drand48()) ;
+      int r = myrand(pd.rotgroup.size()) ;
       pd.mul(pd.rotgroup[pd.rotinv[r]].pos, pw, p2) ;
       pd.mul(pd.solved, p2, p3) ;
       pd.mul(pd.solved, pw, p2) ;

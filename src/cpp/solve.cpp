@@ -161,7 +161,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
             for (int i=0; i<(int)pd.moves.size(); i++)
                r.push_back(i) ;
             for (int i=0; i<(int)r.size(); i++) {
-               int j = i + (int)((r.size()-i)*drand48()) ;
+               int j = i + myrand(r.size()-i) ;
                swap(r[i], r[j]) ;
             }
          }

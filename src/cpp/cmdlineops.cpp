@@ -362,9 +362,9 @@ void showrandompos(const puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
    for (int i=0; i<500; i++) {
-      int mv = (int)(pd.moves.size()*drand48()) ;
+      int mv = myrand(pd.moves.size()) ;
       pd.mul(p1, pd.moves[mv].pos, p2) ;
-      mv = (int)(pd.moves.size()*drand48()) ;
+      mv = myrand(pd.moves.size()) ;
       pd.mul(p2, pd.moves[mv].pos, p1) ;
    }
    emitposition(pd, p1, 0) ;

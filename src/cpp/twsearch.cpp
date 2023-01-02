@@ -69,9 +69,9 @@ void doinit() {
       init_util() ;
       init_threads() ;
       if (seed)
-         srand48(seed) ;
+         mysrand(seed) ;
       else
-         srand48(time(0)) ;
+         mysrand(time(0)) ;
       initialized = 1 ;
    }
 }

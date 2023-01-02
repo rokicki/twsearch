@@ -29,31 +29,31 @@ void calcsym(const puzdef &pd, int iat, int nmoves, vector<char> &used,
       if (pd.cyccnts(p3) != pd.cyccnts(p4))
          continue ;
       if (iat > 0) {
-         int r = (int)(iat*drand48()) ;
+         int r = myrand(iat) ;
          r = r * nmul % nmoves ;
          pd.mul(p3, pd.moves[r].pos, p1) ;
          pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
          if (pd.cyccnts(p1) != pd.cyccnts(p2))
             continue ;
-         r = (int)(iat*drand48()) ;
+         r = myrand(iat) ;
          r = r * nmul % nmoves ;
          pd.mul(p1, pd.moves[r].pos, p3) ;
          pd.mul(p2, pd.moves[mapped[r]].pos, p4) ;
          if (pd.cyccnts(p3) != pd.cyccnts(p4))
             continue ;
-         r = (int)(iat*drand48()) ;
+         r = myrand(iat) ;
          r = r * nmul % nmoves ;
          pd.mul(p3, pd.moves[r].pos, p1) ;
          pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;
          if (pd.cyccnts(p1) != pd.cyccnts(p2))
             continue ;
-         r = (int)(iat*drand48()) ;
+         r = myrand(iat) ;
          r = r * nmul % nmoves ;
          pd.mul(p1, pd.moves[r].pos, p3) ;
          pd.mul(p2, pd.moves[mapped[r]].pos, p4) ;
          if (pd.cyccnts(p3) != pd.cyccnts(p4))
             continue ;
-         r = (int)(iat*drand48()) ;
+         r = myrand(iat) ;
          r = r * nmul % nmoves ;
          pd.mul(p3, pd.moves[r].pos, p1) ;
          pd.mul(p4, pd.moves[mapped[r]].pos, p2) ;

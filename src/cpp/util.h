@@ -1,7 +1,7 @@
 #ifndef UTIL_H
 #include <string>
 #include <cstring>
-#include <cstdlib>   // for drand48 and friends
+#include <cstdlib>
 #ifdef _WIN64
 #include <intrin.h>
 inline int ffsll(unsigned long long v){unsigned long r;_BitScanForward64(&r, v);return(int)r;}
@@ -24,6 +24,7 @@ void error(string msg, string extra="") ;
 void warn(string msg, string extra="") ;
 const char *twstrdup(const char *s) ;
 double myrand(int n) ;
+void mysrand(int n) ;
 ll gcd(ll a, ll b) ;
 ll lcm(ll a, ll b) ;
 int ceillog2(int v) ;
