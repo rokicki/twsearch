@@ -5,7 +5,7 @@ build: build/bin/twsearch
 
 .PHONY: clean
 clean:
-	rm -rf ./.cache ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
+	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo
 
 .PHONY: reset
 reset: clean
