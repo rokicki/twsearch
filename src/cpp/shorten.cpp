@@ -57,14 +57,14 @@ again:
                }
                vector<int> &sol = it->second.second ;
                if ((int)sol.size() < len) {
- cout << "Improving sequence from " << len << " to " << sol.size() << endl ;
+                  cout << "Improving sequence from " << len << " to " << sol.size() << endl ;
                   for (int j=0; j<(int)sol.size(); j++) {
- cout << "Setting index " << i+sol.size()-1-j << endl ;
+                     cout << "Setting index " << i+sol.size()-1-j << endl ;
                      seq[i+sol.size()-1-j] = pd.invmove(sol[j]) ;
                   }
                   seq.erase(seq.begin()+i+sol.size(), seq.begin()+i+len) ;
- cout << "Current length is " << seq.size() << endl ;
- for (int j=0; j<(int)seq.size(); j++) cout << " " << pd.moves[seq[j]].name ; cout << endl ;
+                  cout << "Current length is " << seq.size() << endl ;
+                  for (int j=0; j<(int)seq.size(); j++) cout << " " << pd.moves[seq[j]].name ; cout << endl ;
                   goto again ;
                }
             }
