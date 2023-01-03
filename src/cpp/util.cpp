@@ -42,14 +42,18 @@ const char *twstrdup(const char *s) {
    strcpy(r, s) ;
    return r ;
 }
-static mt19937 rng ;
+static mt19937 *rng ;
+// avoid static initialization fiasco by always seeding.
 void mysrand(int n) {
-   rng.seed(n) ;
+   if (rng)
+      delete rng ;
+   rng = new mt19937 ;
+   rng->seed(n) ;
 }
 double myrand(int n) {
    // the following double is exact
-   static double mul = 1.0 / (rng.max() - rng.min() + 1.0) ;
-   return (int)((rng()-rng.min()) * mul * n) ;
+   static double mul = 1.0 / (rng->max() - rng->min() + 1.0) ;
+   return (int)(((*rng)()-rng->min()) * mul * n) ;
 }
 ll gcd(ll a, ll b) {
    if (a > b)
