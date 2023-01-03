@@ -64,7 +64,8 @@ again:
                   }
                   seq.erase(seq.begin()+i+sol.size(), seq.begin()+i+len) ;
                   cout << "Current length is " << seq.size() << endl ;
-                  for (int j=0; j<(int)seq.size(); j++) cout << " " << pd.moves[seq[j]].name ; cout << endl ;
+                  for (int j=0; j<(int)seq.size(); j++) cout << " " << pd.moves[seq[j]].name ;
+                  cout << endl ;
                   goto again ;
                }
             }
