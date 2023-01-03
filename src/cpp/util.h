@@ -4,7 +4,8 @@
 #include <cstdlib>
 #ifdef _WIN64
 #include <intrin.h>
-inline int ffsll(unsigned long long v){unsigned long r;_BitScanForward64(&r, v);return(int)r;}
+// Note:  this only works because twsearch never calls ffsll on a zero value
+inline int ffsll(unsigned long long v){unsigned long r;_BitScanForward64(&r, v);return 1+r;}
 #else
 #include <strings.h> // for ffsll
 #endif
