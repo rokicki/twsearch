@@ -44,7 +44,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
       }
    }
    vector<moove> newmvs ;
-   for (int i=0; i<(int)pd.moves.size() + (int)pd.rotations.size(); i++) {
+   for (int i=0; i<(int)pd.moves.size() + (int)pd.expandedrotations.size(); i++) {
       moove &bm = i >= nummoves ? pd.expandedrotations[i-nummoves] : pd.moves[i] ;
       int obase = i >= nummoves ? numbmoves + bm.base : bm.base ;
       int bmi = obase >= numbmoves ? pd.baserotorders[obase-numbmoves] : pd.basemoveorders[obase] ;
