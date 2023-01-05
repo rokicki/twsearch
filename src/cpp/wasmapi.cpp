@@ -9,6 +9,7 @@
 #include "twsearch.h"
 #include "parsemoves.h"
 #include "cmdlineops.h"
+#include "string.h"
 struct wasmdata {
    puzdef pd ;
    prunetable *pt ;
@@ -25,14 +26,14 @@ extern "C" void w_arg(const char *s_) {
    while (space < (int)s.size() && s[space] != ' ')
       space++ ;
    if (space >= (int)s.size()) {
-      argv[1] = s.c_str() ;
+      argv[1] = strdup(s.c_str()) ;
       argv[2] = 0 ;
       argc = 2 ;
    } else {
       scopy = s ;
       scopy[space] = 0 ;
-      argv[1] = scopy.c_str() ;
-      argv[2] = scopy.c_str() + space + 1 ;
+      argv[1] = strdup(scopy.c_str()) ;
+      argv[2] = strdup(scopy.c_str() + space + 1) ;
       argv[3] = 0 ;
       argc = 3 ;
    }
