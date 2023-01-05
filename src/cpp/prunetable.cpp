@@ -266,7 +266,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    memshift = 0 ;
    while (hh >> memshift > size)
       memshift++ ;
-   cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift " << subshift << " memshift " << memshift << " shardshift " << shardshift << endl ;
+   if (quiet == 0)
+      cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift " << subshift << " memshift " << memshift << " shardshift " << shardshift << endl ;
    totpop = 0 ;
    ptotpop = 0 ;
    baseval = 0 ;
@@ -279,8 +280,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    fillcnt = 0 ;
    justread = 0 ;
    if (!readpt(pd)) {
-      cout << "Initializing memory " << flush ;
-      cout << "in " << duration() << endl << flush ;
+      if (quiet == 0)
+         cout << "Initializing memory in " << duration() << endl << flush ;
       baseval = 1 ;
       filltable(pd, 0) ;
       filltable(pd, 1) ;
@@ -296,7 +297,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
 void prunetable::filltable(const puzdef &pd, int d) {
    popped = 0 ;
    wbval = min(d, 14) ;
-   cout << "Filling table at depth " << d << " with val " << wval << flush ;
+   if (quiet == 0)
+      cout << "Filling table at depth " << d << " with val " << wval << flush ;
    makeworkchunks(pd, d, true) ;
    int wthreads = setupthreads(pd, *this) ;
    for (int t=0; t<wthreads; t++)
@@ -309,8 +311,9 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #else
    fillthreadworker((void *)&workerparams[0]) ;
 #endif
-   cout << " saw " << popped << " (" << fillcnt << ") in "
-        << duration() << endl << flush ;
+   if (quiet == 0)
+      cout << " saw " << popped << " (" << fillcnt << ") in "
+           << duration() << endl << flush ;
    ptotpop = totpop ;
    totpop += popped ;
    justread = 0 ;
@@ -325,7 +328,8 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
       return ;
    if (wval == 2) {
       ull longcnt = (size + 31) >> 5 ;
-      cout << "Demoting memory values " << flush ;
+      if (quiet == 0)
+         cout << "Demoting memory values " << flush ;
       for (ull i=0; i<longcnt; i += 8) {
          // increment 1's and 2's; leave 3's alone
          // watch out for first element; the 0 in the first one is not a mistake
@@ -346,7 +350,8 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
          v = mem[i+7] ;
          mem[i+7] = v + ((v ^ (v >> 1)) & 0x5555555555555555LL) ;
       }
-      cout << "in " << duration() << endl << flush ;
+      if (quiet == 0)
+         cout << "in " << duration() << endl << flush ;
       wval-- ;
    }
    if (wval <= 0 && prediction < (size >> 9))
@@ -588,7 +593,8 @@ void prunetable::writept(const puzdef &pd) {
    // 56-bits, so we don't use the more complicated length-limited
    // coding.  We use 56-bits so we can use a 64-bit accumulator and
    // still shift things out in byte-sized chunks.
-   cout << "Scanning memory for compression information" << flush ;
+   if (quiet == 0)
+      cout << "Scanning memory for compression information" << flush ;
    for (int i=0; i<272; i++)
       bytecnts[i] = 0 ;
 #ifdef USE_PTHREADS
@@ -604,7 +610,8 @@ void prunetable::writept(const puzdef &pd) {
    cntparams[0] = {0, longcnt, mem} ;
    cntthreadworker((void *)&cntparams[0]) ;
 #endif
-   cout << "in " << duration() << endl << flush ;
+   if (quiet == 0)
+      cout << "in " << duration() << endl << flush ;
    set<pair<ll, int> > codes ;
    vector<pair<int, int> > tree ; // binary tree
    vector<int> depths ; // max depths
@@ -633,9 +640,10 @@ void prunetable::writept(const puzdef &pd) {
       bitcost += a.first + b.first ;
       nextcode++ ;
    }
-   cout << "Encoding; max width is " << maxwidth << " bitcost "
-      << bitcost << " compression " << ((64.0 * longcnt) / bitcost)
-      << " in " << duration() << endl ;
+   if (quiet == 0)
+      cout << "Encoding; max width is " << maxwidth << " bitcost "
+         << bitcost << " compression " << ((64.0 * longcnt) / bitcost)
+         << " in " << duration() << endl ;
    codewidths[nextcode-1] = 0 ;
    codevals[nextcode-1] = 0 ;
    for (int i=0; i<272; i++) {
@@ -671,7 +679,8 @@ void prunetable::writept(const puzdef &pd) {
       }
 #endif
    string filename = makefilename(pd) ;
-   cout << "Writing " << filename << " " << flush ;
+   if (quiet == 0)
+      cout << "Writing " << filename << " " << flush ;
    ofstream w;
    // do stuff
    w.open(filename, ios::out | ios::trunc) ;
@@ -704,7 +713,8 @@ void prunetable::writept(const puzdef &pd) {
    w.close() ;
    if (w.fail())
       error("! I/O error") ;
-   cout << "written in " << duration() << endl << flush ;
+   if (quiet == 0)
+      cout << "written in " << duration() << endl << flush ;
 }
 int prunetable::readpt(const puzdef &pd) {
 #ifdef USECOMPRESSION
@@ -718,7 +728,8 @@ int prunetable::readpt(const puzdef &pd) {
    r.open(filename, ifstream::in);
    if (r.fail())
       return 0 ;
-   cout << "Reading " << filename << " " << flush ;
+   if (quiet == 0)
+      cout << "Reading " << filename << " " << flush ;
    if (r.get() != SIGNATURE) {
       warn("! first byte not signature") ;
       return 0 ;
@@ -841,7 +852,8 @@ int prunetable::readpt(const puzdef &pd) {
    if (tv != SIGNATURE)
       error("! I/O error reading final signature") ;
    r.close() ;
-   cout << "read in " << duration() << endl << flush ;
+   if (quiet == 0)
+      cout << "read in " << duration() << endl << flush ;
    justread = 1 ;
    return 1 ;
 }

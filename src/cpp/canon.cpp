@@ -138,7 +138,8 @@ void makecanonstates(puzdef &pd) {
       }
       canonnext.push_back(nextstate) ;
    }
-   cout << "Found " << statecount << " canonical move states." << endl ;
+   if (quiet == 0)
+      cout << "Found " << statecount << " canonical move states." << endl ;
  /*
    for (int i=0; i<(int)canonnext.size(); i++) {
       cout << i << " " << hex << canonmask[i] << dec ;

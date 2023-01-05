@@ -36,5 +36,6 @@ extern string curline ;
 extern double start ;
 extern int quarter ;
 extern ll maxmem ;
+extern int quiet ;
 #define UTIL_H
 #endif

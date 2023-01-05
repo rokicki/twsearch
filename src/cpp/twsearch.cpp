@@ -130,6 +130,9 @@ void processargs(int &argc, argvtype &argv) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
             nowrite++ ;
+         } else if (strcmp(argv[0], "--quiet") == 0) {
+            quiet++ ;
+            verbose = 0 ;
          } else if (strcmp(argv[0], "--mergeseqs") == 0) {
             domergeseqs++ ;
          } else if (strcmp(argv[0], "--unrotateseqs") == 0) {
@@ -326,7 +329,8 @@ puzdef makepuzdef(istream *f) {
       makecanonstates(pd) ;
    else
       makecanonstates2(pd) ;
-   cout << "Calculated canonical states in " << duration() << endl << flush ;
+   if (quiet == 0)
+      cout << "Calculated canonical states in " << duration() << endl << flush ;
    showcanon(pd, docanon) ;
 //   gensymm(pd) ;
    return pd ;
@@ -339,12 +343,14 @@ puzdef makepuzdef(string s) {
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
 int main(int argc, const char **argv) {
-   cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
-   cout << "#" ;
-   for (int i=0; i<argc; i++)
-      cout << " " << argv[i] ;
-   cout << endl << flush ;
    processargs(argc, argv) ;
+   if (quiet == 0) {
+      cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
+      cout << "#" ;
+      for (int i=0; i<argc; i++)
+         cout << " " << argv[i] ;
+      cout << endl << flush ;
+   }
    if (argc <= 1)
       error("! please provide a twsearch file name on the command line") ;
    ifstream f ;

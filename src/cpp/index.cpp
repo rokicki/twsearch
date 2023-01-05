@@ -245,9 +245,10 @@ void calclooseper(const puzdef &pd) {
       looseiper = 4 ;
       usehashenc += 256 ;
    }
-   cout << "Requiring " << bits << " bits " << looseper*sizeof(loosetype)
-        << " bytes per entry; " << (looseiper*sizeof(loosetype))
-        << " from identity." << endl ;
+   if (quiet == 0)
+      cout << "Requiring " << bits << " bits " << looseper*sizeof(loosetype)
+           << " bytes per entry; " << (looseiper*sizeof(loosetype))
+           << " from identity." << endl ;
 }
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) {
    uchar *p = pos.dat ;

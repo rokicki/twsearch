@@ -229,13 +229,15 @@ void calculatesizes(puzdef &pd) {
    pd.llstates = gllstates ;
    pd.logstates = glogstates ;
    if (glogstates < 64) {
-      cout << "State size is " << gllstates << " log2 " << glogstates << endl ;
+      if (quiet == 0)
+         cout << "State size is " << gllstates << " log2 " << glogstates << endl ;
    } else {
       double log10v = glogstates / log2(10) ;
       double expo = floor(log10v) ;
       double mant = pow(10., log10v-expo) ;
-      cout << "State size is about " << mant << " x 10^" << expo <<
-              " log2 " << glogstates << endl ;
+      if (quiet == 0)
+         cout << "State size is about " << mant << " x 10^" << expo <<
+                 " log2 " << glogstates << endl ;
    }
 }
 void domove(const puzdef &pd, setval p, setval pos, setval pt) {

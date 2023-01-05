@@ -126,7 +126,8 @@ void calcrotations(puzdef &pd) {
    }
    swap(q, filtered) ;
    calcrotinvs(pd) ;
-   cout << "Rotation group size is " << q.size() << endl ;
+   if (quiet == 0)
+      cout << "Rotation group size is " << q.size() << endl ;
    // test that for a random p,
    //  solved * (rotinv * p) == rotinvmap * (solved * p)
    /*

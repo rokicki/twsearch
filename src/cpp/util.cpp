@@ -12,6 +12,7 @@ ll maxmem = 1LL * 1024LL * 1024LL * 1024LL ;
 ll maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
 #endif
 int quarter ;
+int quiet ;
 double walltime() {
    struct timeval tv ;
    gettimeofday(&tv, 0) ;

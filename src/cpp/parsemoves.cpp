@@ -45,10 +45,12 @@ void domove(puzdef &pd, setval p, string mvstring) {
 }
 void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
              generatingset *gs) {
-   if (scramblename.size())
-      cout << "Solving " << scramblename << endl << flush ;
-   else
-      cout << "Solving" << endl << flush ;
+   if (quiet == 0) {
+      if (scramblename.size())
+         cout << "Solving " << scramblename << endl << flush ;
+      else
+         cout << "Solving" << endl << flush ;
+   }
    solve(pd, pt, p, gs) ;
 }
 vector<int> parsemovelist(const puzdef &pd, const char *scr) {
