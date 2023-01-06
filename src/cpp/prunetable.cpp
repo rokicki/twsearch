@@ -739,7 +739,11 @@ int prunetable::readpt(const puzdef &pd) {
    if (r.fail())
       error("! I/O error reading pruning table") ;
    if (checksum != pd.checksum) {
-      cout <<
+      if (quiet)
+         cerr <<
+ "Puzzle definition appears to have changed; recreating pruning table" << endl ;
+      else
+         cout <<
  "Puzzle definition appears to have changed; recreating pruning table" << endl ;
       r.close() ;
       return 0 ;
