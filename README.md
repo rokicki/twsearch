@@ -1,6 +1,22 @@
-Search program for twisty puzzles.  Much like ksolve but, due to licensing issues on
-that program, we have coded it completely from scratch.  We start from a
+# `twsearch`
+
+Search program for twisty puzzles. Much like [KSolve](https://github.com/cubing/ksolve) but, due to licensing issues on that program, we have coded it completely from scratch  We start from a
 base of compatibility but do not guarantee it.
+
+## Running `twsearch`
+
+If you have a C++ toolchain on your computer, you can run:
+
+```shell
+# Check out and build the binary
+git clone https://github.com/cubing/twsearch && cd twsearch
+make build
+
+# Run a search
+./build/bin/twsearch samples/main/3x3x3.tws samples/main/tperm.scr
+```
+
+### Usage
 
 Important options (you should specify these):
 
