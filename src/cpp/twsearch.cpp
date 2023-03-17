@@ -343,12 +343,14 @@ puzdef makepuzdef(string s) {
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
 int main(int argc, const char **argv) {
+   int orig_argc = argc ;
+   const char **orig_argv = argv ;
    processargs(argc, argv) ;
    if (quiet == 0) {
       cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
       cout << "#" ;
-      for (int i=0; i<argc; i++)
-         cout << " " << argv[i] ;
+      for (int i=0; i<orig_argc; i++)
+         cout << " " << orig_argv[i] ;
       cout << endl << flush ;
    }
    if (argc <= 1)
