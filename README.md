@@ -197,3 +197,11 @@ Things to consider:
 
 * Ignore pieces
 * Blocking moves
+
+## License
+
+This work is dual-licensed under the Mozilla Public License 2.0 and GPL 3.0 (or
+any later version). If you use this work, you can choose which license terms you
+wish to adhere to.
+
+`SPDX-License-Identifier: MPL-2.0 OR GPL-3.0-or-later`
