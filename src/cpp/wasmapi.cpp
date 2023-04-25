@@ -1,3 +1,5 @@
+#include "rust/cxx.h"
+
 /*
  *   For WASM use, as an initial test, we use global state to store
  *   our puzdef and pruning table, so our API is just strings everywhere.
@@ -24,11 +26,7 @@ struct wasmdata {
    }
 } wasmdata ;
 static int wasm_inited = 0 ;
-extern "C" void w_arg(const char *s_) {
-   if (wasm_inited == 0) {
-      reseteverything() ;
-      wasm_inited = 1 ;
-   }
+void w_arg(rust::Str s_) {
    string s(s_) ;
    const char *argva[4] ;
    const char **argv = argva ;
@@ -63,7 +61,7 @@ void checkprunetable() {
       wasmdata.havept = 1 ;
    }
 }
-extern "C" void w_setksolve(const char *s_) {
+void w_setksolve(rust::Str s_) {
    if (wasm_inited == 0) {
       reseteverything() ;
       wasm_inited = 1 ;
@@ -72,24 +70,26 @@ extern "C" void w_setksolve(const char *s_) {
    wasmdata.pd = makepuzdef(s) ;
    wasmdata.havepd = 1 ;
 }
-extern "C" const char *w_solvescramble(const char *s) {
+rust::String w_solvescramble(rust::Str s_) {
+   string s(s_) ;
    lastsolution = "--no solution--" ;
    checkprunetable() ;
    puzdef &pd = wasmdata.pd ;
    stacksetval p1(pd) ;
-   vector<setval> movelist = parsemovelist_generously(pd, s) ;
+   vector<setval> movelist = parsemovelist_generously(pd, s.c_str()) ;
    for (auto &m : movelist)
       domove(pd, p1, m) ;
    string noname("NoScrambleName") ;
    solveit(pd, *wasmdata.pt, noname, p1) ;
-   return lastsolution.c_str() ;
+   return lastsolution ;
 }
-extern "C" const char *w_solveposition(const char *s) {
+rust::String w_solveposition(rust::Str s_) {
+   string s(s_) ;
    lastsolution = "--no solution--" ;
    checkprunetable() ;
-   stringstream is(s) ;
+   stringstream is(s.c_str()) ;
    processscrambles(&is, wasmdata.pd, *wasmdata.pt, 0) ;
-   return lastsolution.c_str() ;
+   return lastsolution;
 }
 extern "C" void w_reset() {
    reseteverything() ;
