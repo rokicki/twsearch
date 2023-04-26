@@ -27,6 +27,7 @@ struct wasmdata {
 } wasmdata ;
 static int wasm_inited = 0 ;
 void w_arg(rust::Str s_) {
+   std::cout << "wasmapi: w_arg";
    string s(s_) ;
    const char *argva[4] ;
    const char **argv = argva ;
@@ -66,11 +67,13 @@ void w_setksolve(rust::Str s_) {
       reseteverything() ;
       wasm_inited = 1 ;
    }
+   std::cout << "wasmapi: w_setksolve";
    string s(s_) ;
    wasmdata.pd = makepuzdef(s) ;
    wasmdata.havepd = 1 ;
 }
 rust::String w_solvescramble(rust::Str s_) {
+   std::cout << "wasmapi: w_solvescramble";
    string s(s_) ;
    lastsolution = "--no solution--" ;
    checkprunetable() ;
@@ -84,6 +87,7 @@ rust::String w_solvescramble(rust::Str s_) {
    return lastsolution ;
 }
 rust::String w_solveposition(rust::Str s_) {
+   std::cout << "wasmapi: w_solveposition";
    string s(s_) ;
    lastsolution = "--no solution--" ;
    checkprunetable() ;
