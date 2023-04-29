@@ -42,6 +42,10 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                   pd.mul(p1, pd.moves[mv].pos, p2) ;
                   if (!pd.legalstate(p2))
                      continue ;
+#ifdef CHECKNULLMOVES
+                  if (pd.comparepos(p1, p2) == 0)
+                     continue ;
+#endif
                   slowmodm2(pd, p2, p3) ;
                   int isnew = 1 ;
                   for (int j=0; j<(int)seensize; j++)

@@ -251,8 +251,9 @@ case 's':
             break ;
 case 'C':
             docanon++ ;
-            if (argv[0][2] >= '0')
+            if (argv[0][2] >= '0') {
                canonlim = atoll(argv[0]+2) ;
+            }
             break ;
 case 'F':
             forcearray++ ;
