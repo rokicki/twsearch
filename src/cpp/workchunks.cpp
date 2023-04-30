@@ -27,7 +27,11 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
          vector<ull> wc2 ;
          vector<int> ws2 ;
          int seensize = 0 ;
+#ifdef CHECKNULLMOVES
+         if (1) {
+#else
          if (symmreduce && pd.rotgroup.size() > 1) {
+#endif
             for (int i=0; i<(int)workchunks.size(); i++) {
                ull pmv = workchunks[i] ;
                ull t = pmv ;
@@ -45,8 +49,10 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
 #ifdef CHECKNULLMOVES
                   if (pd.comparepos(p1, p2) == 0)
                      continue ;
-#endif
+                  pd.assignpos(p3, p2) ;
+#else
                   slowmodm2(pd, p2, p3) ;
+#endif
                   int isnew = 1 ;
                   for (int j=0; j<(int)seensize; j++)
                      if (pd.comparepos(p3, seen[j]) == 0) {
