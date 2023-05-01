@@ -23,7 +23,12 @@ struct wasmdata {
       pt = 0 ;
    }
 } wasmdata ;
+static int wasm_inited = 0 ;
 extern "C" void w_arg(const char *s_) {
+   if (wasm_inited == 0) {
+      reseteverything() ;
+      wasm_inited = 1 ;
+   }
    string s(s_) ;
    const char *argva[4] ;
    const char **argv = argva ;
@@ -59,6 +64,10 @@ void checkprunetable() {
    }
 }
 extern "C" void w_setksolve(const char *s_) {
+   if (wasm_inited == 0) {
+      reseteverything() ;
+      wasm_inited = 1 ;
+   }
    string s(s_) ;
    wasmdata.pd = makepuzdef(s) ;
    wasmdata.havepd = 1 ;
