@@ -120,6 +120,17 @@ struct prunetable {
    void addlookups(ull lookups) {
       lookupcnt += lookups ;
    }
+   ~prunetable() {
+      if (mem) {
+         free(mem) ;
+         mem = 0 ;
+      }
+      for (int i=0; i<7; i++)
+         if (tabs[i]) {
+            free(tabs[i]) ;
+            tabs[i] = 0 ;
+         }
+   }
    // if someone set options that affect the hash, we add a suffix to the
    // data file name to reflect this.
    void addsumdat(const puzdef &pd, string &filename) const ;

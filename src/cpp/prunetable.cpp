@@ -283,6 +283,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    lookupcnt = 0 ;
    fillcnt = 0 ;
    justread = 0 ;
+   for (int i=0; i<7; i++)
+      tabs[i] = 0 ;
    if (!readpt(pd)) {
       if (quiet == 0)
          cout << "Initializing memory in " << duration() << endl << flush ;

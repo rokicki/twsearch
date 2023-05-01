@@ -10,10 +10,18 @@
 #include "parsemoves.h"
 #include "cmdlineops.h"
 #include "string.h"
+static puzdef emptypd ;
 struct wasmdata {
    puzdef pd ;
    prunetable *pt ;
    int havepd, havept ;
+   void clear() {
+      pd = emptypd ;
+      delete pt ;
+      havepd = 0 ;
+      havept = 0 ;
+      pt = 0 ;
+   }
 } wasmdata ;
 extern "C" void w_arg(const char *s_) {
    string s(s_) ;
@@ -73,6 +81,10 @@ extern "C" const char *w_solveposition(const char *s) {
    stringstream is(s) ;
    processscrambles(&is, wasmdata.pd, *wasmdata.pt, 0) ;
    return lastsolution.c_str() ;
+}
+extern "C" void w_reset() {
+   reseteverything() ;
+   wasmdata.clear() ;
 }
 #ifdef WASMTEST
 const char *twsfile = 

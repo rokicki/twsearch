@@ -36,6 +36,120 @@ int checkbeforesolve ;
 generatingset *gs ;
 int bestsolve = 1000000 ;
 int optmaxdepth = 0 ;
+int usehashenc ;
+int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
+    dosolvelines, doorder, doshowmoves, doshowpositions, dogenrand,
+    checksolvable, doss, doorderedgs, dosyms, docancelseqs,
+    domergeseqs, dounrotateseqs, doshortenseqs, docoset, douniqsymm,
+    dodescsets, doordertree, dowrong ;
+const char *scramblealgo = 0 ;
+const char *legalmovelist = 0 ;
+static int initialized = 0 ;
+int seed = 0 ;
+int forcearray = 0 ;
+void reseteverything() {
+   checkbeforesolve = 0 ;
+   optmaxdepth = 0 ;
+   usehashenc = 0 ;
+   scramblealgo = 0 ;
+   legalmovelist = 0 ;
+   seed = 0 ;
+   bestsolve = 1000000 ;
+   forcearray = 0 ;
+   dogod = 0 ;
+   docanon = 0 ;
+   doalgo = 0 ;
+   dosolvetest = 0 ;
+   dotimingtest = 0 ;
+   douniq = 0 ;
+   doinv = 0 ;
+   dosolvelines = 0 ;
+   doorder = 0 ;
+   doshowmoves = 0 ;
+   doshowpositions = 0 ;
+   dogenrand = 0 ;
+   checksolvable = 0 ;
+   doss = 0 ;
+   doorderedgs = 0 ;
+   dosyms = 0 ;
+   docancelseqs = 0 ;
+   domergeseqs = 0 ;
+   dounrotateseqs = 0 ;
+   doshortenseqs = 0 ;
+   docoset = 0 ;
+   douniqsymm = 0 ;
+   dodescsets = 0 ;
+   doordertree = 0 ;
+   dowrong = 0 ;
+// for now, WASM limit is 1GB; normal C++ limit is 8GB
+#ifdef WASM
+   maxmem = 1LL * 1024LL * 1024LL * 1024LL ;
+   nowrite = 1 ;
+#else
+   maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
+   nowrite = 0 ;
+#endif
+   antipodecount = 20 ;
+   canonmask.clear() ;
+   canonnext.clear() ;
+   ccount = 0 ;
+   canonlim = 0 ;
+   uniqwork.clear() ;
+   uniqseen.clear() ;
+   globalinputmovecount = 0 ;
+   proclim = 1'000'000'000'000'000'000LL ;
+   compact = 0 ;
+   maxwrong = 0 ;
+   cosetmovelist = 0 ;
+   cosetmoveseq = 0 ;
+   listcosets = 0 ;
+   relaxcosets = 0 ;
+   algostrict = 0 ;
+   cnts.clear() ;
+   symcoordgoal = 20000 ;
+   parts.clear() ;
+   looseper = 0 ;
+   looseiper = 0 ;
+   basebits = 0 ;
+   usehashenc = 0 ;
+   inputbasename = "unknownpuzzle" ;
+   startprunedepth = 3 ;
+   workerparams.clear() ;
+   dllstates = 0 ;
+   origroup = 0 ;
+   posns.clear() ;
+   movehist.clear() ;
+   nocorners = 0 ;
+   nocenters = 0 ;
+   noedges = 0 ;
+   ignoreori = 0 ;
+   distinguishall = 0 ;
+   omitsets.clear() ;
+   solutionsfound = 0 ;
+   solutionsneeded = 1 ;
+   noearlysolutions = 0 ;
+   phase2 = 0 ;
+   optmindepth = 0 ;
+   onlyimprovements = 0 ;
+   randomstart = 0 ;
+   lastsolution.clear() ;
+   maxdepth = 1000000000 ;
+   didprepass = 0 ;
+   scramblemoves = 1 ;
+#ifdef USE_PTHREADS
+   numthreads = 4 ;
+#else
+   numthreads = 1 ;
+#endif
+   verbose = 1 ;
+   curline.clear() ;
+   start = walltime() ;
+   quarter = 0 ;
+   quiet = 0 ;
+   workchunks.clear() ;
+   workstates.clear() ;
+   workat = 0 ;
+}
 void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
               const char *p1str) {
    stacksetval p2(pd) ;
@@ -51,15 +165,6 @@ void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
       cout << "Found a solution totaling " << bestsolve << " moves." << endl ;
    }
 }
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
-    dosolvelines, doorder, doshowmoves, doshowpositions, genrand,
-    checksolvable, doss, doorderedgs, dosyms, usehashenc, docancelseqs,
-    domergeseqs, dounrotateseqs, doshortenseqs, docoset, douniqsymm,
-    dodescsets, doordertree, dowrong ;
-const char *scramblealgo = 0 ;
-const char *legalmovelist = 0 ;
-static int initialized = 0 ;
-int seed = 0 ;
 void doinit() {
    if (!initialized) {
 // disable saving pruning tables when running under WASM
@@ -75,7 +180,6 @@ void doinit() {
       initialized = 1 ;
    }
 }
-int forcearray = 0 ;
 /*
  *   Can be called multiple times at the start.
  */
@@ -196,9 +300,9 @@ case 'd':
             argv++ ;
             break ;
 case 'r':
-            genrand = 1 ;
+            dogenrand = 1 ;
             if (argv[0][2] != 0)
-               genrand = atol(argv[0]+2) ;
+               dogenrand = atol(argv[0]+2) ;
             break ;
 case 'R':
             seed = atol(argv[1]) ;
@@ -344,6 +448,7 @@ puzdef makepuzdef(string s) {
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
 int main(int argc, const char **argv) {
+   reseteverything() ;
    int orig_argc = argc ;
    const char **orig_argv = argv ;
    processargs(argc, argv) ;
@@ -380,8 +485,8 @@ int main(int argc, const char **argv) {
    if (doordertree) {
       ordertree(pd) ;
    }
-   if (genrand) {
-      for (int i=0; i<genrand; i++)
+   if (dogenrand) {
+      for (int i=0; i<dogenrand; i++)
          showrandompos(pd) ;
       return 0 ;
    }
@@ -476,5 +581,6 @@ int main(int argc, const char **argv) {
       processscrambles(&scrambles, pd, gs) ;
       scrambles.close() ;
    }
+   cout << "Twsearch finished." << endl ;
 }
 #endif

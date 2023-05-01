@@ -2,7 +2,7 @@
 #include "index.h"
 #include <iostream>
 int looseper, looseiper, basebits ;
-ll antipodecount = 20 ;
+ll antipodecount ;
 ll antipodeshave ;
 int resetonnewantipode = 0 ;
 loosetype *antipodesloose ;

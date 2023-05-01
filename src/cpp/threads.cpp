@@ -1,11 +1,7 @@
 #include "threads.h"
 #include <pthread.h>
 
-#ifdef USE_PTHREADS
-int numthreads = 4 ;
-#else
-int numthreads = 1 ;
-#endif
+int numthreads ;
 #ifdef USE_PTHREADS
 pthread_mutex_t mmutex ;
 pthread_t p_thread[MAXTHREADS] ;
