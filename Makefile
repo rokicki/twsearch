@@ -3,6 +3,9 @@
 .PHONY: build
 build: build/bin/twsearch
 
+.PHONY: all
+all: build/bin/twsearch build/esm build-rust
+
 .PHONY: clean
 clean:
 	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
@@ -154,10 +157,14 @@ format-js:
 
 # Rust
 
-.PHONY: rust-dev
-rust-dev:
+.PHONY: dev-rust
+dev-rust:
 	cargo run
 
-.PHONY: rust-build
-rust-build:
+.PHONY: build-rust
+build-rust:
 	cargo build --release
+
+.PHONY: lint-rust
+lint-rust:
+	cargo clippy
