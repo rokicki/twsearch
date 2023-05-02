@@ -151,3 +151,13 @@ lint-js:
 .PHONY: format-js
 format-js:
 	npx rome format src/js/**/*.ts
+
+# Rust
+
+.PHONY: rust-dev
+rust-dev:
+	cargo run
+
+.PHONY: rust-build
+rust-build:
+	cargo build --release
