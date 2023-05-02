@@ -147,6 +147,10 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
          continue ;
+#ifdef CHECKNULLMOVES
+      if (pd.comparepos(posns[sp], posns[sp+1]) == 0)
+         continue ;
+#endif
       r += filltable(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
    }
    return r ;
@@ -279,6 +283,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    lookupcnt = 0 ;
    fillcnt = 0 ;
    justread = 0 ;
+   for (int i=0; i<7; i++)
+      tabs[i] = 0 ;
    if (!readpt(pd)) {
       if (quiet == 0)
          cout << "Initializing memory in " << duration() << endl << flush ;

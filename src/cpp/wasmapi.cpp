@@ -10,13 +10,30 @@
 #include "parsemoves.h"
 #include "cmdlineops.h"
 #include "string.h"
+#include "wasmapi.h"
+static puzdef emptypd ;
 struct wasmdata {
    puzdef pd ;
    prunetable *pt ;
    int havepd, havept ;
+   void clear() {
+      pd = emptypd ;
+      delete pt ;
+      havepd = 0 ;
+      havept = 0 ;
+      pt = 0 ;
+   }
 } wasmdata ;
+static int wasm_inited = 0 ;
 extern "C" void w_arg(const char *s_) {
-   string s(s_) ;
+   string s(s_);
+   w_str_arg(s);
+}
+void w_str_arg(string s) {
+   if (wasm_inited == 0) {
+      reseteverything() ;
+      wasm_inited = 1 ;
+   }
    const char *argva[4] ;
    const char **argv = argva ;
    int argc = 0 ;
@@ -51,9 +68,20 @@ void checkprunetable() {
    }
 }
 extern "C" void w_setksolve(const char *s_) {
-   string s(s_) ;
+   string s(s_);
+   w_str_setksolve(s);
+}
+void w_str_setksolve(string s) {
+   if (wasm_inited == 0) {
+      reseteverything() ;
+      wasm_inited = 1 ;
+   }
    wasmdata.pd = makepuzdef(s) ;
    wasmdata.havepd = 1 ;
+}
+string w_str_solvescramble(string s_) {
+   string output(w_solvescramble(s_.c_str()));
+   return output;
 }
 extern "C" const char *w_solvescramble(const char *s) {
    lastsolution = "--no solution--" ;
@@ -67,12 +95,20 @@ extern "C" const char *w_solvescramble(const char *s) {
    solveit(pd, *wasmdata.pt, noname, p1) ;
    return lastsolution.c_str() ;
 }
+string w_str_solveposition(string s_) {
+   string output(w_solveposition(s_.c_str()));
+   return output;
+}
 extern "C" const char *w_solveposition(const char *s) {
    lastsolution = "--no solution--" ;
    checkprunetable() ;
    stringstream is(s) ;
    processscrambles(&is, wasmdata.pd, *wasmdata.pt, 0) ;
    return lastsolution.c_str() ;
+}
+extern "C" void w_reset() {
+   reseteverything() ;
+   wasmdata.clear() ;
 }
 #ifdef WASMTEST
 const char *twsfile = 

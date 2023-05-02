@@ -27,22 +27,40 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
          vector<ull> wc2 ;
          vector<int> ws2 ;
          int seensize = 0 ;
+#ifdef CHECKNULLMOVES
+         if (1) {
+#else
          if (symmreduce && pd.rotgroup.size() > 1) {
+#endif
             for (int i=0; i<(int)workchunks.size(); i++) {
                ull pmv = workchunks[i] ;
                ull t = pmv ;
+               int st = workstates[i] ;
+               ull mask = canonmask[st] ;
+               const vector<int> &ns = canonnext[st] ;
                pd.assignpos(p1, pd.solved) ;
                while (t > 1) {
                   domove(pd, p1, t % nmoves) ;
                   t /= nmoves ;
                }
                for (int mv=0; mv<nmoves; mv++) {
+                  if (((mask >> pd.moves[mv].cs) & 1))
+                     continue ;
                   if (quarter && pd.moves[mv].cost > 1)
                      continue ;
                   pd.mul(p1, pd.moves[mv].pos, p2) ;
                   if (!pd.legalstate(p2))
                      continue ;
+#ifdef CHECKNULLMOVES
+                  if (pd.comparepos(p1, p2) == 0)
+                     continue ;
+                  if (symmreduce && pd.rotgroup.size() > 1)
+                     slowmodm2(pd, p2, p3) ;
+                  else
+                     pd.assignpos(p3, p2) ;
+#else
                   slowmodm2(pd, p2, p3) ;
+#endif
                   int isnew = 1 ;
                   for (int j=0; j<(int)seensize; j++)
                      if (pd.comparepos(p3, seen[j]) == 0) {
@@ -51,7 +69,7 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                      }
                   if (isnew) {
                      wc2.push_back(pmv + (nmoves + mv - 1) * mul) ;
-                     ws2.push_back(0) ;
+                     ws2.push_back(ns[pd.moves[mv].cs]) ;
                      if (seensize < (int)seen.size()) {
                         pd.assignpos(seen[seensize], p3) ;
                      } else {
