@@ -1,5 +1,3 @@
-#include "rust/cxx.h"
-
 /*
  *   For WASM use, as an initial test, we use global state to store
  *   our puzdef and pruning table, so our API is just strings everywhere.
@@ -12,6 +10,7 @@
 #include "parsemoves.h"
 #include "cmdlineops.h"
 #include "string.h"
+#include "wasmapi.h"
 static puzdef emptypd ;
 struct wasmdata {
    puzdef pd ;
@@ -26,9 +25,15 @@ struct wasmdata {
    }
 } wasmdata ;
 static int wasm_inited = 0 ;
-void w_arg(rust::Str s_) {
-   std::cout << "wasmapi: w_arg";
-   string s(s_) ;
+extern "C" void w_arg(const char *s_) {
+   string s(s_);
+   w_str_arg(s);
+}
+void w_str_arg(string s) {
+   if (wasm_inited == 0) {
+      reseteverything() ;
+      wasm_inited = 1 ;
+   }
    const char *argva[4] ;
    const char **argv = argva ;
    int argc = 0 ;
@@ -62,38 +67,44 @@ void checkprunetable() {
       wasmdata.havept = 1 ;
    }
 }
-void w_setksolve(rust::Str s_) {
+extern "C" void w_setksolve(const char *s_) {
+   string s(s_);
+   w_str_setksolve(s);
+}
+void w_str_setksolve(string s) {
    if (wasm_inited == 0) {
       reseteverything() ;
       wasm_inited = 1 ;
    }
-   std::cout << "wasmapi: w_setksolve";
-   string s(s_) ;
    wasmdata.pd = makepuzdef(s) ;
    wasmdata.havepd = 1 ;
 }
-rust::String w_solvescramble(rust::Str s_) {
-   std::cout << "wasmapi: w_solvescramble";
-   string s(s_) ;
+string w_str_solvescramble(string s_) {
+   string output(w_solvescramble(s_.c_str()));
+   return output;
+}
+extern "C" const char *w_solvescramble(const char *s) {
    lastsolution = "--no solution--" ;
    checkprunetable() ;
    puzdef &pd = wasmdata.pd ;
    stacksetval p1(pd) ;
-   vector<setval> movelist = parsemovelist_generously(pd, s.c_str()) ;
+   vector<setval> movelist = parsemovelist_generously(pd, s) ;
    for (auto &m : movelist)
       domove(pd, p1, m) ;
    string noname("NoScrambleName") ;
    solveit(pd, *wasmdata.pt, noname, p1) ;
-   return lastsolution ;
+   return lastsolution.c_str() ;
 }
-rust::String w_solveposition(rust::Str s_) {
-   std::cout << "wasmapi: w_solveposition";
-   string s(s_) ;
+string w_str_solveposition(string s_) {
+   string output(w_solveposition(s_.c_str()));
+   return output;
+}
+extern "C" const char *w_solveposition(const char *s) {
    lastsolution = "--no solution--" ;
    checkprunetable() ;
-   stringstream is(s.c_str()) ;
+   stringstream is(s) ;
    processscrambles(&is, wasmdata.pd, *wasmdata.pt, 0) ;
-   return lastsolution;
+   return lastsolution.c_str() ;
 }
 extern "C" void w_reset() {
    reseteverything() ;

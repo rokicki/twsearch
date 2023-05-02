@@ -1,7 +1,5 @@
 fn main() {
     cxx_build::bridge("src/rs/main.rs")
-        .file("src/cpp/wasmapi.cpp")
-        
         .file("src/cpp/antipode.cpp")
         .file("src/cpp/calcsymm.cpp")
         .file("src/cpp/canon.cpp")
@@ -15,6 +13,7 @@ fn main() {
         .file("src/cpp/prunetable.cpp")
         .file("src/cpp/puzdef.cpp")
         .file("src/cpp/readksolve.cpp")
+        .file("src/cpp/rustapi.cpp")
         .file("src/cpp/solve.cpp")
         .file("src/cpp/test.cpp")
         .file("src/cpp/threads.cpp")
