@@ -20,6 +20,7 @@
 const int CACHELINESIZE = 64 ;
 const int COMPSIGNATURE = 23 ; // start and end of data files
 const int UNCOMPSIGNATURE = 24 ; // start and end of data files
+#define UNKNOWNPUZZLE "unknownpuzzle"
 extern string inputbasename ;
 extern int nowrite ;
 extern int startprunedepth ;

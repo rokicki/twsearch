@@ -371,9 +371,13 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
 // if someone set options that affect the hash, we add a suffix to the
 // data file name to reflect this.
 void prunetable::addsumdat(const puzdef &pd, string &filename) const {
+   ull t = pd.optionssum ;
+   if (inputbasename == UNKNOWNPUZZLE)
+      t ^= pd.checksum ;
+   if (t == 0)
+      return ;
    filename.push_back('-') ;
    filename.push_back('o') ;
-   ull t = pd.optionssum ;
    while (t) {
       int v = t % 36 ;
       t /= 36 ;
@@ -412,8 +416,7 @@ string prunetable::makefilename(const puzdef &pd) const {
    filename += to_string(bytes) ;
    if (suffix)
       filename += suffix ;
-   if (pd.optionssum)
-      addsumdat(pd, filename) ;
+   addsumdat(pd, filename) ;
    filename += ".dat" ;
    return filename ;
 }

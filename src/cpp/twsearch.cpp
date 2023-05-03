@@ -112,7 +112,7 @@ void reseteverything() {
    looseiper = 0 ;
    basebits = 0 ;
    usehashenc = 0 ;
-   inputbasename = "unknownpuzzle" ;
+   inputbasename = UNKNOWNPUZZLE ;
    startprunedepth = 3 ;
    workerparams.clear() ;
    dllstates = 0 ;
