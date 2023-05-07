@@ -163,6 +163,13 @@ dev-rust:
 		--check-before-solve \
 		--random-start
 
+.PHONY: dev-rust-32G
+dev-rust-32G:
+	cargo run -- \
+		--check-before-solve \
+		--random-start \
+		--memory-mb 32768
+
 .PHONY: build-rust
 build-rust:
 	cargo build --release
