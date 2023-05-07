@@ -445,36 +445,21 @@ puzdef makepuzdef(string s) {
    return makepuzdef(&is) ;
 }
 #ifndef ASLIBRARY
-#define STR2(x) #x
-#define STRINGIZE(x) STR2(x)
-int main(int argc, const char **argv) {
-   reseteverything() ;
-   int orig_argc = argc ;
-   const char **orig_argv = argv ;
-   processargs(argc, argv) ;
-   if (quiet == 0) {
-      cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
-      cout << "#" ;
-      for (int i=0; i<orig_argc; i++)
-         cout << " " << orig_argv[i] ;
-      cout << endl << flush ;
-   }
-   if (argc <= 1)
-      error("! please provide a twsearch file name on the command line") ;
+int main_search(const char* def_file, const char** scramble_file) {
    ifstream f ;
-   f.open(argv[1], ifstream::in) ;
+   f.open(def_file, ifstream::in) ;
    if (f.fail())
-      error("! could not open file ", argv[1]) ;
+      error("! could not open file ", def_file) ;
    int sawdot = 0 ;
    inputbasename.clear() ;
-   for (int i=0; argv[1][i]; i++) {
-      if (argv[1][i] == '.')
+   for (int i=0; def_file[i]; i++) {
+      if (def_file[i] == '.')
          sawdot = 1 ;
-      else if (argv[1][i] == '/' || argv[1][i] == '\\') {
+      else if (def_file[i] == '/' || def_file[i] == '\\') {
          sawdot = 0 ;
          inputbasename.clear() ;
       } else if (!sawdot)
-         inputbasename.push_back(argv[1][i]) ;
+         inputbasename.push_back(def_file[i]) ;
    }
    puzdef pd = makepuzdef(&f) ;
    if (doorderedgs)
@@ -554,7 +539,7 @@ int main(int argc, const char **argv) {
       runcoset(pd) ;
    }
    if (phase2) {
-      if (argc <= 2 && !scramblealgo)
+      if (scramble_file == NULL && !scramblealgo)
          error("! need a scramble file for phase 2") ;
       stacksetval scr(pd) ;
       if (scramblealgo) {
@@ -564,23 +549,50 @@ int main(int argc, const char **argv) {
             domove(pd, scr, movelist[i]) ;
       } else {
          ifstream scrambles ;
-         scrambles.open(argv[2], ifstream::in) ;
+         scrambles.open(*scramble_file, ifstream::in) ;
          if (scrambles.fail())
-            error("! could not open scramble file ", argv[2]) ;
+            error("! could not open scramble file ", *scramble_file) ;
          readfirstscramble(&scrambles, pd, scr) ;
          scrambles.close() ;
       }
       prunetable pt(pd, maxmem) ;
       processlines2(pd, [&](const puzdef &pd, setval p1sol, const char *p1str) {
                                dophase2(pd, scr, p1sol, pt, p1str); }) ;
-   } else if (argc > 2) {
+   } else if (scramble_file != NULL) {
       ifstream scrambles ;
-      scrambles.open(argv[2], ifstream::in) ;
+      scrambles.open(*scramble_file, ifstream::in) ;
       if (scrambles.fail())
-         error("! could not open scramble file ", argv[2]) ;
+         error("! could not open scramble file ", *scramble_file) ;
       processscrambles(&scrambles, pd, gs) ;
       scrambles.close() ;
    }
    cout << "Twsearch finished." << endl ;
 }
 #endif
+
+#define STR2(x) #x
+#define STRINGIZE(x) STR2(x)
+int main(int argc, const char **argv) {
+   reseteverything() ;
+   int orig_argc = argc ;
+   const char **orig_argv = argv ;
+   processargs(argc, argv) ;
+   if (quiet == 0) {
+      cout << "# This is twsearch " << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl ;
+      cout << "#" ;
+      for (int i=0; i< orig_argc; i++)
+         cout << " " << orig_argv[i] ;
+      cout << endl << flush ;
+   }
+
+   if (argc <= 1)
+      error("! please provide a twsearch file name on the command line") ;
+
+   const char* def_file = argv[1];
+   const char** scramble_file = NULL;
+   if (argc > 0) {
+      scramble_file = &argv[2];
+   }
+
+   return main_search(def_file, scramble_file);
+}
