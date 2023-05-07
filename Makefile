@@ -159,7 +159,9 @@ format-js:
 
 .PHONY: dev-rust
 dev-rust:
-	cargo run
+	cargo run -- \
+		--check-before-solve \
+		--random-start
 
 .PHONY: build-rust
 build-rust:
