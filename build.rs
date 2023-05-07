@@ -36,7 +36,7 @@ fn main() {
         // .flag("-lpthread") # Unneeded?
         .flag("-DUSE_PTHREADS")
         .flag("-DHAVE_FFSLL")
-        .compile("twsearch-server");
+        .compile("twsearch-rs");
 
     // println!("cargo:rerun-if-changed=src/main.rs");
     // println!("cargo:rerun-if-changed=src/blobstore.cc");
