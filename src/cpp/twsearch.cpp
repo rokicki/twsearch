@@ -444,7 +444,6 @@ puzdef makepuzdef(string s) {
    stringstream is(s) ;
    return makepuzdef(&is) ;
 }
-#ifndef ASLIBRARY
 int main_search(const char* def_file, const char** scramble_file) {
    ifstream f ;
    f.open(def_file, ifstream::in) ;
@@ -568,8 +567,8 @@ int main_search(const char* def_file, const char** scramble_file) {
    }
    cout << "Twsearch finished." << endl ;
 }
-#endif
 
+#ifndef ASLIBRARY
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
 int main(int argc, const char **argv) {
@@ -596,3 +595,4 @@ int main(int argc, const char **argv) {
 
    return main_search(def_file, scramble_file);
 }
+#endif

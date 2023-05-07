@@ -7,4 +7,5 @@ extern void processargs(int &argc, argvtype &argv) ;
 extern puzdef makepuzdef(istream *f) ;
 extern puzdef makepuzdef(string s) ;
 extern void reseteverything() ;
+int main_search(const char* def_file, const char** scramble_file) ;
 #endif
