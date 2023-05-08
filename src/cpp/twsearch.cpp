@@ -590,7 +590,7 @@ int main(int argc, const char **argv) {
 
    const char* def_file = argv[1];
    const char** scramble_file = NULL;
-   if (argc > 0) {
+   if (argc > 2) {
       scramble_file = &argv[2];
    }
 
