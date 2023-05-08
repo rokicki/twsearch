@@ -566,6 +566,7 @@ int main_search(const char* def_file, const char** scramble_file) {
       scrambles.close() ;
    }
    cout << "Twsearch finished." << endl ;
+   return 0;
 }
 
 #ifndef ASLIBRARY
