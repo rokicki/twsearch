@@ -32,7 +32,7 @@ Sample usage:
 
     ./build/bin/twsearch -g samples/main/2x2x2.tws
 
-    ./build/bin/twsearch -c 20 --moves 2L,2R,U,F samples/main/4x4x4.tws samples/main/flip.tws
+    ./build/bin/twsearch -c 20 --moves 2L,2R,U,F samples/main/4x4x4.tws samples/main/flip.scr
 
     ./build/bin/twsearch --moves F,R,D,B,L --scramblealg U samples/main/3x3x3.tws
 
