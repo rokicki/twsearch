@@ -147,10 +147,6 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo,
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
          continue ;
-#ifdef CHECKNULLMOVES
-      if (pd.comparepos(posns[sp], posns[sp+1]) == 0)
-         continue ;
-#endif
       r += filltable(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
    }
    return r ;

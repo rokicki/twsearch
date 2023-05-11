@@ -93,10 +93,6 @@ int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, 
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
          continue ;
-#ifdef CHECKNULLMOVES
-      if (pd.comparepos(posns[sp], posns[sp+1]) == 0)
-         continue ;
-#endif
       movehist[sp] = m ;
       v = solverecur(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
       if (v == 1)
