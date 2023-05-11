@@ -37,7 +37,33 @@ fn main() {
         .flag("-DHAVE_FFSLL")
         .compile("twsearch-rs");
 
-    // println!("cargo:rerun-if-changed=src/main.rs");
-    // println!("cargo:rerun-if-changed=src/blobstore.cc");
-    // println!("cargo:rerun-if-changed=include/blobstore.h");
+    println!("cargo:rerun-if-changed=src/cpp/antipode.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/calcsymm.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/canon.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/cmdlineops.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/filtermoves.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/findalgo.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/generatingset.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/god.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/index.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/parsemoves.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/prunetable.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/puzdef.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/readksolve.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/rustapi.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/solve.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/test.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/threads.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/twsearch.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/util.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/workchunks.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/rotations.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/orderedgs.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/wasmapi.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/cityhash/src/city.cc");
+    println!("cargo:rerun-if-changed=src/cpp/coset.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/descsets.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/ordertree.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/unrotate.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/shorten.cpp");
 }
