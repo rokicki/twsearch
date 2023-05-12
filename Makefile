@@ -159,18 +159,11 @@ format-js:
 
 .PHONY: dev-rust
 dev-rust:
-	cargo run -- \
-		serve \
-		--check-before-solve \
-		--random-start
+	cargo run -- serve
 
 .PHONY: dev-rust-40G
 dev-rust-40G:
-	cargo run -- \
-		serve \
-		--check-before-solve \
-		--random-start \
-		--memory-mb 40960
+	cargo run -- serve --memory-mb 40960
 
 .PHONY: build-rust
 build-rust:
