@@ -3,6 +3,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <sys/time.h>
+#include <filesystem>
 double start ;
 int verbose ;
 ll maxmem ;
@@ -84,3 +85,43 @@ int isprime(int p) {
          return 1 ;
    }
 }
+
+#ifdef WASM
+string prune_table_path(string _file_name, bool _create_dirs) {
+   return "BOGUS_PATH";
+}
+#else
+std::filesystem::path cache_home() {
+   const char* data_home = std::getenv("XDG_CACHE_HOME");
+   if (data_home == NULL) {
+      #ifdef _WIN32
+         // https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables#variables-that-are-recognized-only-in-the-user-context
+         string data_home(std::getenv("CSIDL_DEFAULT_LOCAL_APPDATA"));
+         return data_home;
+      #elif __APPLE__
+         std::filesystem::path home_path = std::getenv("HOME");
+         return home_path / "Library/Caches";
+      #else
+         // > $XDG_CACHE_HOME defines the base directory relative to which
+         // > user-specific non-essential data files should be stored. If
+         // > $XDG_CACHE_HOME is either not set or empty, a default equal to
+         // > $HOME/.cache should be used.
+         // https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
+         std::filesystem::path home_path = std::getenv("HOME");
+         return home_path / ".cache";
+      #endif
+   }
+   return std::filesystem::path(data_home);
+}
+std::filesystem::path app_cache_home(string app_name) {
+   return cache_home() / app_name;
+}
+string prune_table_path(string file_name, bool create_dirs) {
+   std::filesystem::path prune_table_dir = app_cache_home("twsearch") / "prune_tables";
+   if (create_dirs) {
+      std::filesystem::create_directories(prune_table_dir);
+   }
+   std::filesystem::path prune_table_path = prune_table_dir / file_name;
+   return prune_table_path.string(); // The `.string()` call is needed for Windows.
+}
+#endif

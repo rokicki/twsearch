@@ -383,7 +383,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
          filename.push_back('a'+(v-10)) ;
    }
 }
-string prunetable::makefilename(const puzdef &pd) const {
+string prunetable::makefilename(const puzdef &pd, bool create_dirs) const {
 #ifdef USECOMPRESSION
    string filename = "tws7-" + inputbasename + "-" ;
 #else
@@ -414,7 +414,7 @@ string prunetable::makefilename(const puzdef &pd) const {
       filename += suffix ;
    addsumdat(pd, filename) ;
    filename += ".dat" ;
-   return filename ;
+   return prune_table_path(filename, create_dirs);
 }
 ull prunetable::calcblocksize(ull *mem, ull longcnt) {
    ull bits = 0 ;
@@ -683,7 +683,7 @@ void prunetable::writept(const puzdef &pd) {
          widthbases[codewidths[i]]++ ;
       }
 #endif
-   string filename = makefilename(pd) ;
+   string filename = makefilename(pd, true /* create_dirs */) ;
    if (quiet == 0)
       cout << "Writing " << filename << " " << flush ;
    ofstream w;
@@ -728,7 +728,7 @@ int prunetable::readpt(const puzdef &pd) {
       codevals[i] = 0 ;
    }
 #endif
-   string filename = makefilename(pd) ;
+   string filename = makefilename(pd, false /* create_dirs */) ;
    ifstream r ;
    r.open(filename, ifstream::in);
    if (r.fail())

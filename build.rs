@@ -29,7 +29,7 @@ fn main() {
         .file("src/cpp/ordertree.cpp")
         .file("src/cpp/unrotate.cpp")
         .file("src/cpp/shorten.cpp")
-        .flag_if_supported("-std=c++14")
+        .flag("-std=c++17")
         .flag("-DASLIBRARY")
         .flag("-DTWSEARCH_VERSION=v0.4.2-7-g4a9107fa")
         // .flag("-lpthread") # Unneeded?

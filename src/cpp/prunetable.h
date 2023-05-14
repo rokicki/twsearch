@@ -135,7 +135,7 @@ struct prunetable {
    // if someone set options that affect the hash, we add a suffix to the
    // data file name to reflect this.
    void addsumdat(const puzdef &pd, string &filename) const ;
-   string makefilename(const puzdef &pd) const ;
+   string makefilename(const puzdef &pd, bool create_dirs) const ;
    ull calcblocksize(ull *mem, ull longcnt) ;
    void packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) ;
    void unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) ;

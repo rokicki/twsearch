@@ -37,5 +37,9 @@ extern double start ;
 extern int quarter ;
 extern ll maxmem ;
 extern int quiet ;
+// `create_dirs` indicates whether to create the folder hierarchy containing the
+// resulting filename. This is only necessary when you want to write to the
+// file.
+string prune_table_path(string filename, bool create_dirs);
 #define UTIL_H
 #endif
