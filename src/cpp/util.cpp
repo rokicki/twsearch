@@ -156,6 +156,7 @@ const char *prune_table_dir(bool createdirs) {
       }
    }
 #endif
+   int created_dir = 0 ;
    while (1) {
       // ensure final character is not a slash (or, on Windows, a backslash).
       // do this to protect against mkdir's that don't handle trailing slashes.
@@ -172,17 +173,14 @@ const char *prune_table_dir(bool createdirs) {
       if (createdirs) {
 #ifdef _WIN32
          int rc = _mkdir(cachedir.c_str()) ;
-         if (rc != 0 && errno != EEXIST) {
-            cerr << "Error while creating directory " << cachedir << " was " << strerror(errno) << endl ;
-            error("! could not create requested cache dir") ;
-         }
 #else
          int rc = mkdir(cachedir.c_str(), 0777) ;
+#endif
          if (rc != 0 && errno != EEXIST) {
             cerr << "Error while creating directory " << cachedir << " was " << strerror(errno) << endl ;
             error("! could not create requested cache dir") ;
          }
-#endif
+         created_dir |= (rc == 0) ;
       }
       cachedir.push_back('/') ;
       if (append_app_name) {
@@ -192,6 +190,27 @@ const char *prune_table_dir(bool createdirs) {
          // nothing more to do; return name.
          break ;
       }
+   }
+   // if we actually created one of the directories, write a README.txt
+   // file in case someone wanders around the filesystem and bumps into
+   // a bunch of huge files.
+   if (created_dir) {
+      string readmename = cachedir + "readme.txt" ;
+      FILE *f = fopen(readmename.c_str(), "r") ;
+      if (f == 0) { // only write if we won't smash an existing file
+         f = fopen(readmename.c_str(), "w") ;
+         if (f == 0)
+            error("! couldn't open readme.txt in cache dir") ;
+         fprintf(f,
+R"(Files in this directory are temporary pruning table files created by
+the twsearch twisty puzzle searching program.  They may be safely
+deleted because they will be recreated as needed.  For more information
+see
+
+   https://github.com/cubing/twsearch/
+)") ;
+      }
+      fclose(f) ;
    }
    swap(actual_cache_dir, cachedir) ;
    return actual_cache_dir.c_str() ;
