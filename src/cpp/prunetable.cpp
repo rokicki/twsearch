@@ -12,7 +12,7 @@
 fillworker fillworkers[MAXTHREADS] ;
 struct ioqueue ioqueue ;
 string inputbasename = "unknownpuzzle" ;
-int nowrite ;
+int writeprunetables = 1 ; // default is auto
 int startprunedepth = 3 ;
 ull fasthash(int n, const setval sv) {
    return CityHash64((const char *)sv.dat, n) ;
@@ -587,7 +587,8 @@ void *cntthreadworker(void *o) {
 }
 void prunetable::writept(const puzdef &pd) {
    // only write the table if at least 1 in 700 elements has a value
-   if (nowrite || justread || fillcnt < size / 700)
+   if (writeprunetables == 0 || justread ||
+                            (writeprunetables != 2 && fillcnt < size / 700))
       return ;
    ll longcnt = (size + 31) >> 5 ;
    if (longcnt % BLOCKSIZE != 0)

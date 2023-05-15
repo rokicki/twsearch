@@ -84,10 +84,10 @@ void reseteverything() {
 // for now, WASM limit is 1GB; normal C++ limit is 8GB
 #ifdef WASM
    maxmem = 1LL * 1024LL * 1024LL * 1024LL ;
-   nowrite = 1 ;
+   writeprunetables = 0 ; // never
 #else
    maxmem = 8LL * 1024LL * 1024LL * 1024LL ;
-   nowrite = 0 ;
+   writeprunetables = 1 ; // auto
 #endif
    antipodecount = 20 ;
    canonmask.clear() ;
@@ -169,7 +169,7 @@ void doinit() {
    if (!initialized) {
 // disable saving pruning tables when running under WASM
 #ifdef WASM
-      nowrite = 1 ;
+      writeprunetables = 0 ; // never
 #endif
       init_util() ;
       init_threads() ;
@@ -233,7 +233,19 @@ void processargs(int &argc, argvtype &argv) {
          } else if (strcmp(argv[0], "--showsymmetry") == 0) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
-            nowrite++ ;
+            writeprunetables = 0 ; // never
+         } else if (strcmp(argv[0], "--writeprunetables") == 0) {
+            const char *arg = argv[1] ;
+            argc-- ;
+            argv++ ;
+            if (strcmp(arg, "never") == 0)
+               writeprunetables = 0 ;
+            else if (strcmp(arg, "auto") == 0)
+               writeprunetables = 1 ;
+            else if (strcmp(arg, "always") == 0)
+               writeprunetables = 2 ;
+            else
+               error("! the --writeprunetables option expects always, auto, or never") ;
          } else if (strcmp(argv[0], "--cachedir") == 0) {
             user_option_cache_dir = argv[1] ;
             argc-- ;

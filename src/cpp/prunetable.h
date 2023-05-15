@@ -22,7 +22,7 @@ const int COMPSIGNATURE = 23 ; // start and end of data files
 const int UNCOMPSIGNATURE = 24 ; // start and end of data files
 #define UNKNOWNPUZZLE "unknownpuzzle"
 extern string inputbasename ;
-extern int nowrite ;
+extern int writeprunetables ; // 0=always 1=auto 2=never
 extern int startprunedepth ;
 ull fasthash(int n, const setval sv) ;
 struct prunetable ;
