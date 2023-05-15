@@ -32,7 +32,7 @@ CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cm
    src/cpp/index.cpp src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
    src/cpp/readksolve.cpp src/cpp/solve.cpp src/cpp/test.cpp src/cpp/threads.cpp \
    src/cpp/twsearch.cpp src/cpp/util.cpp src/cpp/workchunks.cpp src/cpp/rotations.cpp \
-   src/cpp/orderedgs.cpp src/cpp/wasmapi.cpp src/cpp/cityhash/src/city.cc src/cpp/coset.cpp \
+   src/cpp/orderedgs.cpp src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp src/cpp/cityhash/src/city.cc src/cpp/coset.cpp \
    src/cpp/descsets.cpp src/cpp/ordertree.cpp src/cpp/unrotate.cpp src/cpp/shorten.cpp
 
 OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdlineops.o \
@@ -40,23 +40,23 @@ OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdl
    build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/puzdef.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
-   build/cpp/orderedgs.o build/cpp/wasmapi.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
+   build/cpp/orderedgs.o build/cpp/ffi/ffi_api.o build/cpp/ffi/wasm_api.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
    src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
-   src/cpp/orderedgs.h src/cpp/wasmapi.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
+   src/cpp/orderedgs.h src/cpp/ffi/ffi_api.h src/cpp/ffi/wasm_api.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h
 
-build/cpp/:
-	mkdir -p build/cpp/
+build/cpp/ffi/:
+	mkdir -p build/cpp/ffi/
 
-build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp/
+build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp/ffi/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/%.o: src/cpp/cityhash/src/%.cc | build/cpp/
+build/cpp/%.o: src/cpp/cityhash/src/%.cc | build/cpp/ffi/
 	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/bin/:
@@ -69,7 +69,7 @@ build/bin/twsearch: $(OBJ) | build/bin/
 
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++17 -Wsign-compare
-WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_w_arg,_w_setksolve,_w_solvescramble,_w_solveposition -sEXPORTED_RUNTIME_METHODS=cwrap
+WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_wasm_api_set_arg,_wasm_api_set_kpuzzle_definition,_wasm_api_solve_scramble,_wasm_api_solve_position -sEXPORTED_RUNTIME_METHODS=cwrap
 WASM_TEST_FLAGS = -DWASMTEST -sASSERTIONS
 WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH
 WASM_LDFLAGS = 
@@ -159,18 +159,11 @@ format-js:
 
 .PHONY: dev-rust
 dev-rust:
-	cargo run -- \
-		serve \
-		--check-before-solve \
-		--random-start
+	cargo run -- serve
 
 .PHONY: dev-rust-40G
 dev-rust-40G:
-	cargo run -- \
-		serve \
-		--check-before-solve \
-		--random-start \
-		--memory-mb 40960
+	cargo run -- serve --memory-MiB 40960
 
 .PHONY: build-rust
 build-rust:
