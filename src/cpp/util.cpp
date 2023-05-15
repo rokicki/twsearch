@@ -2,8 +2,13 @@
 #include <random>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio> // for strerror
 #include <sys/time.h>
-#include <filesystem>
+#ifdef _WIN32
+#include <direct.h>    // EEXIST
+#else
+#include <sys/stat.h> // EEXIST, mkdir
+#endif
 double start ;
 int verbose ;
 ll maxmem ;
@@ -86,42 +91,109 @@ int isprime(int p) {
    }
 }
 
+/*
+ *   The cache directory implementation here makes no explicit support
+ *   for Unicode.  It should always work for ASCII data; it may work in
+ *   UTF-8 or codepage environments, or it may not.
+ *
+ *   The actual_cache_dir string maintains the storage for the actual
+ *   string, and a const char* into the string is what's returned (by
+ *   the c_str() method which ensures the terminating 0).
+ */
+string actual_cache_dir ;
+const char *user_option_cache_dir ;
+static int attempted_mkdirs = 0 ;
 #ifdef WASM
-string prune_table_path(string _file_name, bool _create_dirs) {
+const char *prune_table_dir(bool _create_dirs) {
    return "BOGUS_PATH";
 }
 #else
-std::filesystem::path cache_home() {
-   const char* data_home = std::getenv("XDG_CACHE_HOME");
-   if (data_home == NULL) {
-      #ifdef _WIN32
-         // https://learn.microsoft.com/en-us/windows/deployment/usmt/usmt-recognized-environment-variables#variables-that-are-recognized-only-in-the-user-context
-         string data_home(std::getenv("CSIDL_DEFAULT_LOCAL_APPDATA"));
-         return data_home;
-      #elif __APPLE__
-         std::filesystem::path home_path = std::getenv("HOME");
-         return home_path / "Library/Caches";
-      #else
-         // > $XDG_CACHE_HOME defines the base directory relative to which
-         // > user-specific non-essential data files should be stored. If
-         // > $XDG_CACHE_HOME is either not set or empty, a default equal to
-         // > $HOME/.cache should be used.
-         // https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html
-         std::filesystem::path home_path = std::getenv("HOME");
-         return home_path / ".cache";
-      #endif
+#ifdef _WIN32
+static const char *envname = "LOCALAPPDATA" ;
+// on Windows, LOCALAPPDATA should always be set, so this fallback should
+// never be used.
+static const char *defaultdir = "~/.cache/" ;
+#else
+static const char *envname = "XDG_CACHE_HOME" ; // Mac and Linux
+#ifdef __APPLE__
+static const char *defaultdir = "~/Library/Caches/" ;
+#else  // assume a Unix-like operating system
+static const char *defaultdir = "~/.cache/" ;
+#endif
+#endif
+const char *prune_table_dir(bool createdirs) {
+   // do this work only once, but retry if createdirs is 1 and we haven't
+   // tried it with createdirs before.  This means when writing a pruning
+   // table we actually do this twice.
+   if (actual_cache_dir.size() && (!createdirs || attempted_mkdirs))
+      return actual_cache_dir.c_str() ;
+   const char *fromenv = 0 ;
+   // if we get system defaults, append the twsearch app name.
+   // if we got it from a command line argument, do not.
+   int append_app_name = 1 ;
+   if (user_option_cache_dir) {
+      fromenv = user_option_cache_dir ;
+      append_app_name = 0 ;
+   } else {
+      fromenv = std::getenv(envname) ;
+      if (fromenv == 0)
+         fromenv = defaultdir ;
    }
-   return std::filesystem::path(data_home);
-}
-std::filesystem::path app_cache_home(string app_name) {
-   return cache_home() / app_name;
-}
-string prune_table_path(string file_name, bool create_dirs) {
-   std::filesystem::path prune_table_dir = app_cache_home("twsearch") / "prune_tables";
-   if (create_dirs) {
-      std::filesystem::create_directories(prune_table_dir);
+   if (fromenv == 0 || *fromenv == 0)
+      error("! cannot determine cache directory to write pruning table") ;
+   string cachedir(fromenv, fromenv + strlen(fromenv)) ;
+#ifndef _WIN32
+   // on MacOS and Windows, expand tilde, but only if the HOME
+   // environment variable is set.
+   if (cachedir[0] == '~' && cachedir[1] == '/') {
+      const char *homedir = getenv("HOME") ;
+      if (homedir != 0) {
+         // only remove the ~, but retain the directory separator
+         cachedir.erase(cachedir.begin(), cachedir.begin()+1) ;
+         cachedir.insert(cachedir.begin(), homedir, homedir+strlen(homedir)) ;
+      } else {
+         error("! could not expand leading tilde in config path using HOME environment variable") ;
+      }
    }
-   std::filesystem::path prune_table_path = prune_table_dir / file_name;
-   return prune_table_path.string(); // The `.string()` call is needed for Windows.
+#endif
+   while (1) {
+      // ensure final character is not a slash (or, on Windows, a backslash).
+      // do this to protect against mkdir's that don't handle trailing slashes.
+      int lastc = cachedir[cachedir.size()-1] ;
+#ifdef _WIN32
+      if (lastc == '/' || lastc == '\\')
+#else
+      if (lastc == '/')
+#endif
+      {
+         cachedir.pop_back() ;
+      }
+      // make the directory if it doesn't exist, but only if so requested.
+      if (createdirs) {
+#ifdef _WIN32
+         int rc = _mkdir(cachedir.c_str()) ;
+         if (rc != 0 && errno != EEXIST) {
+            cerr << "Error while creating directory " << cachedir << " was " << strerror(errno) << endl ;
+            error("! could not create requested cache dir") ;
+         }
+#else
+         int rc = mkdir(cachedir.c_str(), 0777) ;
+         if (rc != 0 && errno != EEXIST) {
+            cerr << "Error while creating directory " << cachedir << " was " << strerror(errno) << endl ;
+            error("! could not create requested cache dir") ;
+         }
+#endif
+      }
+      cachedir.push_back('/') ;
+      if (append_app_name) {
+         cachedir += "twsearch" ;
+         append_app_name = 0 ;
+      } else {
+         // nothing more to do; return name.
+         break ;
+      }
+   }
+   swap(actual_cache_dir, cachedir) ;
+   return actual_cache_dir.c_str() ;
 }
 #endif

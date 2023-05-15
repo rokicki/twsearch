@@ -234,6 +234,10 @@ void processargs(int &argc, argvtype &argv) {
             dosyms = 1 ;
          } else if (strcmp(argv[0], "--nowrite") == 0) {
             nowrite++ ;
+         } else if (strcmp(argv[0], "--cachedir") == 0) {
+            user_option_cache_dir = argv[1] ;
+            argc-- ;
+            argv++ ;
          } else if (strcmp(argv[0], "--quiet") == 0) {
             quiet++ ;
             verbose = 0 ;

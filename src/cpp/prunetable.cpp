@@ -384,10 +384,12 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
    }
 }
 string prunetable::makefilename(const puzdef &pd, bool create_dirs) const {
+   const char *cachedir = prune_table_dir(create_dirs) ;
+   string filename(cachedir, cachedir + strlen(cachedir)) ;
 #ifdef USECOMPRESSION
-   string filename = "tws7-" + inputbasename + "-" ;
+   filename += "tws7-" + inputbasename + "-" ;
 #else
-   string filename = "tws6-" + inputbasename + "-" ;
+   filename += "tws6-" + inputbasename + "-" ;
 #endif
    if (quarter)
       filename += "q-" ;
@@ -414,7 +416,7 @@ string prunetable::makefilename(const puzdef &pd, bool create_dirs) const {
       filename += suffix ;
    addsumdat(pd, filename) ;
    filename += ".dat" ;
-   return prune_table_path(filename, create_dirs);
+   return filename ;
 }
 ull prunetable::calcblocksize(ull *mem, ull longcnt) {
    ull bits = 0 ;

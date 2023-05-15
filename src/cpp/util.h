@@ -39,7 +39,9 @@ extern ll maxmem ;
 extern int quiet ;
 // `create_dirs` indicates whether to create the folder hierarchy containing the
 // resulting filename. This is only necessary when you want to write to the
-// file.
-string prune_table_path(string filename, bool create_dirs);
+// file.  The return value of this function should always end in a forward
+// slash; if it is from user-provided input, this added if needed.
+extern const char *user_option_cache_dir ;
+const char *prune_table_dir(bool create_dirs);
 #define UTIL_H
 #endif
