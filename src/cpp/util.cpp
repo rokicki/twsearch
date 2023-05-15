@@ -102,12 +102,13 @@ int isprime(int p) {
  */
 string actual_cache_dir ;
 const char *user_option_cache_dir ;
-static int attempted_mkdirs = 0 ;
 #ifdef WASM
 const char *prune_table_dir(bool _create_dirs) {
+   (void)_create_dirs; // Avoid a build warning for the unused arg.
    return "BOGUS_PATH";
 }
 #else
+static int attempted_mkdirs = 0 ;
 #ifdef _WIN32
 static const char *envname = "LOCALAPPDATA" ;
 // on Windows, LOCALAPPDATA should always be set, so this fallback should
