@@ -128,6 +128,10 @@ Options:
 
 `--nowrite`     Don't write pruning tables to disk; regenerate them every time.
 
+`--writeprunetables` `[always|auto|never]'  Write pruning tables always (after
+                 level 5), never (same as `nowrite` above), or automatically
+                 depending on table occupancy.  Default is auto.
+
 `-o`    Print the order of every scramble from standard input.
 
 `--orientationgroup` *#* For puzzles using adjacent element permutations rather
