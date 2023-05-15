@@ -13,7 +13,8 @@ fn main() {
         .file("src/cpp/prunetable.cpp")
         .file("src/cpp/puzdef.cpp")
         .file("src/cpp/readksolve.cpp")
-        .file("src/cpp/rustapi.cpp")
+        .file("src/cpp/ffi/ffi_api.cpp")
+        .file("src/cpp/ffi/rust_api.cpp")
         .file("src/cpp/solve.cpp")
         .file("src/cpp/test.cpp")
         .file("src/cpp/threads.cpp")
@@ -22,7 +23,6 @@ fn main() {
         .file("src/cpp/workchunks.cpp")
         .file("src/cpp/rotations.cpp")
         .file("src/cpp/orderedgs.cpp")
-        .file("src/cpp/wasmapi.cpp")
         .file("src/cpp/cityhash/src/city.cc")
         .file("src/cpp/coset.cpp")
         .file("src/cpp/descsets.cpp")
@@ -50,7 +50,8 @@ fn main() {
     println!("cargo:rerun-if-changed=src/cpp/prunetable.cpp");
     println!("cargo:rerun-if-changed=src/cpp/puzdef.cpp");
     println!("cargo:rerun-if-changed=src/cpp/readksolve.cpp");
-    println!("cargo:rerun-if-changed=src/cpp/rustapi.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/ffi/ffi_api.cpp");
+    println!("cargo:rerun-if-changed=src/cpp/ffi/rust_api.cpp");
     println!("cargo:rerun-if-changed=src/cpp/solve.cpp");
     println!("cargo:rerun-if-changed=src/cpp/test.cpp");
     println!("cargo:rerun-if-changed=src/cpp/threads.cpp");
@@ -59,7 +60,6 @@ fn main() {
     println!("cargo:rerun-if-changed=src/cpp/workchunks.cpp");
     println!("cargo:rerun-if-changed=src/cpp/rotations.cpp");
     println!("cargo:rerun-if-changed=src/cpp/orderedgs.cpp");
-    println!("cargo:rerun-if-changed=src/cpp/wasmapi.cpp");
     println!("cargo:rerun-if-changed=src/cpp/cityhash/src/city.cc");
     println!("cargo:rerun-if-changed=src/cpp/coset.cpp");
     println!("cargo:rerun-if-changed=src/cpp/descsets.cpp");

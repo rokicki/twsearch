@@ -88,6 +88,9 @@ int isprime(int p) {
 
 #ifdef WASM
 string prune_table_path(string _file_name, bool _create_dirs) {
+   // Mark inputs as used: https://stackoverflow.com/a/1486931
+   (void)_file_name;
+   (void)_create_dirs;
    return "BOGUS_PATH";
 }
 #else
