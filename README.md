@@ -76,6 +76,9 @@ Options:
                     solve it.  This may take extra time or memory for
                     large puzzles.
 
+`--cachedir`  Write pruning tables here.  Expands a leading tilde with the value
+              of the HOME environment variable.
+
 `-d` *#*  Set the max depth to search.
 
 `--distinguishall`  Distinguish all pieces, despite any identical
@@ -174,6 +177,24 @@ Options:
 `-v`   Increase verbosity.  If followed immediately by a digit, that digit
      sets the verbosity.
 
+## Pruning Tables
+
+The pruning tables are written to a system-dependent cache directory.
+On Unix, the default system directory is `~/.cache/`, and on Apple
+platforms the default system directory is `~/Library/Caches/`; on
+both of these platforms the default can be overrriden by setting the
+`XDG_CACHE_HOME` environment variable.
+On Windows, the default location is obtained from the `LOCALAPPDATA`
+environment variable.
+
+Unless a directory is explicitly specified with the `--cachedir` option,
+a `twsearch` subdirectory will be created for the pruning tables.
+
+In environment values and in the `--cachedir` option, a leading tilde
+will be expanded with the contents of the `HOME` environment variable.
+
+## Status
+
 What is working so far:
 
 * Parsing ksolve file
@@ -186,11 +207,11 @@ What is working so far:
 * Parse scramble file
 * Solve scramble positions
 * QTM solves/pruning tables
+* Symmetry reduction (except mirroring)
 
 Things to do:
 
 * Add algebraic support for when reading scrambles
-* Symmetry reduction
 * Add grip information; derive moves according to SiGN
 * Print antipodes on two-bit God's algorithm
 * Coset solvers
