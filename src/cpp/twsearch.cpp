@@ -460,7 +460,7 @@ puzdef makepuzdef(string s) {
    stringstream is(s) ;
    return makepuzdef(&is) ;
 }
-int main_search(const char* def_file, const char** scramble_file) {
+int main_search(const char* def_file, const char* scramble_file) {
    ifstream f ;
    f.open(def_file, ifstream::in) ;
    if (f.fail())
@@ -564,9 +564,9 @@ int main_search(const char* def_file, const char** scramble_file) {
             domove(pd, scr, movelist[i]) ;
       } else {
          ifstream scrambles ;
-         scrambles.open(*scramble_file, ifstream::in) ;
+         scrambles.open(scramble_file, ifstream::in) ;
          if (scrambles.fail())
-            error("! could not open scramble file ", *scramble_file) ;
+            error("! could not open scramble file ", scramble_file) ;
          readfirstscramble(&scrambles, pd, scr) ;
          scrambles.close() ;
       }
@@ -575,9 +575,9 @@ int main_search(const char* def_file, const char** scramble_file) {
                                dophase2(pd, scr, p1sol, pt, p1str); }) ;
    } else if (scramble_file != NULL) {
       ifstream scrambles ;
-      scrambles.open(*scramble_file, ifstream::in) ;
+      scrambles.open(scramble_file, ifstream::in) ;
       if (scrambles.fail())
-         error("! could not open scramble file ", *scramble_file) ;
+         error("! could not open scramble file ", scramble_file) ;
       processscrambles(&scrambles, pd, gs) ;
       scrambles.close() ;
    }
@@ -605,9 +605,9 @@ int main(int argc, const char **argv) {
       error("! please provide a twsearch file name on the command line") ;
 
    const char* def_file = argv[1];
-   const char** scramble_file = NULL;
+   const char* scramble_file = NULL;
    if (argc > 2) {
-      scramble_file = &argv[2];
+      scramble_file = argv[2];
    }
 
    return main_search(def_file, scramble_file);
