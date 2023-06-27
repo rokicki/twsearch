@@ -79,7 +79,7 @@ struct ioqueue {
 } ;
 extern struct ioqueue ioqueue ;
 struct prunetable {
-   prunetable() {}
+   prunetable() { amem = 0 ; mem = 0 ; for (int i=0; i<7; i++) tabs[i] = 0 ; }
    prunetable(const puzdef &pd, ull maxmem) ;
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd, int ignorelookups=0) ;
@@ -122,9 +122,10 @@ struct prunetable {
       lookupcnt += lookups ;
    }
    ~prunetable() {
-      if (mem) {
-         free(mem) ;
-         mem = 0 ;
+      if (amem) {
+         free(amem) ;
+         amem = 0 ;
+	 mem = 0 ;
       }
       for (int i=0; i<7; i++)
          if (tabs[i]) {
@@ -148,7 +149,7 @@ struct prunetable {
    ull subshift, memshift ;
    ull lookupcnt ;
    ull fillcnt ;
-   ull *mem ;
+   ull *mem, *amem ;
    int totsize ;
    int shardshift ;
    int baseval, hibase ; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2

@@ -272,8 +272,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    ptotpop = 0 ;
    baseval = 0 ;
    wval = 0 ;
+   amem = mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1) ;
    // hack memalign
-   mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1) ;
    while (((ull)mem) & (CACHELINESIZE - 1))
       mem++ ;
    lookupcnt = 0 ;
