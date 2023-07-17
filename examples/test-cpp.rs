@@ -11,7 +11,7 @@ fn basic_tests() -> Result<(), ()> {
     test_command(
         &[
             "-M",
-            "23768",
+            "1",
             "samples/main/3x3x3.tws",
             "samples/main/tperm.scr",
         ],
