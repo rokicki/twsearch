@@ -55,8 +55,10 @@ void calcrotinvs(puzdef &pd) {
 void calcrotations(puzdef &pd) {
    for (int i=0; i<(int)pd.setdefs.size(); i++) {
       setdef &sd = pd.setdefs[i] ;
-      if (sd.omod != 1 && !sd.uniq)
-         error("! can't use rotations when oriented duplicated pieces.") ;
+      if (sd.omod != 1 && !sd.uniq) {
+         warn("Can't use rotations for symmetry reduction when oriented duplicated pieces.") ;
+         return ;
+      }
    }
    stacksetval pw(pd) ;
    vector<moove> &q = pd.rotgroup ;
