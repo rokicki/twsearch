@@ -233,21 +233,50 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_i
       }
       p += n ;
       int s = 0 ;
+      int checkwildo = 0 ;
       for (int j=0; j<n; j++) {
          if (p[j] == 255 && typ != 'm') {
             if (pz.setdefs[i].omod == 1) {
                p[j] = 0 ;
             } else {
                p[j] = 2 * pz.setdefs[i].omod ;
-               pz.setdefs[i].wildo = 1 ;
-               pz.setdefs[i].obits = ceillog2(pz.setdefs[i].omod+1) ;
-               pz.wildo = 1 ;
-               pz.setdefs[i].oparity = 0 ;
+               if (typ == 's') {
+                  pz.setdefs[i].wildo = 1 ;
+                  pz.setdefs[i].obits = ceillog2(pz.setdefs[i].omod+1) ;
+                  pz.wildo = 1 ;
+                  pz.setdefs[i].oparity = 0 ;
+               } else {
+                  if (typ != 'S')
+                     inerror("! internal error; should be reading scramble") ;
+                  checkwildo = 1 ;
+               }
             }
          } else if (p[j] >= pz.setdefs[i].omod) {
             inerror("! modulo value too large") ;
          }
          s += p[j] ;
+      }
+      // ensure all identical pieces either have same wild orientation
+      if (typ == 's' && pz.setdefs[i].wildo) {
+         for (int j=0; j<n; j++)
+            for (int k=j+1; k<n; k++)
+               if (p[j-n] == p[k-n])
+                  if ((p[j] < pz.setdefs[i].omod) != (p[k] < pz.setdefs[i].omod))
+                     inerror("! inconsistent orientation wildcards across identical pieces") ;
+      }
+      if (typ == 'S' && (checkwildo || pz.setdefs[i].wildo)) {
+         if (!checkwildo)
+           inerror("! solved state in def has ? orientation but scramble does not") ;
+         if (!pz.setdefs[i].wildo)
+           inerror("! scramble def has ? orientation but solved state in def does not") ;
+         for (int j=0; j<n; j++)
+            for (int k=0; k<n; k++)
+               if (p[j-n] == pz.solved.dat[pz.setdefs[i].off+k])
+                  if ((p[j] < pz.setdefs[i].omod) !=
+                   (pz.solved.dat[pz.setdefs[i].off+n+k] < pz.setdefs[i].omod))
+                  inerror(
+"! inconsistent use of orientation wildcards between solved state and scramble"
+                   ) ;
       }
       if (s % pz.setdefs[i].omod != 0)
          pz.setdefs[i].oparity = 0 ;
@@ -291,6 +320,8 @@ puzdef readdef(istream *f) {
          sd.name = twstrdup(toks[1].c_str()) ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
+         if (sd.omod > 127)
+            inerror("! twsearch supports a maximum orientation size of 127") ;
          if (ignoreori)
             sd.omod = 1 ;
          sd.pparity = (sd.size == 1 ? 0 : 1) ;
