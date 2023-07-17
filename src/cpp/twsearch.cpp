@@ -445,6 +445,8 @@ puzdef makepuzdef(istream *f) {
          warn("Ignoring --checkbeforesolve due to identical pieces") ;
       else if (!doss && !pd.uniq)
          warn("Ignoring --checkbeforesolve due to orientation wildcards") ;
+      else if (!doss && pd.haveillegal)
+         warn("Ignoring --checkbeforesolve due to illegal positions") ;
       else
          gs = new generatingset(pd) ;
    }
