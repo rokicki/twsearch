@@ -440,8 +440,14 @@ puzdef makepuzdef(istream *f) {
    }
    if (distinguishall)
       pd.addoptionssum("distinguishall") ;
-   if (doss || checkbeforesolve)
-      gs = new generatingset(pd) ;
+   if (doss || checkbeforesolve) {
+      if (!doss && !pd.uniq)
+         warn("Ignoring --checkbeforesolve due to identical pieces") ;
+      else if (!doss && !pd.uniq)
+         warn("Ignoring --checkbeforesolve due to orientation wildcards") ;
+      else
+         gs = new generatingset(pd) ;
+   }
    if (pd.rotations.size())
       calcrotations(pd) ;
    calculatesizes(pd) ;

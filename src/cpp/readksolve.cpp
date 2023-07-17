@@ -223,6 +223,7 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_i
                inerror("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
+               pz.uniq = 0 ;
                pz.setdefs[i].cnts = cnts ;
                pz.setdefs[i].pbits = ceillog2(cnts.size()) ;
             }
