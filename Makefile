@@ -6,6 +6,10 @@ build: build/bin/twsearch
 .PHONY: all
 all: build/bin/twsearch build/esm build-rust
 
+.PHONY: test-cpp
+test-cpp: build/bin/twsearch
+	cargo run --example test-cpp
+
 .PHONY: clean
 clean:
 	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
