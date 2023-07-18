@@ -19,6 +19,14 @@ fn basic_tests() -> Result<(), ()> {
         " R2 D' F2 U F2 R2 U R2 U' R2",
     )?;
 
+    test_fail(
+        &[
+            "examples/wildoident.tws",
+        ],
+        None,
+        "",
+    )?;
+
     // If no tests failed until now, we're okay!
     Ok(())
 }
@@ -53,6 +61,32 @@ pub(crate) fn test_command(
         println!("❌");
         eprintln!("Expected stdout to contain:\n{}\n", expect_to_contain);
         eprintln!("Stdout was:\n{}\n", stdout);
+        Err(())
+    }
+}
+
+pub(crate) fn test_fail(
+    args: &[&str],
+    stdin: Option<&[u8]>,
+    expect_to_contain: &str,
+) -> Result<(), ()> {
+    println!("----------------");
+    println!("{} {}", BIN_PATH, args.join(" "));
+    let stderr = match run_command(BIN_PATH, args, stdin) {
+        Err(stderr) => stderr,
+        Ok(stdout) => {
+            println!("❌");
+            eprintln!("twsearch should have failed\n");
+            return Ok(());
+        }
+    };
+    if stderr.contains(expect_to_contain) {
+        println!("✅");
+        Ok(())
+    } else {
+        println!("❌");
+        eprintln!("Expected stderr to contain:\n{}\n", expect_to_contain);
+        eprintln!("Stderr was:\n{}\n", stderr);
         Err(())
     }
 }
