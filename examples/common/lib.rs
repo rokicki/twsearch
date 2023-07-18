@@ -39,6 +39,7 @@ impl CliCommand {
             CliCommand::Cpp() => &[],
             CliCommand::Rust() => &[
                 "run",
+                "--quiet", // Suppress deprecation warnings for transitive dependencies (`buf_redux`, `multipart`): https://github.com/tomaka/rouille/issues/271
                 "--",
                 "search",
                 "--debug-print-serialized-json",
