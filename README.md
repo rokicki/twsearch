@@ -227,11 +227,11 @@ Things to consider:
 
 ## `twsearch-rs`
 
-This repo also contains a Rust build that wraps the C++ implementation (in a single binary). This allows running a server to connect with web UIs
+This repo also contains a Rust build that wraps the C++ implementation (in a single binary). This allows running a server to connect with web UIs:
 
 ```
-cargo run --
-https://experiments.cubing.net/cubing.js/twsearch/text-ui.html
+cargo run -- serve
+// Now open https://experiments.cubing.net/cubing.js/twsearch/text-ui.html
 ```
 
 To run commands similar to the examples above:
