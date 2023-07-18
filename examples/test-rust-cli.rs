@@ -52,6 +52,20 @@ fn json_tests() -> Result<(), ()> {
         "F R U R' U' F'",
     )?;
 
+    test_search_succeeds(
+        common::CliCommand::Rust(),
+        &[
+            "--experimental-target-pattern",
+            "samples/json/3x3x3/ELS-FR.target-pattern.json",
+            "--moves",
+            "U,R,r",
+            "samples/json/3x3x3/3x3x3-Reid.def.json",
+            "samples/json/3x3x3/ELS-E3.search-pattern.json",
+        ],
+        None,
+        "r U' R' U R U r'",
+    )?;
+
     // If no tests failed until now, we're okay!
     Ok(())
 }
