@@ -1,11 +1,12 @@
 #[path = "./common/lib.rs"]
 mod common;
 
-use common::{run_tests, test_command_fails, test_command_succeeds};
+use common::{run_tests, test_search_fails, test_search_succeeds};
 
 // TODO: Support `#[test]`.
 fn basic_tests() -> Result<(), ()> {
-    test_command_succeeds(
+    test_search_succeeds(
+        common::CliCommand::Cpp(),
         &[
             "-M",
             "1",
@@ -16,7 +17,12 @@ fn basic_tests() -> Result<(), ()> {
         " R2 D' F2 U F2 R2 U R2 U' R2",
     )?;
 
-    test_command_fails(&["examples/test-cases/wildcard_conflict.tws"], None, "")?;
+    test_search_fails(
+        common::CliCommand::Cpp(),
+        &["examples/test-cases/wildcard_conflict.tws"],
+        None,
+        "",
+    )?;
 
     // If no tests failed until now, we're okay!
     Ok(())

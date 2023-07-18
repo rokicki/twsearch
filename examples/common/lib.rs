@@ -18,16 +18,45 @@ pub fn run_tests(test_fn: fn() -> Result<(), ()>) {
 
 /********/
 
-static BIN_PATH: &str = "./build/bin/twsearch";
+static BIN_PATH_CPP: &str = "./build/bin/twsearch";
+static BIN_PATH_RUST: &str = "cargo";
 
-pub(crate) fn test_command_succeeds(
+#[allow(dead_code)] // Workaround for how we are hacking together our tests.
+pub enum CliCommand {
+    Cpp(),
+    Rust(),
+}
+
+impl CliCommand {
+    fn binary_path(&self) -> &'static str {
+        match self {
+            CliCommand::Cpp() => BIN_PATH_CPP,
+            CliCommand::Rust() => BIN_PATH_RUST,
+        }
+    }
+    fn prefix_args(&self) -> &[&str] {
+        match self {
+            CliCommand::Cpp() => &[],
+            CliCommand::Rust() => &[
+                "run",
+                "--",
+                "search",
+                "--debug-print-serialized-json",
+                "--num-threads",
+                "1",
+            ],
+        }
+    }
+}
+
+#[allow(dead_code)] // Workaround for how we are hacking together our tests.
+pub(crate) fn test_search_succeeds(
+    cli_command: CliCommand,
     args: &[&str],
     stdin: Option<&[u8]>,
     expect_stdout_to_contain: &str,
 ) -> Result<(), ()> {
-    println!("----------------");
-    println!("{} {}", BIN_PATH, args.join(" "));
-    let stdout = match run_command(BIN_PATH, args, stdin) {
+    let stdout = match run_search_command(cli_command, args, stdin) {
         Ok(stdout) => stdout,
         Err(stderr) => {
             println!("❌");
@@ -49,14 +78,14 @@ pub(crate) fn test_command_succeeds(
     }
 }
 
-pub(crate) fn test_command_fails(
+#[allow(dead_code)] // Workaround for how we are hacking together our tests.
+pub(crate) fn test_search_fails(
+    cli_command: CliCommand,
     args: &[&str],
     stdin: Option<&[u8]>,
     expect_stderr_to_contain: &str,
 ) -> Result<(), ()> {
-    println!("----------------");
-    println!("{} {}", BIN_PATH, args.join(" "));
-    let stderr = match run_command(BIN_PATH, args, stdin) {
+    let stderr = match run_search_command(cli_command, args, stdin) {
         Err(stderr) => stderr,
         Ok(stdout) => {
             println!("❌");
@@ -79,10 +108,22 @@ pub(crate) fn test_command_fails(
     }
 }
 
+pub(crate) fn run_search_command(
+    cli_command: CliCommand,
+    args: &[&str],
+    stdin: Option<&[u8]>,
+) -> Result<String, String> {
+    let binary_path = cli_command.binary_path();
+    let full_args = [cli_command.prefix_args(), args].concat();
+    println!("----------------");
+    println!("{} {}", binary_path, full_args.join(" "));
+    run_command(binary_path, full_args, stdin)
+}
+
 // Returns either stdout on success, or stderr as an error.
 pub(crate) fn run_command(
     command_name: &str,
-    args: &[&str],
+    args: Vec<&str>,
     stdin: Option<&[u8]>,
 ) -> Result<String, String> {
     if DEBUG_PRINT_ARGS {
