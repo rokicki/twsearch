@@ -42,24 +42,24 @@ fn json_tests() -> Result<(), ()> {
         common::CliCommand::Rust(),
         &[
             "--moves",
-            "U,F,R,D",
+            "F,R,B",
             "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/T-Perm.scramble.json",
+            "samples/json/Unoriented-A-Perm.json",
         ],
         None,
-        "R2 D' F2 U F2 R2 U R2 U' R2 D", // TODO: this may be a different alg
+        "R B R' F R B' R' F'", // TODO: this may be a different 8-move alg
     )?;
 
     test_search_succeeds(
         common::CliCommand::Rust(),
         &[
             "--moves",
-            "F,R,B",
+            "U,F,R,D",
             "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/Unoriented-A-Perm.json",
+            "samples/json/T-Perm.scramble.json",
         ],
         None,
-        "R B R' F R B' R' F", // TODO: this may be a different alg
+        "R2 D' F2 U F2 R2 U R2 U' R2 D", // TODO: this may be a different alg
     )?;
 
     test_search_succeeds(
