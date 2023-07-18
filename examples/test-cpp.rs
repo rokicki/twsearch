@@ -1,6 +1,6 @@
 use std::{
     io::Write,
-    process::{Command, Stdio},
+    process::{exit, Command, Stdio},
     str,
 };
 
@@ -8,7 +8,7 @@ const DEBUG_PRINT_ARGS: bool = false;
 
 // TODO: Support `#[test]`.
 fn basic_tests() -> Result<(), ()> {
-    test_command(
+    test_command_succeeds(
         &[
             "-M",
             "1",
@@ -19,30 +19,34 @@ fn basic_tests() -> Result<(), ()> {
         " R2 D' F2 U F2 R2 U R2 U' R2",
     )?;
 
-    test_fail(
-        &[
-            "examples/wildoident.tws",
-        ],
-        None,
-        "",
-    )?;
+    test_command_fails(&["examples/test-cases/wildcard_conflict.tws"], None, "")?;
 
     // If no tests failed until now, we're okay!
     Ok(())
 }
 
+fn run_tests(test_fn: fn() -> Result<(), ()>) {
+    match test_fn() {
+        Ok(_) => (),
+        Err(_) => {
+            eprintln!("At least one tests failed. Exiting");
+            exit(1)
+        }
+    }
+}
+
 fn main() {
-    basic_tests().expect("At least one test failed.")
+    run_tests(basic_tests)
 }
 
 /********/
 
 static BIN_PATH: &str = "./build/bin/twsearch";
 
-pub(crate) fn test_command(
+pub(crate) fn test_command_succeeds(
     args: &[&str],
     stdin: Option<&[u8]>,
-    expect_to_contain: &str,
+    expect_stdout_to_contain: &str,
 ) -> Result<(), ()> {
     println!("----------------");
     println!("{} {}", BIN_PATH, args.join(" "));
@@ -54,21 +58,24 @@ pub(crate) fn test_command(
             return Ok(());
         }
     };
-    if stdout.contains(expect_to_contain) {
+    if stdout.contains(expect_stdout_to_contain) {
         println!("✅");
         Ok(())
     } else {
         println!("❌");
-        eprintln!("Expected stdout to contain:\n{}\n", expect_to_contain);
+        eprintln!(
+            "Expected stdout to contain:\n{}\n",
+            expect_stdout_to_contain
+        );
         eprintln!("Stdout was:\n{}\n", stdout);
         Err(())
     }
 }
 
-pub(crate) fn test_fail(
+pub(crate) fn test_command_fails(
     args: &[&str],
     stdin: Option<&[u8]>,
-    expect_to_contain: &str,
+    expect_stderr_to_contain: &str,
 ) -> Result<(), ()> {
     println!("----------------");
     println!("{} {}", BIN_PATH, args.join(" "));
@@ -77,15 +84,19 @@ pub(crate) fn test_fail(
         Ok(stdout) => {
             println!("❌");
             eprintln!("twsearch should have failed\n");
+            eprintln!("stdout contained:\n{}\n", stdout);
             return Ok(());
         }
     };
-    if stderr.contains(expect_to_contain) {
+    if stderr.contains(expect_stderr_to_contain) {
         println!("✅");
         Ok(())
     } else {
         println!("❌");
-        eprintln!("Expected stderr to contain:\n{}\n", expect_to_contain);
+        eprintln!(
+            "Expected stderr to contain:\n{}\n",
+            expect_stderr_to_contain
+        );
         eprintln!("Stderr was:\n{}\n", stderr);
         Err(())
     }
