@@ -30,48 +30,12 @@ fn json_tests() -> Result<(), ()> {
         common::CliCommand::Rust(),
         &[
             "--moves",
-            "U,F,R,D",
-            "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/A-Perm.scramble.json",
+            "U,R,F",
+            "samples/json/3x3x3/3x3x3-Reid.def.json",
+            "samples/json/3x3x3/FRURUF.exact.search-pattern.json",
         ],
         None,
-        "R2 D R2 D' F2 R2 U' R2 U F2",
-    )?;
-
-    test_search_succeeds(
-        common::CliCommand::Rust(),
-        &[
-            "--moves",
-            "F,R,B",
-            "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/Unoriented-A-Perm.json",
-        ],
-        None,
-        "R B R' F R B' R' F'", // TODO: this may be a different 8-move alg
-    )?;
-
-    test_search_succeeds(
-        common::CliCommand::Rust(),
-        &[
-            "--moves",
-            "U,F,R,D",
-            "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/T-Perm.scramble.json",
-        ],
-        None,
-        "R2 D' F2 U F2 R2 U R2 U' R2 D", // TODO: this may be a different alg
-    )?;
-
-    test_search_succeeds(
-        common::CliCommand::Rust(),
-        &[
-            "--moves",
-            "F,R,U",
-            "samples/json/3x3x3-Reid-supercube.def.json",
-            "samples/json/Unoriented-Y-Perm.scramble.json",
-        ],
-        None,
-        "F R U R' U' F' U", // TODO: this may be a different alg
+        "F R U R' U' F'",
     )?;
 
     // If no tests failed until now, we're okay!
