@@ -134,6 +134,7 @@ pub(crate) fn run_command(
         .args(args.iter())
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn();
     let mut child = match child {
         Ok(child) => child,
