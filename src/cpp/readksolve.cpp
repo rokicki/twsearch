@@ -215,16 +215,16 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_i
          for (int j=0; j<(int)cnts.size(); j++)
             if (cnts[j] == 0)
                inerror("! values are not contiguous") ;
+         if (typ == 'S' && !(cnts == pz.setdefs[i].cnts))
+            inerror("! scramble position permutation doesn't match solved") ;
+         if (typ == 's')
+            pz.setdefs[i].cnts = cnts ;
          if ((int)cnts.size() != n) {
-            if (typ == 'S') {
-               if (!(cnts == pz.setdefs[i].cnts))
-                  inerror("! scramble position permutation doesn't match solved") ;
-            } else if (typ != 's')
+            if (typ != 's' && typ != 'S')
                inerror("! expected, but did not see, a proper permutation") ;
             else {
                pz.setdefs[i].uniq = 0 ;
                pz.uniq = 0 ;
-               pz.setdefs[i].cnts = cnts ;
                pz.setdefs[i].pbits = ceillog2(cnts.size()) ;
             }
          } else {
