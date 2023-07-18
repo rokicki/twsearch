@@ -236,7 +236,7 @@ void calclooseper(const puzdef &pd) {
    // symmetric states.  After reduction mod m and uniqification, we
    // will recalculate the symmetries for any symmetric states.
    basebits = bits ;
-   if (pd.rotations.size() > 0)
+   if (pd.rotgroup.size() > 0)
       bits++ ;
    looseper = (bits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
    looseiper = (ibits + BITSPERLOOSE - 1) / BITSPERLOOSE ;
@@ -303,7 +303,7 @@ void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid, int sym) 
       }
       p += n ;
    }
-   if (pd.rotations.size() > 0 && sym) {
+   if (pd.rotgroup.size() > 0 && sym) {
       if (1 + storedbits > 64) {
          *w++ = accum ;
          accum >>= BITSPERLOOSE ;

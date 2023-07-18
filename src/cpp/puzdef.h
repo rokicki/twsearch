@@ -37,7 +37,7 @@ struct setdef {
    unsigned long long llperms, llords, llstates ;
    vector<int> cnts ; // only not empty when not unique.
    setdef() : size(0), off(0), name(0), omod(0), pbits(0), obits(0), pibits(0),
-              psum(0), uniq(0), pparity(0), oparity(0), wildo(0), logstates(0),
+              psum(0), uniq(1), pparity(0), oparity(0), wildo(0), logstates(0),
               llperms(0), llords(0), llstates(0), cnts() {}
    void mulp(const uchar *ap, const uchar *bp, uchar *cp) const {
       for (int j=0; j<size; j++)
@@ -77,7 +77,8 @@ struct movealias {
 } ;
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
-              logstates(0), llstates(0), checksum(0), haveillegal(0), wildo(0)
+              logstates(0), llstates(0), checksum(0), haveillegal(0),
+              wildo(0), uniq(0)
               {}
    const char *name ;
    setdefs_t setdefs ;
@@ -98,15 +99,12 @@ struct puzdef {
    ull checksum ;
    ull optionssum ;
    vector<illegal_t> illegal ;
-   char haveillegal, wildo ;
+   char haveillegal, wildo, uniq ;
    int comparepos(const setval a, const setval b) const {
       return memcmp(a.dat, b.dat, totsize) ;
    }
    int canpackdense() const {
-      for (int i=0; i<(int)setdefs.size(); i++)
-         if (!setdefs[i].uniq)
-            return 0 ;
-      return 1 ;
+      return uniq ;
    }
    int invertible() const {
       return canpackdense() ;

@@ -440,8 +440,16 @@ puzdef makepuzdef(istream *f) {
    }
    if (distinguishall)
       pd.addoptionssum("distinguishall") ;
-   if (doss || checkbeforesolve)
-      gs = new generatingset(pd) ;
+   if (doss || checkbeforesolve) {
+      if (!doss && !pd.uniq)
+         warn("Ignoring --checkbeforesolve due to identical pieces") ;
+      else if (!doss && !pd.uniq)
+         warn("Ignoring --checkbeforesolve due to orientation wildcards") ;
+      else if (!doss && pd.haveillegal)
+         warn("Ignoring --checkbeforesolve due to illegal positions") ;
+      else
+         gs = new generatingset(pd) ;
+   }
    if (pd.rotations.size())
       calcrotations(pd) ;
    calculatesizes(pd) ;
@@ -495,11 +503,11 @@ int main_search(const char* def_file, const char* scramble_file) {
       int statesfitsa = forcearray ||
           (pd.logstates <= 50 &&
              ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem)) ;
-      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotations.size() == 0) {
+      if (!forcearray && statesfit2 && pd.canpackdense() && pd.rotgroup.size() == 0) {
          cout << "Using twobit arrays." << endl ;
          dotwobitgod2(pd) ;
       } else if (statesfitsa) {
-         if (pd.rotations.size()) {
+         if (pd.rotgroup.size()) {
             cout << "Using sorting bfs symm and arrays." << endl ;
             doarraygodsymm(pd) ;
          } else {
