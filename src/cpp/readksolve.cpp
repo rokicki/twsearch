@@ -257,7 +257,8 @@ setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_i
          }
          s += p[j] ;
       }
-      // ensure all identical pieces either have same wild orientation
+      // ensure all identical pieces either are not wild orientation
+      // or are all wild orientation
       if (typ == 's' && pz.setdefs[i].wildo) {
          for (int j=0; j<n; j++)
             for (int k=j+1; k<n; k++)
