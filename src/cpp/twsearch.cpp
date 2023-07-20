@@ -443,7 +443,7 @@ puzdef makepuzdef(istream *f) {
    if (doss || checkbeforesolve) {
       if (!doss && !pd.uniq)
          warn("Ignoring --checkbeforesolve due to identical pieces") ;
-      else if (!doss && !pd.uniq)
+      else if (!doss && pd.wildo)
          warn("Ignoring --checkbeforesolve due to orientation wildcards") ;
       else if (!doss && pd.haveillegal)
          warn("Ignoring --checkbeforesolve due to illegal positions") ;
