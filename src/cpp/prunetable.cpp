@@ -272,7 +272,10 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
    ptotpop = 0 ;
    baseval = 0 ;
    wval = 0 ;
+   cout << "Trying to allocate " << (CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) << endl ;
    amem = mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1) ;
+   if (mem == 0)
+      error("! could not allocate main memory buffer") ;
    // hack memalign
    while (((ull)mem) & (CACHELINESIZE - 1))
       mem++ ;
