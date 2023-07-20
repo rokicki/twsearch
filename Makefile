@@ -77,9 +77,9 @@ build/bin/twsearch: $(OBJ) | build/bin/
 
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++17 -Wsign-compare
-WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_wasm_api_set_arg,_wasm_api_set_kpuzzle_definition,_wasm_api_solve_scramble,_wasm_api_solve_position -sEXPORTED_RUNTIME_METHODS=cwrap
+WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_wasm_api_set_arg,_wasm_api_set_kpuzzle_definition,_wasm_api_solve_scramble,_wasm_api_solve_position -sEXPORTED_RUNTIME_METHODS=cwrap -sINITIAL_MEMORY=32768000
 WASM_TEST_FLAGS = -DWASMTEST -sASSERTIONS
-WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH
+WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH=1
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
