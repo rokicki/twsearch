@@ -2,7 +2,10 @@ use std::{
     io::Write,
     process::{exit, Command, Stdio},
     str,
+    time::Duration,
 };
+
+use wait_timeout::ChildExt;
 
 const DEBUG_PRINT_ARGS: bool = false;
 
@@ -56,8 +59,9 @@ pub(crate) fn test_search_succeeds(
     args: &[&str],
     stdin: Option<&[u8]>,
     expect_stdout_to_contain: &str,
+    timeout: Option<Duration>,
 ) -> Result<(), ()> {
-    let stdout = match run_search_command(cli_command, args, stdin) {
+    let stdout = match run_search_command(cli_command, args, stdin, timeout) {
         Ok(stdout) => stdout,
         Err(stderr) => {
             println!("❌");
@@ -85,8 +89,9 @@ pub(crate) fn test_search_fails(
     args: &[&str],
     stdin: Option<&[u8]>,
     expect_stderr_to_contain: &str,
+    timeout: Option<Duration>,
 ) -> Result<(), ()> {
-    let stderr = match run_search_command(cli_command, args, stdin) {
+    let stderr = match run_search_command(cli_command, args, stdin, timeout) {
         Err(stderr) => stderr,
         Ok(stdout) => {
             println!("❌");
@@ -113,12 +118,13 @@ pub(crate) fn run_search_command(
     cli_command: CliCommand,
     args: &[&str],
     stdin: Option<&[u8]>,
+    timeout: Option<Duration>,
 ) -> Result<String, String> {
     let binary_path = cli_command.binary_path();
     let full_args = [cli_command.prefix_args(), args].concat();
     println!("----------------");
     println!("{} {}", binary_path, full_args.join(" "));
-    run_command(binary_path, full_args, stdin)
+    run_command(binary_path, full_args, stdin, timeout)
 }
 
 // Returns either stdout on success, or stderr as an error.
@@ -126,6 +132,7 @@ pub(crate) fn run_command(
     command_name: &str,
     args: Vec<&str>,
     stdin: Option<&[u8]>,
+    timeout: Option<Duration>,
 ) -> Result<String, String> {
     if DEBUG_PRINT_ARGS {
         println!("args: {}", args.join(" "));
@@ -142,6 +149,16 @@ pub(crate) fn run_command(
             return Err(e.to_string());
         }
     };
+
+    if let Some(timeout) = timeout {
+        match child.wait_timeout(timeout).unwrap() {
+            Some(_) => {}
+            None => {
+                child.kill().expect("Unable to kill process upon timeout.");
+                return Err(format!("Command timed out after {:?}", timeout));
+            }
+        };
+    }
 
     if let Some(stdin) = stdin {
         let child_stdin = child.stdin.as_mut().unwrap(); // TODO
