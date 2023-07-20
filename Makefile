@@ -77,9 +77,9 @@ build/bin/twsearch: $(OBJ) | build/bin/
 
 WASM_CXX = emsdk/upstream/emscripten/em++
 WASM_CXXFLAGS = -O3 -fno-exceptions -Wextra -Wall -pedantic -std=c++17 -Wsign-compare
-WASM_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_wasm_api_set_arg,_wasm_api_set_kpuzzle_definition,_wasm_api_solve_scramble,_wasm_api_solve_position -sEXPORTED_RUNTIME_METHODS=cwrap -sINITIAL_MEMORY=32768000
+WASM_COMMON_FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DWASM -DASLIBRARY -Isrc/cpp -Isrc/cpp/cityhash/src -sEXPORTED_FUNCTIONS=_wasm_api_set_arg,_wasm_api_set_kpuzzle_definition,_wasm_api_solve_scramble,_wasm_api_solve_position -sEXPORTED_RUNTIME_METHODS=cwrap -sINITIAL_MEMORY=32768000
 WASM_TEST_FLAGS = -DWASMTEST -sASSERTIONS
-WASM_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH=1
+WASM_ESM_BASE64_SINGLE_FILE_FLAGS = -sEXPORT_ES6 -sSINGLE_FILE -sALLOW_MEMORY_GROWTH=1
 WASM_LDFLAGS = 
 
 emsdk: ${WASM_CXX}
@@ -104,13 +104,13 @@ build/wasm-test/:
 	mkdir -p build/wasm-test/
 
 build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
 build/wasm-single-file/:
 	mkdir -p build/wasm-single-file/
 
 build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) $(WASM_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_ESM_BASE64_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
 
 # JS
 
