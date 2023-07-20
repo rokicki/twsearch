@@ -78,7 +78,7 @@ struct movealias {
 struct puzdef {
    puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
               logstates(0), llstates(0), checksum(0), haveillegal(0),
-              wildo(0), uniq(0)
+              wildo(0), uniq(1)
               {}
    const char *name ;
    setdefs_t setdefs ;
