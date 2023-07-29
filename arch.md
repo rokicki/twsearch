@@ -226,13 +226,37 @@ any multiplication, but this is true for ksolve as well.
 
 The twsearch input description
 
+The twsearch input description format is cribbed directly from ksolve
+(although I don't support all the features that ksolve has, and I do
+support some features that ksolve does not have).  The parser for the
+format is ad-hoc C++ code because I did not want to introduce extra
+dependencies on parsers or lexers.  The input description is line-based,
+with comments preceded by a hash symbol (#) and blank lines ignored.
 
+Name [puzzlename] (optional)
+Set name permcount orientation (1 or more)
+Solved
+Position...
+End
+
+Move
+Position..
+End
+Illegal ...
+MoveAlias
+MoveSequence (is this finished???)
 
 Internal puzzle representation
 
 Canonical sequences
 
-Pruning tables
+Pruning tables in memory
+
+Hashing
+
+Reading and writing pruning tables
+
+Compression of pruning tables
 
 Solve routines
 

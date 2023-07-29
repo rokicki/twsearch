@@ -86,7 +86,6 @@ struct puzdef {
    vector<moove> basemoves, moves, parsemoves, rotations, expandedrotations, rotgroup ;
    vector<movealias> aliases ;
    vector<movealias> moveseqs ;
-   vector<const char *> swizzlenames ;
    vector<setval> rotinvmap ;
    vector<int> basemoveorders, baserotorders ;
    vector<int> rotinv ;

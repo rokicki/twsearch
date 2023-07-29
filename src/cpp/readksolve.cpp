@@ -375,11 +375,6 @@ puzdef readdef(istream *f) {
             m.base = pz.moves.size() ;
             pz.moves.push_back(m) ;
          }
-      } else if (toks[0] == "SwizzleSet") {
-         if (toks.size() < 3)
-            inerror("Too few tokens in SwizzleSet definition") ;
-         for (int i=1; i<(int)toks.size(); i++)
-            pz.swizzlenames.push_back(twstrdup(toks[i].c_str())) ;
       } else if (toks[0] == "MoveAlias") {
          if (state != 2)
             inerror("! MoveAlias in wrong place") ;
