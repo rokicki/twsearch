@@ -233,18 +233,101 @@ format is ad-hoc C++ code because I did not want to introduce extra
 dependencies on parsers or lexers.  The input description is line-based,
 with comments preceded by a hash symbol (#) and blank lines ignored.
 
-Name [puzzlename] (optional)
-Set name permcount orientation (1 or more)
+To motivate this section, we list here the initial part of the 3x3x3
+twsearch definition file (omitting some moves for brevity):
+
+# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+Name PuzzleGeometryPuzzle
+
+Set EDGE 12 2
+Set CORNER 8 3
+
 Solved
-Position...
+EDGE
+1 2 3 4 5 6 7 8 9 10 11 12
+0 0 0 0 0 0 0 0 0 0 0 0
+CORNER
+1 2 3 4 5 6 7 8
+0 0 0 0 0 0 0 0
 End
 
-Move
-Position..
+Move F
+EDGE
+10 1 3 4 2 6 7 8 9 5 11 12
+1 1 0 0 1 0 0 0 0 1 0 0
+CORNER
+7 1 3 2 5 6 4 8
+2 1 0 2 0 0 1 0
 End
-Illegal ...
-MoveAlias
-MoveSequence (is this finished???)
+
+Tokens on a line are whitespace separated.  The file can start with a
+Name command, which if present must be followed by a single token that
+is used as the puzzle name.  (The name is not presently used for anything.)
+
+After that there must be one or more Set commands.  Each Set command
+defines pieces of a particular orbit, which consists of pieces that might be
+exchanged for each other.  For instance, on the standard 3x3x3, the two
+orbits are corners and edges; corners can never be swapped with edges, and
+edges can never be swapped with corners.
+
+Each Set command must have a total of four tokens: first, the Set command
+itself, then a name for the set (which must be unique among the sets),
+then a count of pieces in that set, and finally, a count of the number
+of ways that a piece might be oriented (which must be an integer between
+1 and 126 inclusive).  The orientation count must be supplied even if it is
+1.  There is no current limit on the count of sets.
+
+Following the Set commands there must be a Solved command.  The Solved
+command is a single token on one line, followed by a position block,
+which is terminated by an End line.  The position block contains zero
+or more set position chunks.  Each set position chunk consists of two or
+three lines.  The first line is the name of the set, on a single line.
+Next is the identity of elements of that set.  Finally, we have the
+optional orientation values of elements of that set; if not provided,
+all zeros are assumed.
+
+For set position blocks, we use element identities which are numbered
+from 1 to the count of distinct identities.  There may be duplications
+in the case some elements are indistinguishable, but the range of
+values must be contiguous from 1.  If all pieces are distinguishable,
+then the element identity must consist of some permutation of the
+numbers 1 through the number of elements.
+
+In a position block, if any sets are not listed, they default to the
+identity permutation (with all pieces distinguishable) and the all-zero
+orientation vector.
+
+For the element orientation specification, in addition to values from
+0 to one less than the orientation count for the set, an element can
+have the distinguished value '?' which indicates an orientation
+wildcard.  All elements that are indistinguishable and share the same
+numeric identifier must either have a numeric orientation or they must
+all be orientation wildcards.
+
+After the Solved block, we then have a sequence of Move or Illegal
+blocks.  We'll describe the Move blocks first.
+
+Each Move block describes either a move (something that changes the
+puzzle state) or a rotation (something that rotates the whole puzzle
+in space without actually changing the position of any piece with
+respect to any other piece).  The Move command is on a line with two
+tokens, and the second token is the unique name of the move or rotation.
+
+Rotations are distinguished from Moves because they consist of one or
+more upper case letters or underscores followed by a lowercase v, or
+they consist of x, y, or z possibly followed by 2 or a single quote.
+Anything else is a move.  So Uv, FRBv, Z_Av, and x' are rotations,
+while X, F, xx, and T are just moves.
+
+Following the Move command line is a transformation block.  The
+transformation block has the same syntax as a position block, except
+the element identity line is instead a permutation line, and must
+always contain a proper permutation with the numbers 1 through the
+number of elements.  Also, if an orientation vector is provided for
+a set transformation block, all values must be numeric; orientation
+wildcards are not permitted as part of a transformation.
+
+In addition to Move commands, 
 
 Internal puzzle representation
 
