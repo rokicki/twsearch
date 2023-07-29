@@ -327,7 +327,47 @@ number of elements.  Also, if an orientation vector is provided for
 a set transformation block, all values must be numeric; orientation
 wildcards are not permitted as part of a transformation.
 
-In addition to Move commands, 
+Identical pieces are useful in puzzles like Rubik's Revenge (the 4x4x4)
+where there are some pieces that are generally indistinguishable,
+but they, with orientation wildcards, are also useful when evaluating
+different steps of solution methods.  For instance, when solving the
+last layer edge orientation step of the 3x3x3, you might make all last
+layer edges identical and oriented, and all last layer corners identical
+but unoriented.
+
+Move extension
+
+When specifying moves, only a "base" move needs to be described.  A base
+move is one like "U" on the 3x3x3; it's the one that generally is not
+decorated with a suffix like an apostrophe or number.  For every such
+move or rotation given, twsearch will generate the decorated versions by
+calculating the order of the move (the number of times it must be
+executed to yield the identity), and then selecting appropriate decorations.
+For instance, on the 3x3x3, twsearch displays the following output
+indicating what decorated moves it generates:
+
+Created new moves F2 F' B2 B' D2 D' U2 U' L2 L' R2 R'
+
+For the megaminx, it will generate moves including U2'; in general it
+generates repetitions in both the clockwise direction of up to and
+including half a full rotation, and in the counterclockwise direction of
+up to but not including half a full rotation.
+
+Symmetry and rotations
+
+In general when calculating solutions or most other operations, rotations
+are not used; only moves are used.  However, rotations can be used when
+providing an algorithm or scramble sequence as input.  Further, when
+generating pruning tables or performing a God's algorithm search,
+rotations are used to perform symmetry reduction, which can increase the
+speed and memory effectiveness of the algorithms.  Twsearch will calculate
+the full rotation group from the given rotations and perform symmetry
+reduction on that group.  Twsearch does not yet perform mirror symmetry
+reduction or inverse "symmetry" reduction (but it may in the fugure).
+If a move subset is specified, it will only use the symmetries that
+preserve that move subset; for instance, on the 3x3x3, if you specify
+the move subset U,R,F, then only the three-element symmetry group that
+preserves the URF corner will be used.
 
 Internal puzzle representation
 
@@ -354,6 +394,10 @@ Utility routines
 * Conversion algorithm -> position
 * Shorten
 * Invert
+
+All options
+
+Extra stuff
 
 To do
 
