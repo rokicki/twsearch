@@ -199,7 +199,7 @@ To convert a state to a move:
 Note that the permutations are the same.  To convert a move to a
 state:
 
-	s.o[i] = m.o[p[i]]
+   s.o[i] = m.o[p[i]]
 
 So for move 13425,01201 we convert to state 13425,02011.
 For state 13425,02011 we convert to move 13425,01201.
@@ -286,6 +286,12 @@ Next is the identity of elements of that set.  Finally, we have the
 optional orientation values of elements of that set; if not provided,
 all zeros are assumed.
 
+As a future-looking extension, the "Solved" command can be replaced with
+the "StartState" command, with the following change in behavior.
+The element numbering is zero-based rather than one-based.  This is
+consistent with cubing.js states (and permutations) and with the
+internal representation.
+
 For set position blocks, we use element identities which are numbered
 from 1 to the count of distinct identities.  There may be duplications
 in the case some elements are indistinguishable, but the range of
@@ -348,34 +354,95 @@ indicating what decorated moves it generates:
 
 Created new moves F2 F' B2 B' D2 D' U2 U' L2 L' R2 R'
 
-For the megaminx, it will generate moves including U2'; in general it
-generates repetitions in both the clockwise direction of up to and
-including half a full rotation, and in the counterclockwise direction of
-up to but not including half a full rotation.
+For the megaminx, it will generate moves including U2'; in general
+it generates repetitions in both the clockwise direction of up to
+and including half a full rotation, and in the counterclockwise
+direction of up to but not including half a full rotation.
+
+As a future-looking extension, the "Move" command can be replaced
+with the "MoveTransformation" command, with the following changes
+in behavior.  First, the numbering is zero-based rather than
+one-based.  Secondly, the orientations are given in the same way
+as for states, rather than in the awkward ksolve-style representation.
+We recommend any new software interacting with twsearch use this
+format as it is more logical and easier to reason about than the
+ksolve format.
 
 Symmetry and rotations
 
-In general when calculating solutions or most other operations, rotations
-are not used; only moves are used.  However, rotations can be used when
-providing an algorithm or scramble sequence as input.  Further, when
-generating pruning tables or performing a God's algorithm search,
-rotations are used to perform symmetry reduction, which can increase the
-speed and memory effectiveness of the algorithms.  Twsearch will calculate
-the full rotation group from the given rotations and perform symmetry
-reduction on that group.  Twsearch does not yet perform mirror symmetry
-reduction or inverse "symmetry" reduction (but it may in the fugure).
-If a move subset is specified, it will only use the symmetries that
-preserve that move subset; for instance, on the 3x3x3, if you specify
-the move subset U,R,F, then only the three-element symmetry group that
+In general when calculating solutions or most other operations,
+rotations are not used; only moves are used.  However, rotations
+can be used when providing an algorithm or scramble sequence as
+input.  Further, when generating pruning tables or performing a
+God's algorithm search, rotations are used to perform symmetry
+reduction, which can increase the speed and memory effectiveness
+of the algorithms.  Twsearch will calculate the full rotation group
+from the given rotations and perform symmetry reduction on that
+group.  Twsearch does not yet perform mirror symmetry reduction or
+inverse "symmetry" reduction (but it may in the fugure).  If a move
+subset is specified, it will only use the symmetries that preserve
+that move subset; for instance, on the 3x3x3, if you specify the
+move subset U,R,F, then only the three-element symmetry group that
 preserves the URF corner will be used.
 
 Internal puzzle representation
 
+The primary internal data structures are the puzzle definition
+(puzdef), the set definition (setdef), and the set value (setval).
+The setval is a bad name because it actually stores the full state
+of all sets in one contiguous memory array.  We will describe these
+structures from the bottom up, starting with the setval, then the
+setdef, then the puzdef.
+
+The setval is just a contiguous array of unsigned bytes, with two
+bytes for each set element.  The values for the sets are stored in
+the same order the sets occur in the input file, which is the same
+order they occur in the setdef array in the puzdef.  For a particular
+set, with say n elements, we have n unsigned characters storing the
+permutation (for the case of a transformation) or the element numbers
+(in the case of a state); then we have a further n unsigned characters
+storing the orientation values in the same order.  Permutations and
+element ids are stored using a base of zero (despite being read
+with a base of 1).
+
+The permutation portion of a state or transformation is always
+represented in passive mode:  array element i holding value j means
+that a piece with id j is in slot i (for a state), or that the
+element in slot j should be moved to slot i (for a permutation).
+States can hold duplicated values within the permutation elements,
+but transformations must always contain each of the values 0..n-1
+exactly once.
+
+The orientation is stored exactly as given in the input for states,
+with the value in slot i representing how much twisting is applied
+to the cubie that is currently in slot i (thus, orientation is moved
+along with the cubies).  If an orientation is a wildcard (given as
+a question mark on the input), then it is stored as the special
+value 2m (where m is the modulus of the orientation).  As a special
+performance optimization, to avoid unpredictable branches and slow
+division operations, when two orientations are added together when
+performing a move, a small table is used rather than an actual
+arithmetic instruction, and this table preserves the don't care
+special values of 2m.
+
+Storing the entire state of the puzzle (or transformation in the
+case of a move) in one contiguous sequence of bytes helps cache
+locality and simplifies some operations such as hashing of a state,
+as we will see.
+
+<><> setdef <><>
+
+<><> puzdef <><>
+
 Canonical sequences
 
-Pruning tables in memory
-
 Hashing
+
+Indexing
+
+Compact internal state representation
+
+Pruning tables in memory
 
 Reading and writing pruning tables
 
@@ -387,7 +454,7 @@ Schreier-Sims
 
 God's Algorithm searches
 
-Compact puzzle representation
+Compact external puzzle representation
 
 Utility routines
 * Uniquify
@@ -409,3 +476,10 @@ To do
 * Improve compression and decompression speed
 
 * Support moves-from-algorithms in input description
+
+* When --showpositions or --showmoves, use StartState and/or
+  MoveRepresentation rather than the older formats
+
+* Tighten setdef; if orientationmod=1 don't store orientation;
+  consider combining orientaiton and permutation if their
+  product is small enough (and don't cares "work").
