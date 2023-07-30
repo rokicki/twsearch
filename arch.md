@@ -430,6 +430,23 @@ case of a move) in one contiguous sequence of bytes helps cache
 locality and simplifies some operations such as hashing of a state,
 as we will see.
 
+The setval structure itself is just a pointer to the actual array
+of unsigned characters; since it is a single pointer, it is normally
+stored in a register.  The setval constructor takes a pointer to
+an appropriately-sized memory chunk, but does not manage the
+lifetime of the memory chunk itself.
+
+Currently twsearch uses two distinct types, stacksetval and
+allocsetval, which are supposed to manage lifetimes but in practice
+do not do it properly.  In the way they are currently used in
+the code, this generates a small memory leak so is marginally okay,
+but these classes need to be written correctly.  (The setval is
+just a pointer, so it is efficient and can live in a register,
+but in order to implement the copy constructor and the assignment
+operator for allocsetval and stacksetval, the size of the memory
+chunk must be also retained, or else a reference count should be
+implemented; right now the code does neither.)
+
 <><> setdef <><>
 
 <><> puzdef <><>
@@ -483,3 +500,6 @@ To do
 * Tighten setdef; if orientationmod=1 don't store orientation;
   consider combining orientaiton and permutation if their
   product is small enough (and don't cares "work").
+
+* Fix allocsetval and stacksetval to be the same class and to
+  properly manage the state memory.
