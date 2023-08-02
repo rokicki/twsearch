@@ -127,7 +127,7 @@ void puzdef::addillegal(const char *setname, int pos, int val) {
    int rpos = -1 ;
    for (int i=0; i<(int)setdefs.size(); i++) {
       const setdef &sd = setdefs[i] ;
-      if (strcmp(sd.name, setname) == 0) {
+      if (sd.name == setname) {
          if (pos <= 0 || pos > sd.size)
             error("! position out of bounds of set") ;
          rpos = sd.off + pos - 1 ;

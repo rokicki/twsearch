@@ -29,14 +29,14 @@ extern double dllstates ;
 extern uchar *gmoda[256] ;
 struct setdef {
    int size, off ;
-   const char *name ;
+   string name ;
    uchar omod ;
    int pbits, obits, pibits, psum ;
    bool uniq, pparity, oparity, wildo ;
    double logstates ;
    unsigned long long llperms, llords, llstates ;
    vector<int> cnts ; // only not empty when not unique.
-   setdef() : size(0), off(0), name(0), omod(0), pbits(0), obits(0), pibits(0),
+   setdef() : size(0), off(0), name(), omod(0), pbits(0), obits(0), pibits(0),
               psum(0), uniq(1), pparity(0), oparity(0), wildo(0), logstates(0),
               llperms(0), llords(0), llstates(0), cnts() {}
    void mulp(const uchar *ap, const uchar *bp, uchar *cp) const {
@@ -66,8 +66,8 @@ struct illegal_t {
    ull mask ;
 } ;
 struct moove {
-   moove() : name(0), pos(0), cost(1) {}
-   const char *name ;
+   moove() : name(), pos(0), cost(1) {}
+   string name ;
    setval pos ;
    int cost, base, twist, cs ;
 } ;
@@ -76,11 +76,11 @@ struct movealias {
    const char *src, *dst ;
 } ;
 struct puzdef {
-   puzdef() : name(0), setdefs(), solved(0), totsize(0), id(0),
+   puzdef() : name(), setdefs(), solved(0), totsize(0), id(0),
               logstates(0), llstates(0), checksum(0), haveillegal(0),
               wildo(0), uniq(1)
               {}
-   const char *name ;
+   string name ;
    setdefs_t setdefs ;
    setval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, expandedrotations, rotgroup ;

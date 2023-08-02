@@ -1,47 +1,35 @@
 #include "parsemoves.h"
 #include "solve.h"
 #include <iostream>
-setval findmove_generously(const puzdef &pd, const char *mvstring) {
+setval findmove_generously(const puzdef &pd, const string &mvstring) {
    for (int i=0; i<(int)pd.moves.size(); i++)
-      if (strcmp(mvstring, pd.moves[i].name) == 0)
+      if (mvstring ==  pd.moves[i].name)
          return pd.moves[i].pos ;
    for (int i=0; i<(int)pd.parsemoves.size(); i++)
-      if (strcmp(mvstring, pd.parsemoves[i].name) == 0)
+      if (mvstring == pd.parsemoves[i].name)
          return pd.parsemoves[i].pos ;
    for (int i=0; i<(int)pd.expandedrotations.size(); i++)
-      if (strcmp(mvstring, pd.expandedrotations[i].name) == 0)
+      if (mvstring == pd.expandedrotations[i].name)
          return pd.expandedrotations[i].pos ;
    error("! bad move name ", mvstring) ;
    return setval(0) ;
 }
-setval findmove_generously(const puzdef &pd, string s) {
-   return findmove_generously(pd, s.c_str()) ;
-}
-int findmove(const puzdef &pd, const char *mvstring) {
+int findmove(const puzdef &pd, const string &mvstring) {
    for (int i=0; i<(int)pd.moves.size(); i++)
-      if (strcmp(mvstring, pd.moves[i].name) == 0)
+      if (mvstring == pd.moves[i].name)
          return i ;
    error("! bad move name ", mvstring) ;
    return -1 ;
 }
-int findmove(const puzdef &pd, string mvstring) {
-   return findmove(pd, mvstring.c_str()) ;
-}
-int findmoveorrotation(const puzdef &pd, const char *mvstring) {
+int findmoveorrotation(const puzdef &pd, const string &mvstring) {
    for (int i=0; i<(int)pd.moves.size(); i++)
-      if (strcmp(mvstring, pd.moves[i].name) == 0)
+      if (mvstring == pd.moves[i].name)
          return i ;
    for (int i=0; i<(int)pd.expandedrotations.size(); i++)
-      if (strcmp(mvstring, pd.expandedrotations[i].name) == 0)
+      if (mvstring == pd.expandedrotations[i].name)
          return i+pd.moves.size() ;
    error("! bad move or rotation name ", mvstring) ;
    return -1 ;
-}
-int findmoveorrotation(const puzdef &pd, string mvstring) {
-   return findmoveorrotation(pd, mvstring.c_str()) ;
-}
-void domove(puzdef &pd, setval p, string mvstring) {
-   domove(pd, p, findmove(pd, mvstring)) ;
 }
 void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
              generatingset *gs) {
@@ -53,49 +41,49 @@ void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
    }
    solve(pd, pt, p, gs) ;
 }
-vector<int> parsemovelist(const puzdef &pd, const char *scr) {
+vector<int> parsemovelist(const puzdef &pd, const string &scr) {
    vector<int> movelist ;
    string move ;
-   for (const char *p=scr; *p; p++) {
-      if (*p <= ' ' || *p == ',') {
+   for (auto c: scr) {
+      if (c <= ' ' || c == ',') {
          if (move.size()) {
             movelist.push_back(findmove(pd, move)) ;
             move.clear() ;
          }
       } else
-         move.push_back(*p) ;
+         move.push_back(c) ;
    }
    if (move.size())
       movelist.push_back(findmove(pd, move)) ;
    return movelist ;
 }
-vector<int> parsemoveorrotationlist(const puzdef &pd, const char *scr) {
+vector<int> parsemoveorrotationlist(const puzdef &pd, const string &scr) {
    vector<int> movelist ;
    string move ;
-   for (const char *p=scr; *p; p++) {
-      if (*p <= ' ' || *p == ',') {
+   for (auto c: scr) {
+      if (c <= ' ' || c == ',') {
          if (move.size()) {
             movelist.push_back(findmoveorrotation(pd, move)) ;
             move.clear() ;
          }
       } else
-         move.push_back(*p) ;
+         move.push_back(c) ;
    }
    if (move.size())
       movelist.push_back(findmoveorrotation(pd, move)) ;
    return movelist ;
 }
-vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
+vector<setval> parsemovelist_generously(const puzdef &pd, const string &scr) {
    vector<setval> movelist ;
    string move ;
-   for (const char *p=scr; *p; p++) {
-      if (*p <= ' ' || *p == ',') {
+   for (auto c: scr) {
+      if (c <= ' ' || c == ',') {
          if (move.size()) {
             movelist.push_back(findmove_generously(pd, move)) ;
             move.clear() ;
          }
       } else
-         move.push_back(*p) ;
+         move.push_back(c) ;
    }
    if (move.size())
       movelist.push_back(findmove_generously(pd, move)) ;
@@ -105,15 +93,17 @@ vector<setval> parsemovelist_generously(const puzdef &pd, const char *scr) {
  *   A rotation is always a grip (uppercase) followed only by 'p'.  There
  *   must not be a prefix or additional suffix.
  */
-int isrotation(const char *mv) {
-   const char *q = mv ;
-   if ((*q == 'x' || *q == 'y' || *q == 'z') &&
-       (q[1] == 0 || q[1] == '\'' || q[1] == '2'))
-      return true;
-   while (*q == '_' || ('A' <= *q && *q <= 'Z'))
-      q++ ;
-   if (*q != 'v' || q[1] != 0 || mv == q)
+int isrotation(const string &mv) {
+   if (mv.size() == 0)
       return 0 ;
-   else
+   if (mv[0] == 'x' || mv[0] == 'y' || mv[0] == 'z') {
+      if (mv.size() == 1 || (mv.size() == 2 && (mv[1] == '2' || mv[1] == '\'')))
+         return 1 ;
+   }
+   int i = 0 ;
+   while (i < (int)mv.size() && (mv[i] == '_' || ('A' <= mv[i] && mv[i] <= 'Z')))
+      i++ ;
+   if (i > 0 && i+1 == (int)mv.size() && mv[i] == 'v')
       return 1 ;
+   return 0 ;
 }

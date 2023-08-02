@@ -398,7 +398,7 @@ puzdef readdef(istream *f) {
          inerror("! unexpected first token on line ", toks[0]) ;
       }
    }
-   if (pz.name == 0)
+   if (pz.name.size() == 0)
       inerror("! puzzle must be given a name") ;
    if (pz.setdefs.size() == 0)
       inerror("! puzzle must have set definitions") ;
