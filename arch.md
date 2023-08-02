@@ -260,8 +260,8 @@ CORNER
 2 1 0 2 0 0 1 0
 End
 
-Tokens on a line are whitespace separated.  The file can start with a
-Name command, which if present must be followed by a single token that
+Tokens on a line are whitespace separated.  The first command in the file
+must be a Name command, which must be followed by a single token that
 is used as the puzzle name.  (The name is not presently used for anything.)
 
 After that there must be one or more Set commands.  Each Set command
