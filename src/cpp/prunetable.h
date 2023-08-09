@@ -81,6 +81,10 @@ extern struct ioqueue ioqueue ;
 struct prunetable {
    prunetable() { amem = 0 ; mem = 0 ; for (int i=0; i<7; i++) tabs[i] = 0 ; }
    prunetable(const puzdef &pd, ull maxmem) ;
+   prunetable(const prunetable &) = delete ;
+   prunetable(prunetable &&) noexcept = delete ;
+   prunetable& operator=(const prunetable &) = delete ;
+   prunetable& operator=(prunetable &&) noexcept = delete ;
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd, int ignorelookups=0) ;
    int lookuph(ull h) const {
