@@ -23,7 +23,6 @@ double walltime() ;
 double duration() ;
 void error(string msg, string extra="") ;
 void warn(string msg, string extra="") ;
-const char *twstrdup(const char *s) ;
 double myrand(int n) ;
 void mysrand(int n) ;
 ll gcd(ll a, ll b) ;

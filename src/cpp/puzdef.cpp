@@ -118,7 +118,7 @@ ll puzdef::order(const vector<int> cc) {
          r = lcm(r, i) ;
    return r ;
 }
-void puzdef::addillegal(const char *setname, int pos, int val) {
+void puzdef::addillegal(const string &setname, int pos, int val) {
    if (val > 64)
       error("! cannot use illegal on sets with more than 64 elements") ;
    if (val <= 0)

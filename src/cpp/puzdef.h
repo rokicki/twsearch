@@ -65,24 +65,52 @@ struct illegal_t {
    int pos ;
    ull mask ;
 } ;
+struct puzdef ;
+//  These cannot be copied or assigned
+struct stacksetval : setval {
+   stacksetval(const puzdef &pd) ;
+   stacksetval(const puzdef &pd, const setval iv) ;
+   stacksetval(const stacksetval &) = delete ;
+   stacksetval(stacksetval &&) = delete ;
+   stacksetval& operator=(const stacksetval &) = delete ;
+   stacksetval& operator=(stacksetval &&) = delete ;
+   ~stacksetval() { delete [] dat ; }
+   const puzdef *owner ;
+} ;
+struct allocsetval : setval {
+   allocsetval() : setval(0), sz(0) {}
+   allocsetval(const puzdef &pd, int) ;
+   allocsetval(const puzdef &pd, const setval &iv) ;
+   allocsetval(const allocsetval &) ;
+   allocsetval(allocsetval &&) ;
+   allocsetval& operator=(const allocsetval &) ;
+   allocsetval& operator=(allocsetval &&) ;
+   ~allocsetval() {
+      if (dat) {
+         delete[] dat ;
+         dat = 0 ;
+      }
+   }
+   int sz ;
+} ;
 struct moove {
-   moove() : name(), pos(0), cost(1) {}
+   moove(const puzdef &pd, const setval &iv) : name(), pos(pd, iv), cost(1) {}
    string name ;
-   setval pos ;
+   allocsetval pos ;
    int cost, base, twist, cs ;
 } ;
 extern int origroup ;
 struct movealias {
-   const char *src, *dst ;
+   string src, dst ;
 } ;
 struct puzdef {
-   puzdef() : name(), setdefs(), solved(0), totsize(0), id(0),
+   puzdef() : name(), setdefs(), solved(), totsize(0), id(),
               logstates(0), llstates(0), checksum(0), haveillegal(0),
               wildo(0), uniq(1)
               {}
    string name ;
    setdefs_t setdefs ;
-   setval solved ;
+   allocsetval solved ;
    vector<moove> basemoves, moves, parsemoves, rotations, expandedrotations, rotgroup ;
    vector<movealias> aliases ;
    vector<movealias> moveseqs ;
@@ -92,7 +120,7 @@ struct puzdef {
    vector<ull> commutes ;
    int totsize ;
    int ncs ;
-   setval id ;
+   allocsetval id ;
    double logstates ;
    unsigned long long llstates ;
    ull checksum ;
@@ -119,6 +147,7 @@ struct puzdef {
    int permwrong(const setval a, const setval b, ull mask=-1) const ;
    vector<int> cyccnts(const setval a, ull sets=-1) const ;
    static ll order(const vector<int> cc) ;
+   vector<allocsetval> stacksetvals ;
    void mul(const setval a, const setval b, setval c) const {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
@@ -330,27 +359,51 @@ struct puzdef {
       int twist = (o - mv.twist) % o ;
       return mvind-mv.twist+twist ;
    }
-   void addillegal(const char *setname, int pos, int val) ;
+   void addillegal(const string &setname, int pos, int val) ;
    void pow(const setval a, setval b, ll cnt) const ;
    void inv(const setval a, setval b) const ;
 } ;
-struct stacksetval : setval {
-   stacksetval(const puzdef &pd) : setval(new uchar[pd.totsize]) {
-      memcpy(dat, pd.id.dat, pd.totsize) ;
-   }
-   stacksetval(const puzdef &pd, const setval iv) : setval(new uchar[pd.totsize]) {
-      memcpy(dat, iv.dat, pd.totsize) ;
-   }
-   ~stacksetval() { delete [] dat ; }
-} ;
-struct allocsetval : setval {
-   allocsetval(const puzdef &pd, const setval &iv) : setval(new uchar[pd.totsize]) {
-      memcpy(dat, iv.dat, pd.totsize) ;
-   }
-   ~allocsetval() {
-      // we drop memory here; need fix
-   }
-} ;
+inline stacksetval::stacksetval(const puzdef &pd) {
+   dat = new uchar[pd.totsize] ;
+   owner = &pd ;
+   memcpy(dat, pd.id.dat, pd.totsize) ;
+}
+inline stacksetval::stacksetval(const puzdef &pd, const setval iv) {
+   dat = new uchar[pd.totsize] ;
+   owner = &pd ;
+   memcpy(dat, iv.dat, pd.totsize) ;
+}
+inline allocsetval::allocsetval(const puzdef &pd, const setval &iv) {
+   dat = new uchar[pd.totsize] ;
+   sz = pd.totsize ;
+   memcpy(dat, iv.dat, pd.totsize) ;
+}
+inline allocsetval::allocsetval(const puzdef &pd, int) {
+   dat = new uchar[pd.totsize] ;
+   sz = pd.totsize ;
+}
+inline allocsetval::allocsetval(const allocsetval &v) {
+   dat = new uchar[v.sz] ;
+   sz = v.sz ;
+   memcpy(dat, v.dat, sz) ;
+}
+inline allocsetval::allocsetval(allocsetval &&v) {
+   dat = v.dat ;
+   v.dat = 0 ;
+   sz = v.sz ;
+}
+inline allocsetval& allocsetval::operator=(const allocsetval &v) {
+   dat = new uchar[v.sz] ;
+   sz = v.sz ;
+   memcpy(dat, v.dat, sz) ;
+   return *this ;
+}
+inline allocsetval& allocsetval::operator=(allocsetval &&v) {
+   dat = v.dat ;
+   v.dat = 0 ;
+   sz = v.sz ;
+   return *this ;
+}
 extern vector<allocsetval> posns ;
 extern vector<int> movehist ;
 void calculatesizes(puzdef &pd) ;

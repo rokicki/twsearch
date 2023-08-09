@@ -121,8 +121,8 @@ int omitset(string s) {
       return 1 ;
    return 0 ;
 }
-setval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_indexed) {
-   setval r((uchar *)calloc(pz.totsize, 1)) ;
+allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool zero_indexed) {
+   allocsetval r(pz, pz.id) ;
    int curset = -1 ;
    int numseq = 0 ;
    int ignore = 0 ;
@@ -307,7 +307,7 @@ puzdef readdef(istream *f) {
             inerror("! Name in wrong place") ;
          state++ ;
          expect(toks, 2) ;
-         pz.name = twstrdup(toks[1].c_str()) ; ;
+         pz.name = toks[1] ;
       } else if (toks[0] == "Set") {
          if (state == 0) {
             pz.name = "Unnamed" ;
@@ -319,7 +319,7 @@ puzdef readdef(istream *f) {
          if (omitset(toks[1]))
             continue ;
          setdef sd ;
-         sd.name = twstrdup(toks[1].c_str()) ;
+         sd.name = toks[1] ;
          sd.size = getnumber(1, toks[2]) ;
          sd.omod = getnumber(1, toks[3]) ;
          if (sd.omod > 127)
@@ -358,13 +358,24 @@ puzdef readdef(istream *f) {
             inerror("! Solved in wrong place") ;
          state++ ;
          expect(toks, 1) ;
+         pz.id = allocsetval(pz, -1) ;
+         uchar *p = pz.id.dat ;
+         for (int i=0; i<(int)pz.setdefs.size(); i++) {
+            int n = pz.setdefs[i].size ;
+            for (int j=0; j<n; j++)
+               p[j] = j ;
+            p += n ;
+            for (int j=0; j<n; j++)
+               p[j] = 0 ;
+            p += n ;
+         }
          pz.solved = readposition(pz, 's', f, checksum, toks[0] == "StartState") ;
       } else if (toks[0] == "Move" || toks[0] == "MoveTransformation") {
          if (state != 2)
             inerror("! Move in wrong place") ;
          expect(toks, 2) ;
-         moove m ;
-         m.name = twstrdup(toks[1].c_str()) ;
+         moove m(pz, pz.id) ;
+         m.name = toks[1] ;
          m.pos = readposition(pz, 'm', f, checksum, toks[0] == "MoveTransformation") ;
          m.cost = 1 ;
          m.twist = 1 ;
@@ -379,8 +390,7 @@ puzdef readdef(istream *f) {
          if (state != 2)
             inerror("! MoveAlias in wrong place") ;
          expect(toks, 3) ;
-         pz.aliases.push_back(
-                      {twstrdup(toks[1].c_str()), twstrdup(toks[2].c_str())}) ;
+         pz.aliases.push_back({toks[1], toks[2]}) ;
       } else if (toks[0] == "MoveSequence") {
          if (state != 2)
             inerror("! MoveSequence in wrong place") ;
@@ -392,8 +402,7 @@ puzdef readdef(istream *f) {
                seq += " " ;
             seq += toks[i] ;
          }
-         pz.moveseqs.push_back(
-                      {twstrdup(toks[1].c_str()), twstrdup(seq.c_str())}) ;
+         pz.moveseqs.push_back({toks[1], seq}) ;
       } else {
          inerror("! unexpected first token on line ", toks[0]) ;
       }
@@ -407,17 +416,6 @@ puzdef readdef(istream *f) {
    if (pz.moves.size() == 0)
       inerror("! puzzle must have moves") ;
    lineno = 0 ;
-   pz.id = setval((uchar *)calloc(pz.totsize, 1)) ;
-   uchar *p = pz.id.dat ;
-   for (int i=0; i<(int)pz.setdefs.size(); i++) {
-      int n = pz.setdefs[i].size ;
-      for (int j=0; j<n; j++)
-         p[j] = j ;
-      p += n ;
-      for (int j=0; j<n; j++)
-         p[j] = 0 ;
-      p += n ;
-   }
    if (distinguishall) {
       pz.solved = pz.id ;
    }
@@ -430,7 +428,7 @@ void expandmoveset(const puzdef &pd, vector<moove> &moves, vector<moove> &newmov
       moove &m = moves[i] ;
       if (quarter && m.cost > 1)
          continue ;
-      vector<setval> movepowers ;
+      vector<allocsetval> movepowers ;
       movepowers.push_back(m.pos) ;
       pd.assignpos(p1, m.pos) ;
       pd.assignpos(p2, m.pos) ;
@@ -458,7 +456,7 @@ void expandmoveset(const puzdef &pd, vector<moove> &moves, vector<moove> &newmov
             if (tw < 0)
                s2 += "'" ;
             newnames.push_back(s2) ;
-            m2.name = twstrdup(s2.c_str()) ;
+            m2.name = s2 ;
          }
          newmoves.push_back(m2) ;
       }

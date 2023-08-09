@@ -64,9 +64,8 @@ void calcrotations(puzdef &pd) {
    vector<moove> &q = pd.rotgroup ;
    set<vector<uchar>> seen ;
    seen.insert(setvaltovec(pd, pd.id)) ;
-   moove m ;
+   moove m(pd, pd.id) ;
    m.name = "(identity)" ;
-   m.pos = allocsetval(pd, pd.id) ;
    m.cost = 0 ;
    m.twist = 0 ;
    q.push_back(m) ;

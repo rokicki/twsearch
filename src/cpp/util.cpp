@@ -35,15 +35,6 @@ void error(string msg, string extra) {
 void warn(string msg, string extra) {
    cerr << msg << extra << endl ;
 }
-/*
- *   strdup is going through some issues: POSIX vs C++, so we just
- *   implement it ourselves.
- */
-const char *twstrdup(const char *s) {
-   char *r = (char *)malloc(strlen(s)+1) ;
-   strcpy(r, s) ;
-   return r ;
-}
 static mt19937 *rng ;
 // avoid static initialization fiasco by always seeding.
 void mysrand(int n) {
