@@ -567,7 +567,7 @@ int main_search(const char* def_file, const char* scramble_file) {
       stacksetval scr(pd) ;
       if (scramblealgo) {
          pd.assignpos(scr, pd.solved) ;
-         vector<setval> movelist = parsemovelist_generously(pd, scramblealgo) ;
+         vector<allocsetval> movelist = parsemovelist_generously(pd, scramblealgo) ;
          for (int i=0; i<(int)movelist.size(); i++)
             domove(pd, scr, movelist[i]) ;
       } else {

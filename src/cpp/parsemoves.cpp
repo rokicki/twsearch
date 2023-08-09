@@ -1,7 +1,7 @@
 #include "parsemoves.h"
 #include "solve.h"
 #include <iostream>
-setval findmove_generously(const puzdef &pd, const string &mvstring) {
+allocsetval findmove_generously(const puzdef &pd, const string &mvstring) {
    for (int i=0; i<(int)pd.moves.size(); i++)
       if (mvstring ==  pd.moves[i].name)
          return pd.moves[i].pos ;
@@ -12,7 +12,7 @@ setval findmove_generously(const puzdef &pd, const string &mvstring) {
       if (mvstring == pd.expandedrotations[i].name)
          return pd.expandedrotations[i].pos ;
    error("! bad move name ", mvstring) ;
-   return setval(0) ;
+   return allocsetval(pd, 0) ;
 }
 int findmove(const puzdef &pd, const string &mvstring) {
    for (int i=0; i<(int)pd.moves.size(); i++)
@@ -73,8 +73,8 @@ vector<int> parsemoveorrotationlist(const puzdef &pd, const string &scr) {
       movelist.push_back(findmoveorrotation(pd, move)) ;
    return movelist ;
 }
-vector<setval> parsemovelist_generously(const puzdef &pd, const string &scr) {
-   vector<setval> movelist ;
+vector<allocsetval> parsemovelist_generously(const puzdef &pd, const string &scr) {
+   vector<allocsetval> movelist ;
    string move ;
    for (auto c: scr) {
       if (c <= ' ' || c == ',') {

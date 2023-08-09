@@ -110,9 +110,9 @@ orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder) : pd(pd_), e(
       oset[i] = sdi ;
       ooff[i] = roff ;
       int sz = sd.size * sd.omod ;
-      sgs.push_back(vector<setval>(sz)) ;
-      sgsi.push_back(vector<setval>(sz)) ;
-      tk.push_back(vector<setval>(0)) ;
+      sgs.push_back(vector<allocsetval>(sz)) ;
+      sgsi.push_back(vector<allocsetval>(sz)) ;
+      tk.push_back(vector<allocsetval>(0)) ;
       int at = sgs.size() - 1 ;
       sgs[at][roff*sd.omod] = e ;
       sgsi[at][roff*sd.omod] = e ;

@@ -5,8 +5,8 @@ using namespace std ;
 struct orderedgs {
    orderedgs(const puzdef &pd, const vector<int> &order) ;
    const puzdef &pd ;
-   setval e ;
-   vector<vector<setval>> sgs, sgsi, tk ;
+   allocsetval e ;
+   vector<vector<allocsetval>> sgs, sgsi, tk ;
    vector<int> oset, ooff ;
    bool resolve(const setval p_) ;
    void knutha(int k, const setval &p) ;

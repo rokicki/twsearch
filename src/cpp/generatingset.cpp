@@ -77,8 +77,8 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
          sgsi.push_back(vector<allocsetval>(sz)) ;
          tk.push_back(vector<allocsetval>(0)) ;
          int at = sgs.size() - 1 ;
-         sgs[at][j*sd.omod] = allocsetval(pd, pd.id) ;
-         sgsi[at][j*sd.omod] = allocsetval(pd, pd.id) ;
+         sgs[at][j*sd.omod] = e ;
+         sgsi[at][j*sd.omod] = e ;
       }
    }
    int oldprec = cout.precision() ;
