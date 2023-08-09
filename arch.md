@@ -437,15 +437,18 @@ an appropriately-sized memory chunk, but does not manage the
 lifetime of the memory chunk itself.
 
 Currently twsearch uses two distinct types, stacksetval and
-allocsetval, which are supposed to manage lifetimes but in practice
-do not do it properly.  In the way they are currently used in
-the code, this generates a small memory leak so is marginally okay,
-but these classes need to be written correctly.  (The setval is
-just a pointer, so it is efficient and can live in a register,
-but in order to implement the copy constructor and the assignment
-operator for allocsetval and stacksetval, the size of the memory
-chunk must be also retained, or else a reference count should be
-implemented; right now the code does neither.)
+allocsetval, which manage lifetimes of setvals.  allocsetval is
+intended for general but infrequent use, as in when reading a
+puzzle definition or doing low-frequency things.  stacksetval is
+intended to be used in a stack-based manner, as in automatic
+values that track some recursive control flow.  I intended
+stacksetval to be very fast (that is, not churn the memory
+allocator) by maintaining a stack of available values on the
+puzzle definition, but this fails to take into account threading.
+So all the performance-critical routines, such as search,
+allocate a vector of allocsetvals, one vector per thread, and
+pass this vector into the recursion to use so memory allocation is
+not on the critical path.
 
 <><> setdef <><>
 
