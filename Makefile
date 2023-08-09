@@ -6,6 +6,13 @@ build: build/bin/twsearch
 .PHONY: all
 all: build/bin/twsearch build/esm build-rust
 
+.PHONY: test
+test: test-warning lint test-cpp-cli test-rust-cli
+
+.PHONY: test-warning
+test-warning:
+	@echo "Warning: tests are slow to run right now."
+
 .PHONY: test-cpp-cli
 test-cpp-cli: build/bin/twsearch
 	cargo run --example test-cpp-cli
