@@ -18,6 +18,11 @@ test-rust-cli:
 clean:
 	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
 
+.PHONY: cpp-clean
+cpp-clean:
+	rm -rf ./build
+
+
 .PHONY: reset
 reset: clean
 	rm -rf ./emsdk ./node_modules
