@@ -6,7 +6,7 @@ struct generatingset {
    generatingset(const puzdef &pd) ;
    const puzdef &pd ;
    setval e ;
-   vector<vector<setval>> sgs, sgsi, tk ;
+   vector<vector<allocsetval>> sgs, sgsi, tk ;
    bool resolve(const setval p_) ;
    void knutha(int k1, int k2, const setval &p) ;
    void knuthb(int k1, int k2, const setval &p) ;
