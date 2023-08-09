@@ -1,5 +1,3 @@
-# Architecture
-
 The twsearch program is my attempt to solve, generate algorithms
 for, and otherwise explore twisty puzzles such as the ones generated
 by the puzzle geometry component of cubing.js.  This document
