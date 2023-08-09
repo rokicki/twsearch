@@ -363,31 +363,31 @@ struct puzdef {
    void pow(const setval a, setval b, ll cnt) const ;
    void inv(const setval a, setval b) const ;
 } ;
-inline stacksetval::stacksetval(const puzdef &pd) {
+inline stacksetval::stacksetval(const puzdef &pd) : setval(0) {
    dat = new uchar[pd.totsize] ;
    owner = &pd ;
    memcpy(dat, pd.id.dat, pd.totsize) ;
 }
-inline stacksetval::stacksetval(const puzdef &pd, const setval iv) {
+inline stacksetval::stacksetval(const puzdef &pd, const setval iv) : setval(0) {
    dat = new uchar[pd.totsize] ;
    owner = &pd ;
    memcpy(dat, iv.dat, pd.totsize) ;
 }
-inline allocsetval::allocsetval(const puzdef &pd, const setval &iv) {
+inline allocsetval::allocsetval(const puzdef &pd, const setval &iv) : setval(0) {
    dat = new uchar[pd.totsize] ;
    sz = pd.totsize ;
    memcpy(dat, iv.dat, pd.totsize) ;
 }
-inline allocsetval::allocsetval(const puzdef &pd, int) {
+inline allocsetval::allocsetval(const puzdef &pd, int) : setval(0) {
    dat = new uchar[pd.totsize] ;
    sz = pd.totsize ;
 }
-inline allocsetval::allocsetval(const allocsetval &v) {
+inline allocsetval::allocsetval(const allocsetval &v) : setval(0) {
    dat = new uchar[v.sz] ;
    sz = v.sz ;
    memcpy(dat, v.dat, sz) ;
 }
-inline allocsetval::allocsetval(allocsetval &&v) {
+inline allocsetval::allocsetval(allocsetval &&v) : setval(0) {
    dat = v.dat ;
    v.dat = 0 ;
    sz = v.sz ;
