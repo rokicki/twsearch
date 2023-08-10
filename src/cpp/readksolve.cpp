@@ -190,18 +190,23 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum, bool z
    for (int i=0; i<(int)pz.setdefs.size(); i++) {
       uchar *p = r.dat + pz.setdefs[i].off ;
       int n = pz.setdefs[i].size ;
+      vector<int> cnts ;
       if (p[0] == 0) {
          if (typ == 'S') {
             for (int j=0; j<n; j++)
                p[j] = pz.solved.dat[pz.setdefs[i].off+j] ;
          } else {
-            for (int j=0; j<n; j++)
+            cnts.resize(n) ;
+            for (int j=0; j<n; j++) {
                p[j] = j ; // identity perm
-            if (typ == 's')
+               cnts[j]++ ;
+            }
+            if (typ == 's') {
                pz.setdefs[i].psum = n * (n - 1) / 2 ;
+               pz.setdefs[i].cnts = cnts ;
+            }
          }
       } else {
-         vector<int> cnts ;
          int sum = 0 ;
          for (int j=0; j<n; j++) {
             int v = --p[j] ;
