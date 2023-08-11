@@ -150,7 +150,7 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
 void wrongit(const puzdef &pd, setval p, const char *s) {
    int t = pd.numwrong(p, pd.solved) ;
    if (t <= maxwrong) {
-      cout << s << endl << flush ;
+      cout << t << " " << s << endl << flush ;
       proclim-- ;
       if (proclim == 0)
          exit(0) ;
