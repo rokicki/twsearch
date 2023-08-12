@@ -67,68 +67,79 @@ int solveworker::possibsolution(const puzdef &pd, int sp) {
       return 0 ;
 }
 int solveworker::solveiter(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
-   int v, mi, m ;
-   ull mask, skipbase ;
+   ull h = innersetup(pt, sp) ;
    while (1) {
-      lookups++ ; 
-      v = pt.lookup(posns[sp], looktmp) ;
-      if (v > togo + 1) {
-         v = -1 ;
-      } else if (v > togo) {
-         v = 0 ;
-      } else if (v == 0 && togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0) {
-         v = 0 ;
-      } else if (v == 0 && togo > 0 && noearlysolutions && pd.comparepos(posns[sp], pd.solved) == 0) {
-         v = 0 ;
-      } else if (togo == 0) {
-         v = possibsolution(pd, sp) ;
-      } else {
-         mask = canonmask[st] ;
-         skipbase = 0 ;
-         mi = -1 ;
-         goto downstack ;
-      }
-upstack:
-      if (solvestates.size() == 0)
+      int v = innerfetch(pd, pt, togo, sp, st, h) ;
+      if (v != 3)
          return v ;
-      {
-         auto &ss = solvestates[solvestates.size()-1] ;
-         togo++ ;
-         sp-- ;
-         st = ss.st ;
-         mi = ss.mi ;
-         mask = ss.mask ;
-         skipbase = ss.skipbase ;
-      }
-      solvestates.pop_back() ;
-      if (v == 1)
-         goto upstack ;
-      if (!quarter && v == -1) {
-         m = randomstart ? randomized[togo][mi] : mi ;
-         if (pd.moves[m].base < 64)
-            skipbase |= 1LL << pd.moves[m].base ;
-      }
-downstack:
-      mi++ ;
-      if (mi >= (int)pd.moves.size()) {
-         v = 0 ;
-         goto upstack ;
-      }
-      m = randomstart ? randomized[togo][mi] : mi ;
-      const moove &mv = pd.moves[m] ;
-      if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
-         goto downstack ;
-      if ((mask >> mv.cs) & 1)
-         goto downstack ;
-      pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
-      if (!pd.legalstate(posns[sp+1]))
-         goto downstack ;
-      movehist[sp] = m ;
-      solvestates.push_back({st, mi, mask, skipbase}) ;
-      togo-- ;
-      sp++ ;
-      st = canonnext[st][mv.cs] ;
+      h = innersetup(pt, sp) ;
    }
+}
+ull solveworker::innersetup(prunetable &pt, int sp) {
+   lookups++ ; 
+   return pt.prefetchindexed(pt.gethashforlookup(posns[sp], looktmp)) ;
+}
+int solveworker::innerfetch(const puzdef &pd, prunetable &pt, int &togo, int &sp, int &st, ull h) {
+   int v = pt.lookuphindexed(h) ;
+   int m, mi ;
+   ull mask, skipbase ;
+   if (v > togo + 1) {
+      v = -1 ;
+   } else if (v > togo) {
+      v = 0 ;
+   } else if (v == 0 && togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0) {
+      v = 0 ;
+   } else if (v == 0 && togo > 0 && noearlysolutions && pd.comparepos(posns[sp], pd.solved) == 0) {
+      v = 0 ;
+   } else if (togo == 0) {
+      v = possibsolution(pd, sp) ;
+   } else {
+      mask = canonmask[st] ;
+      skipbase = 0 ;
+      mi = -1 ;
+      goto downstack ;
+   }
+upstack:
+   if (solvestates.size() == 0)
+      return v ;
+   {
+      auto &ss = solvestates[solvestates.size()-1] ;
+      togo++ ;
+      sp-- ;
+      st = ss.st ;
+      mi = ss.mi ;
+      mask = ss.mask ;
+      skipbase = ss.skipbase ;
+   }
+   solvestates.pop_back() ;
+   if (v == 1)
+      goto upstack ;
+   if (!quarter && v == -1) {
+      m = randomstart ? randomized[togo][mi] : mi ;
+      if (pd.moves[m].base < 64)
+         skipbase |= 1LL << pd.moves[m].base ;
+   }
+downstack:
+   mi++ ;
+   if (mi >= (int)pd.moves.size()) {
+      v = 0 ;
+      goto upstack ;
+   }
+   m = randomstart ? randomized[togo][mi] : mi ;
+   const moove &mv = pd.moves[m] ;
+   if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
+      goto downstack ;
+   if ((mask >> mv.cs) & 1)
+      goto downstack ;
+   pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
+   if (!pd.legalstate(posns[sp+1]))
+      goto downstack ;
+   movehist[sp] = m ;
+   solvestates.push_back({st, mi, mask, skipbase}) ;
+   togo-- ;
+   sp++ ;
+   st = canonnext[st][mv.cs] ;
+   return 3 ;
 }
 int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
    ull initmoves = workchunks[w] ;

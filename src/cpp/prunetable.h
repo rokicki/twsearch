@@ -87,7 +87,7 @@ struct prunetable {
    prunetable& operator=(prunetable &&) noexcept = delete ;
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd, int ignorelookups=0) ;
-   int lookuph(ull h) const {
+   int lookuph(ull h) const { // deprecate this
       h = indexhash(h) ;
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 3)
@@ -95,8 +95,19 @@ struct prunetable {
       else
          return 2 - v + baseval ;
    }
-   void prefetch(ull h) const {
-      __builtin_prefetch(mem+((indexhash(h)) >> 5)) ;
+   int lookuphindexed(ull h) const {
+      int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
+      if (v == 3)
+         return (mem[(h >> 5) & ~7] & 15) - 1 ;
+      else
+         return 2 - v + baseval ;
+   }
+   void prefetch(ull h) const { // deprecate this
+      __builtin_prefetch(mem+(indexhash(h) >> 5)) ;
+   }
+   ull prefetchindexed(ull h) const {
+      __builtin_prefetch(mem+(h >> 5)) ;
+      return h ;
    }
    ull indexhash(ull lowb) const {
       ull h = lowb ;
@@ -108,19 +119,17 @@ struct prunetable {
    ull indexhash(int n, const setval sv) const {
       return indexhash(fasthash(n, sv)) ;
    }
-   int lookup(const setval sv, setval *looktmp) const {
-      ull h ;
+   ull gethashforlookup(const setval sv, setval *looktmp) const {
       if ((int)pdp->rotgroup.size() > 1) {
          slowmodm2(*pdp, sv, *looktmp) ;
-         h = indexhash(totsize, *looktmp) ;
+         return indexhash(totsize, *looktmp) ;
       } else {
-         h = indexhash(totsize, sv) ;
+         return indexhash(totsize, sv) ;
       }
-      int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 3)
-         return (mem[(h >> 5) & ~7] & 15) - 1 ;
-      else
-         return 2 - v + baseval ;
+   }
+   int lookup(const setval sv, setval *looktmp) const {
+      ull h = gethashforlookup(sv, looktmp) ;
+      return lookuphindexed(h) ;
    }
    void addlookups(ull lookups) {
       lookupcnt += lookups ;

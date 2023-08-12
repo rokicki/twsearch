@@ -30,6 +30,8 @@ struct solveworker {
    char padding[256] ; // kill false sharing
    void init(const puzdef &pd, int d_, int id_, const setval &p) ;
    int solveiter(const puzdef &pd, prunetable &pt, int togo, int sp, int st) ;
+   ull innersetup(prunetable &pt, int sp) ;
+   int innerfetch(const puzdef &pd, prunetable &pt, int &togo, int &sp, int &st, ull h) ;
    int possibsolution(const puzdef &pd, int sp) ;
    int solvestart(const puzdef &pd, prunetable &pt, int w) ;
    void dowork(const puzdef &pd, prunetable &pt) ;
