@@ -73,29 +73,41 @@ top:
    lookups++ ; 
    v = pt.lookup(posns[sp], looktmp) ;
    if (v > togo + 1) {
-      v = -1 ; goto returnval ;
-   }
-   if (v > togo) {
-      v = 0 ; goto returnval ;
-   }
-   if (v == 0) {
-      if (togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0) {
-         v = 0 ;
-         goto returnval ;
-      }
-      if (togo > 0 && noearlysolutions &&
-          pd.comparepos(posns[sp], pd.solved) == 0) {
-         v = 0 ;
-         goto returnval ;
-      }
-   }
-   if (togo == 0) {
+      v = -1 ;
+   } else if (v > togo) {
+      v = 0 ;
+   } else if (v == 0 && togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0) {
+      v = 0 ;
+   } else if (v == 0 && togo > 0 && noearlysolutions && pd.comparepos(posns[sp], pd.solved) == 0) {
+      v = 0 ;
+   } else if (togo == 0) {
       v = possibsolution(pd, sp) ;
-      goto returnval ;
+   } else {
+      mask = canonmask[st] ;
+      skipbase = 0 ;
+      mi = -1 ;
+      goto topm ;
    }
-   mask = canonmask[st] ;
-   skipbase = 0 ;
-   mi = -1 ;
+returnval:
+   if (solvestates.size() == 0)
+      return v ;
+   {
+      auto &ss = solvestates[solvestates.size()-1] ;
+      togo++ ;
+      sp-- ;
+      st = ss.st ;
+      mi = ss.mi ;
+      mask = ss.mask ;
+      skipbase = ss.skipbase ;
+   }
+   solvestates.pop_back() ;
+   if (v == 1)
+      goto returnval ;
+   if (!quarter && v == -1) {
+      m = randomstart ? randomized[togo][mi] : mi ;
+      if (pd.moves[m].base < 64)
+         skipbase |= 1LL << pd.moves[m].base ;
+   }
 topm:
    mi++ ;
    if (mi >= (int)pd.moves.size()) {
@@ -119,27 +131,6 @@ topm:
       st = canonnext[st][mv.cs] ;
       goto top ;
    }
-returnval:
-   if (solvestates.size() == 0)
-      return v ;
-   {
-      auto &ss = solvestates[solvestates.size()-1] ;
-      togo++ ;
-      sp-- ;
-      st = ss.st ;
-      mi = ss.mi ;
-      mask = ss.mask ;
-      skipbase = ss.skipbase ;
-   }
-   solvestates.pop_back() ;
-   if (v == 1)
-      goto returnval ;
-   if (!quarter && v == -1) {
-      m = randomstart ? randomized[togo][mi] : mi ;
-      if (pd.moves[m].base < 64)
-         skipbase |= 1LL << pd.moves[m].base ;
-   }
-   goto topm ;
 }
 int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
    ull initmoves = workchunks[w] ;
