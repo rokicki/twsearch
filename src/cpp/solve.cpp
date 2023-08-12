@@ -95,8 +95,9 @@ top:
    }
    mask = canonmask[st] ;
    skipbase = 0 ;
-   mi = 0 ;
+   mi = -1 ;
 topm:
+   mi++ ;
    if (mi >= (int)pd.moves.size()) {
       v = 0 ;
       goto returnval ;
@@ -105,12 +106,12 @@ topm:
    {
       const moove &mv = pd.moves[m] ;
       if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
-         goto nextm ;
+         goto topm ;
       if ((mask >> mv.cs) & 1)
-         goto nextm ;
+         goto topm ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
-         goto nextm ;
+         goto topm ;
       movehist[sp] = m ;
       solvestates.push_back({st, mi, mask, skipbase}) ;
       togo-- ;
@@ -138,8 +139,6 @@ returnval:
       if (pd.moves[m].base < 64)
          skipbase |= 1LL << pd.moves[m].base ;
    }
-nextm:
-   mi++ ;
    goto topm ;
 }
 int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
