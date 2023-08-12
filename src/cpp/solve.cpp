@@ -41,68 +41,106 @@ void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
    d = d_ ;
    id = id_ ;
 }
-int solveworker::solverecur(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
-   lookups++ ;
-   int v = pt.lookup(posns[sp], looktmp) ;
-   if (v > togo + 1)
-      return -1 ;
-   if (v > togo)
+int solveworker::possibsolution(const puzdef &pd, int sp) {
+   if (callback) {
+      return callback(posns[sp], movehist, d, id) ;
+   }
+   if (pd.comparepos(posns[sp], pd.solved) == 0) {
+      int r = 1 ;
+      get_global_lock() ;
+      solutionsfound++ ;
+      lastsolution.clear() ;
+      if (d == 0) // allow null solution to trigger
+         cout << " " ;
+      for (int i=0; i<d; i++) {
+         cout << " " << pd.moves[movehist[i]].name ;
+         if (i > 0)
+            lastsolution += " " ;
+         lastsolution += pd.moves[movehist[i]].name ;
+      }
+      cout << endl << flush ;
+      if (solutionsfound < solutionsneeded)
+         r = 0 ;
+      release_global_lock() ;
+      return r ;
+   } else
       return 0 ;
+}
+int solveworker::solveiter(const puzdef &pd, prunetable &pt, int togo, int sp, int st) {
+   int v, mi, m ;
+   ull mask, skipbase ;
+top:
+   lookups++ ; 
+   v = pt.lookup(posns[sp], looktmp) ;
+   if (v > togo + 1) {
+      v = -1 ; goto returnval ;
+   }
+   if (v > togo) {
+      v = 0 ; goto returnval ;
+   }
    if (v == 0) {
-      if (togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0)
-         return 0 ;
+      if (togo == 1 && didprepass && pd.comparepos(posns[sp], pd.solved) == 0) {
+         v = 0 ;
+         goto returnval ;
+      }
       if (togo > 0 && noearlysolutions &&
-          pd.comparepos(posns[sp], pd.solved) == 0)
-         return 0 ;
+          pd.comparepos(posns[sp], pd.solved) == 0) {
+         v = 0 ;
+         goto returnval ;
+      }
    }
    if (togo == 0) {
-      if (callback) {
-         return callback(posns[sp], movehist, d, id) ;
-      }
-      if (pd.comparepos(posns[sp], pd.solved) == 0) {
-         int r = 1 ;
-         get_global_lock() ;
-         solutionsfound++ ;
-         lastsolution.clear() ;
-         if (d == 0) // allow null solution to trigger
-            cout << " " ;
-         for (int i=0; i<d; i++) {
-            cout << " " << pd.moves[movehist[i]].name ;
-            if (i > 0)
-               lastsolution += " " ;
-            lastsolution += pd.moves[movehist[i]].name ;
-         }
-         cout << endl << flush ;
-         if (solutionsfound < solutionsneeded)
-            r = 0 ;
-         release_global_lock() ;
-         return r ;
-      } else
-         return 0 ;
+      v = possibsolution(pd, sp) ;
+      goto returnval ;
    }
-   ull mask = canonmask[st] ;
-   const vector<int> &ns = canonnext[st] ;
-   ull skipbase = 0 ;
-   for (int mi=0; mi<(int)pd.moves.size(); mi++) {
-      int m = randomstart ? randomized[togo][mi] : mi ;
+   mask = canonmask[st] ;
+   skipbase = 0 ;
+   mi = 0 ;
+topm:
+   if (mi >= (int)pd.moves.size()) {
+      v = 0 ;
+      goto returnval ;
+   }
+   m = randomstart ? randomized[togo][mi] : mi ;
+   {
       const moove &mv = pd.moves[m] ;
       if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
-         continue ;
+         goto nextm ;
       if ((mask >> mv.cs) & 1)
-         continue ;
+         goto nextm ;
       pd.mul(posns[sp], mv.pos, posns[sp+1]) ;
       if (!pd.legalstate(posns[sp+1]))
-         continue ;
+         goto nextm ;
       movehist[sp] = m ;
-      v = solverecur(pd, pt, togo-1, sp+1, ns[mv.cs]) ;
-      if (v == 1)
-         return 1 ;
-      if (!quarter && v == -1) {
-         if (mv.base < 64)
-            skipbase |= 1LL << mv.base ;
-      }
+      solvestates.push_back({st, mi, mask, skipbase}) ;
+      togo-- ;
+      sp++ ;
+      st = canonnext[st][mv.cs] ;
+      goto top ;
    }
-   return 0 ;
+returnval:
+   if (solvestates.size() == 0)
+      return v ;
+   {
+      auto &ss = solvestates[solvestates.size()-1] ;
+      togo++ ;
+      sp-- ;
+      st = ss.st ;
+      mi = ss.mi ;
+      mask = ss.mask ;
+      skipbase = ss.skipbase ;
+   }
+   solvestates.pop_back() ;
+   if (v == 1)
+      goto returnval ;
+   if (!quarter && v == -1) {
+      m = randomstart ? randomized[togo][mi] : mi ;
+      if (pd.moves[m].base < 64)
+         skipbase |= 1LL << pd.moves[m].base ;
+   }
+nextm:
+   mi++ ;
+   goto topm ;
 }
 int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
    ull initmoves = workchunks[w] ;
@@ -121,7 +159,8 @@ int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
       togo-- ;
       initmoves /= nmoves ;
    }
-   return solverecur(pd, pt, togo, sp, st) ;
+   solvestates.clear() ;
+   return solveiter(pd, pt, togo, sp, st) ;
 }
 void solveworker::dowork(const puzdef &pd, prunetable &pt) {
    while (1) {
