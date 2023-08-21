@@ -78,22 +78,22 @@ void timingtest(puzdef &pd) {
             int rmv = myrand(pd.moves.size()) ;
             pd.mul(p1, pd.moves[rmv].pos, p2) ;
             slowmodm2(pd, p2, p1) ;
-            sum += pt.lookuph(tgo[i&mask]) ;
-            tgo[i&mask] = fasthash(pd.totsize, p1) ;
-            pt.prefetch(tgo[i&mask]) ;
+            sum += pt.lookuphindexed(tgo[i&mask]) ;
+            tgo[i&mask] = pt.indexhash(pd.totsize, p1) ;
+            pt.prefetchindexed(tgo[i&mask]) ;
          }
       } else {
          for (int i=0; i<cnt; i += 2) {
             int rmv = myrand(pd.moves.size()) ;
             pd.mul(p1, pd.moves[rmv].pos, p2) ;
-            sum += pt.lookuph(tgo[i&mask]) ;
-            tgo[i&mask] = fasthash(pd.totsize, p2) ;
-            pt.prefetch(tgo[i&mask]) ;
+            sum += pt.lookuphindexed(tgo[i&mask]) ;
+            tgo[i&mask] = pt.indexhash(pd.totsize, p2) ;
+            pt.prefetchindexed(tgo[i&mask]) ;
             rmv = myrand(pd.moves.size()) ;
             pd.mul(p2, pd.moves[rmv].pos, p1) ;
-            sum += pt.lookuph(tgo[1+(i&mask)]) ;
-            tgo[1+(i&mask)] = fasthash(pd.totsize, p1) ;
-            pt.prefetch(tgo[1+(i&mask)]) ;
+            sum += pt.lookuphindexed(tgo[1+(i&mask)]) ;
+            tgo[1+(i&mask)] = pt.indexhash(pd.totsize, p1) ;
+            pt.prefetchindexed(tgo[1+(i&mask)]) ;
          }
       }
       tim = duration() ;

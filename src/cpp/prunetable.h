@@ -87,23 +87,12 @@ struct prunetable {
    prunetable& operator=(prunetable &&) noexcept = delete ;
    void filltable(const puzdef &pd, int d) ;
    void checkextend(const puzdef &pd, int ignorelookups=0) ;
-   int lookuph(ull h) const { // deprecate this
-      h = indexhash(h) ;
-      int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
-      if (v == 3)
-         return (mem[(h >> 5) & ~7] & 15) - 1 ;
-      else
-         return 2 - v + baseval ;
-   }
    int lookuphindexed(ull h) const {
       int v = 3 & (mem[h >> 5] >> ((h & 31) * 2)) ;
       if (v == 3)
          return (mem[(h >> 5) & ~7] & 15) - 1 ;
       else
          return 2 - v + baseval ;
-   }
-   void prefetch(ull h) const { // deprecate this
-      __builtin_prefetch(mem+(indexhash(h) >> 5)) ;
    }
    ull prefetchindexed(ull h) const {
       __builtin_prefetch(mem+(h >> 5)) ;
