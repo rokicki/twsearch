@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use cubing::{
     alg::Move,
     kpuzzle::{InvalidAlgError, InvalidDefinitionError, KPuzzle, KPuzzleOrbitName},
@@ -26,7 +24,8 @@ pub struct PackedKPuzzleData {
 
 #[derive(Debug, Clone)]
 pub struct PackedKPuzzle {
-    pub data: Arc<PackedKPuzzleData>,
+    // pub data: Arc<PackedKPuzzleData>, // TODO
+    pub data: PackedKPuzzleData,
 }
 
 impl TryFrom<KPuzzle> for PackedKPuzzle {
@@ -62,7 +61,7 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
         }
 
         Ok(Self {
-            data: Arc::new(PackedKPuzzleData {
+            data: (PackedKPuzzleData {
                 kpuzzle,
                 num_bytes: bytes_offset,
                 orbit_iteration_info,
@@ -85,15 +84,14 @@ fn usize_to_u8(n: usize) -> u8 {
 #[macro_export]
 macro_rules! set_packed_piece_or_permutation {
     ($bytes:expr, $orbit_info:expr, $i:expr, $value: expr) => {
-        $bytes[$orbit_info.bytes_offset + $i] = ($value).try_into().expect("Value too large!")
+        $bytes[$orbit_info.bytes_offset + $i] = ($value)
     };
 }
 
 #[macro_export]
 macro_rules! set_packed_orientation {
     ($bytes:expr, $orbit_info:expr, $i:expr, $value: expr) => {
-        $bytes[$orbit_info.bytes_offset + $orbit_info.num_pieces + $i] =
-            ($value).try_into().expect("Value too large!")
+        $bytes[$orbit_info.bytes_offset + $orbit_info.num_pieces + $i] = ($value)
     };
 }
 
@@ -108,7 +106,7 @@ macro_rules! set_packed_piece_or_permutation_and_orientation {
 #[macro_export]
 macro_rules! get_packed_piece_or_permutation {
     ($bytes:expr, $orbit_info:expr, $i:expr) => {
-        $bytes[$orbit_info.bytes_offset + std::convert::Into::<usize>::into($i)]
+        $bytes[$orbit_info.bytes_offset + $i]
     };
 }
 
@@ -116,9 +114,7 @@ macro_rules! get_packed_piece_or_permutation {
 #[macro_export]
 macro_rules! get_packed_orientation {
     ($bytes:expr, $orbit_info:expr, $i:expr) => {
-        $bytes[$orbit_info.bytes_offset
-            + $orbit_info.num_pieces
-            + std::convert::Into::<usize>::into($i)]
+        $bytes[$orbit_info.bytes_offset + $orbit_info.num_pieces + $i]
     };
 }
 
@@ -137,7 +133,7 @@ impl PackedKPuzzle {
                     bytes,
                     orbit_info,
                     i,
-                    kstate_orbit_data.pieces[i],
+                    usize_to_u8(kstate_orbit_data.pieces[i]),
                     match &kstate_orbit_data.orientation_mod {
                         None => usize_to_u8(kstate_orbit_data.orientation[i]),
                         Some(orientation_mod) => {
@@ -152,10 +148,7 @@ impl PackedKPuzzle {
             }
         }
 
-        PackedKState {
-            packed_kpuzzle: self.clone(),
-            bytes,
-        }
+        PackedKState { bytes }
     }
 
     // TODO: implement this as a `TryFrom`?
@@ -179,15 +172,12 @@ impl PackedKPuzzle {
                     bytes,
                     orbit_info,
                     i,
-                    unpacked_orbit_data.permutation[i],
-                    unpacked_orbit_data.orientation[i]
+                    usize_to_u8(unpacked_orbit_data.permutation[i]),
+                    usize_to_u8(unpacked_orbit_data.orientation[i])
                 );
             }
         }
 
-        Ok(PackedKTransformation {
-            packed_kpuzzle: self.clone(),
-            bytes,
-        })
+        Ok(PackedKTransformation { bytes })
     }
 }

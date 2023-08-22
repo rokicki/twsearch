@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use cubing::{parse_move, puzzles::cube3x3x3_kpuzzle};
 
 use crate::cpp_port::PackedKPuzzle;
@@ -8,24 +10,39 @@ mod cpp_port;
 fn main() {
     let packed_kpuzzle = PackedKPuzzle::try_from(cube3x3x3_kpuzzle()).unwrap();
 
-    let start_state = packed_kpuzzle.start_state();
-    println!("{:?}", start_state.bytes);
+    let m = |s: &str| {
+        packed_kpuzzle
+            .transformation_from_move(&parse_move!(s).unwrap())
+            .unwrap()
+    };
 
-    #[allow(non_snake_case)]
-    let transformation_R = packed_kpuzzle
-        .transformation_from_move(&parse_move!("R").unwrap())
-        .unwrap();
-    println!("{:?}", transformation_R.bytes);
+    let move_transformations = vec![
+        m("U"),
+        m("U2"),
+        m("U'"),
+        m("L"),
+        m("L2"),
+        m("L'"),
+        m("F"),
+        m("F2"),
+        m("F'"),
+        m("R"),
+        m("R2"),
+        m("R'"),
+        m("B"),
+        m("B2"),
+        m("B'"),
+        m("D"),
+        m("D2"),
+        m("D'"),
+    ];
 
-    let transformed = start_state.apply_transformation(&transformation_R);
-    println!("{:?}", transformed.bytes);
-
-    let transformed = transformed.apply_transformation(&transformation_R);
-    println!("{:?}", transformed.bytes);
-
-    let transformed = transformed.apply_transformation(&transformation_R);
-    println!("{:?}", transformed.bytes);
-
-    let transformed = transformed.apply_transformation(&transformation_R);
-    println!("{:?}", transformed.bytes);
+    let mut state = packed_kpuzzle.start_state();
+    let start = Instant::now();
+    for i in 0..1000000 {
+        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+    }
+    println!("{:?}", state.bytes);
+    let duration = start.elapsed();
+    println!("Time elapsed: {:?}", duration);
 }
