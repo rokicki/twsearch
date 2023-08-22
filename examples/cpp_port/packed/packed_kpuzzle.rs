@@ -1,28 +1,19 @@
 use std::sync::Arc;
 
-use cubing::kpuzzle::{InvalidDefinitionError, KPuzzle, KPuzzleOrbitDefinition, KPuzzleOrbitName};
+use cubing::{
+    alg::Move,
+    kpuzzle::{InvalidAlgError, InvalidDefinitionError, KPuzzle, KPuzzleOrbitName},
+};
 
-use super::PackedKState;
+use super::{PackedKState, PackedKTransformation};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PackedKPuzzleOrbitData {
     pub name: KPuzzleOrbitName,
-    pub definition: KPuzzleOrbitDefinition,
     pub bytes_offset: usize,
-}
-
-impl Clone for PackedKPuzzleOrbitData {
-    fn clone(&self) -> Self {
-        Self {
-            name: self.name.clone(),
-            // TODO: Implement `Clone` for `KPuzzleOrbitDefinition`?
-            definition: KPuzzleOrbitDefinition {
-                num_pieces: self.definition.num_pieces,
-                num_orientations: self.definition.num_orientations,
-            },
-            bytes_offset: self.bytes_offset,
-        }
-    }
+    pub num_pieces: usize,
+    pub num_orientations: u8,
+    pub unknown_orientation_value: u8,
 }
 
 #[derive(Debug, Clone)]
@@ -30,7 +21,7 @@ pub struct PackedKPuzzleData {
     pub kpuzzle: KPuzzle,
     // Private cached values.
     pub num_bytes: usize,
-    pub orbit_iteration_data: Vec<PackedKPuzzleOrbitData>,
+    pub orbit_iteration_info: Vec<PackedKPuzzleOrbitData>,
 }
 
 #[derive(Debug, Clone)]
@@ -47,7 +38,7 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
         let orbit_ordering = orbit_ordering.as_ref().ok_or_else(|| InvalidDefinitionError{ description: "Constructing a `PackedKPuzzle` from a `KPuzzle` requires the `orbitOrdering` field.".to_owned()})?;
 
         let mut bytes_offset = 0;
-        let mut orbit_iteration_data: Vec<PackedKPuzzleOrbitData> = vec![];
+        let mut orbit_iteration_info: Vec<PackedKPuzzleOrbitData> = vec![];
 
         for orbit_name in orbit_ordering {
             let orbit_definition = kpuzzle.definition().orbits.get(orbit_name);
@@ -57,14 +48,14 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                     orbit_name
                 ),
             })?;
-            orbit_iteration_data.push({
+            let unknown_orientation_value = usize_to_u8(2 * orbit_definition.num_orientations);
+            orbit_iteration_info.push({
                 PackedKPuzzleOrbitData {
                     name: orbit_name.clone(),
-                    definition: KPuzzleOrbitDefinition {
-                        num_pieces: orbit_definition.num_pieces,
-                        num_orientations: orbit_definition.num_orientations,
-                    },
+                    num_pieces: orbit_definition.num_pieces,
+                    num_orientations: usize_to_u8(orbit_definition.num_orientations),
                     bytes_offset,
+                    unknown_orientation_value,
                 }
             });
             bytes_offset += orbit_definition.num_pieces * 2;
@@ -74,10 +65,61 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
             data: Arc::new(PackedKPuzzleData {
                 kpuzzle,
                 num_bytes: bytes_offset,
-                orbit_iteration_data,
+                orbit_iteration_info,
             }),
         })
     }
+}
+
+/// An error type that can indicate multiple error causes, when parsing and applying an alg at the same time.
+#[derive(derive_more::From, Debug, derive_more::Display)]
+pub enum ConversionError {
+    InvalidAlg(InvalidAlgError),
+    InvalidDefinition(InvalidDefinitionError),
+}
+
+fn usize_to_u8(n: usize) -> u8 {
+    n.try_into().expect("Value too large!") // TODO
+}
+
+#[macro_export]
+macro_rules! set_packed_piece_or_permutation {
+    ($bytes:expr, $orbit_info:expr, $i:expr, $value: expr) => {
+        $bytes[$orbit_info.bytes_offset + $i] = ($value).try_into().expect("Value too large!")
+    };
+}
+
+#[macro_export]
+macro_rules! set_packed_orientation {
+    ($bytes:expr, $orbit_info:expr, $i:expr, $value: expr) => {
+        $bytes[$orbit_info.bytes_offset + $orbit_info.num_pieces + $i] =
+            ($value).try_into().expect("Value too large!")
+    };
+}
+
+#[macro_export]
+macro_rules! set_packed_piece_or_permutation_and_orientation {
+    ($bytes:expr, $orbit_info:expr, $i:expr, $piece_or_permutation: expr, $orientation: expr) => {
+        set_packed_piece_or_permutation!($bytes, $orbit_info, $i, $piece_or_permutation);
+        set_packed_orientation!($bytes, $orbit_info, $i, $orientation);
+    };
+}
+
+#[macro_export]
+macro_rules! get_packed_piece_or_permutation {
+    ($bytes:expr, $orbit_info:expr, $i:expr) => {
+        $bytes[$orbit_info.bytes_offset + std::convert::Into::<usize>::into($i)]
+    };
+}
+
+// Applies to both states and transformations.
+#[macro_export]
+macro_rules! get_packed_orientation {
+    ($bytes:expr, $orbit_info:expr, $i:expr) => {
+        $bytes[$orbit_info.bytes_offset
+            + $orbit_info.num_pieces
+            + std::convert::Into::<usize>::into($i)]
+    };
 }
 
 impl PackedKPuzzle {
@@ -85,29 +127,28 @@ impl PackedKPuzzle {
         let kstate_start_state_data = self.data.kpuzzle.start_state().state_data;
         let mut bytes: Vec<u8> = vec![0; self.data.num_bytes];
 
-        for current_orbit in &self.data.orbit_iteration_data {
+        for orbit_info in &self.data.orbit_iteration_info {
             let kstate_orbit_data = kstate_start_state_data
-                .get(&current_orbit.name)
+                .get(&orbit_info.name)
                 .expect("Missing orbit!");
-            let num_pieces = current_orbit.definition.num_pieces;
+            let num_pieces = orbit_info.num_pieces;
             for i in 0..num_pieces {
-                bytes[current_orbit.bytes_offset + i] = kstate_orbit_data.pieces[i]
-                    .try_into()
-                    .expect("Value too large!");
-                // TODO: macro?
-                bytes[current_orbit.bytes_offset + num_pieces + i] =
+                set_packed_piece_or_permutation_and_orientation!(
+                    bytes,
+                    orbit_info,
+                    i,
+                    kstate_orbit_data.pieces[i],
                     match &kstate_orbit_data.orientation_mod {
-                        None => kstate_orbit_data.orientation[i],
+                        None => usize_to_u8(kstate_orbit_data.orientation[i]),
                         Some(orientation_mod) => {
                             match orientation_mod[i] {
-                                0 => kstate_orbit_data.orientation[i],
-                                1 => current_orbit.definition.num_orientations * 2, // TODO
-                                _ => panic!("Unsupported!"),                        // TODO
+                                0 => usize_to_u8(kstate_orbit_data.orientation[i]),
+                                1 => orbit_info.num_orientations * 2, // TODO
+                                _ => panic!("Unsupported!"),          // TODO
                             }
                         }
                     }
-                    .try_into()
-                    .expect("Value too large!")
+                );
             }
         }
 
@@ -115,5 +156,38 @@ impl PackedKPuzzle {
             packed_kpuzzle: self.clone(),
             bytes,
         }
+    }
+
+    // TODO: implement this as a `TryFrom`?
+    pub fn transformation_from_move(
+        &self, // TODO: Any issues with not using `&self`?
+        key_move: &Move,
+    ) -> Result<PackedKTransformation, ConversionError> {
+        let unpacked_ktransformation = self.data.kpuzzle.transformation_from_move(key_move)?;
+
+        let mut bytes: Vec<u8> = vec![0; self.data.num_bytes];
+        for orbit_info in &self.data.orbit_iteration_info {
+            let unpacked_orbit_data = unpacked_ktransformation
+                .transformation_data
+                .get(&orbit_info.name);
+            let unpacked_orbit_data =
+                unpacked_orbit_data.ok_or_else(|| InvalidDefinitionError {
+                    description: format!("Missing orbit: {}", orbit_info.name),
+                })?;
+            for i in 0..orbit_info.num_pieces {
+                set_packed_piece_or_permutation_and_orientation!(
+                    bytes,
+                    orbit_info,
+                    i,
+                    unpacked_orbit_data.permutation[i],
+                    unpacked_orbit_data.orientation[i]
+                );
+            }
+        }
+
+        Ok(PackedKTransformation {
+            packed_kpuzzle: self.clone(),
+            bytes,
+        })
     }
 }
