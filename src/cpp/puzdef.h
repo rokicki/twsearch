@@ -152,7 +152,6 @@ struct puzdef {
       const uchar *ap = a.dat ;
       const uchar *bp = b.dat ;
       uchar *cp = c.dat ;
-      memset(cp, 0, totsize) ;
       for (int i=0; i<(int)setdefs.size(); i++) {
          const setdef &sd = setdefs[i] ;
          int n = sd.size ;
