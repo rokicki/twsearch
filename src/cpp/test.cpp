@@ -6,14 +6,12 @@ int scramblemoves = 1 ;
 void timingtest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
-   cout << "Timing moves." << endl << flush ;
+   cout << "Timing moves." << pd.moves.size()<< endl << flush ;
    duration() ;
    int cnt = 100000000 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = myrand(pd.moves.size()) ;
-      pd.mul(p1, pd.moves[rmv].pos, p2) ;
-      rmv = myrand(pd.moves.size()) ;
-      pd.mul(p2, pd.moves[rmv].pos, p1) ;
+      pd.mul(p1, pd.moves[i % pd.moves.size()].pos, p2) ;
+      pd.mul(p2, pd.moves[(i + 1) % pd.moves.size()].pos, p1) ;
    }
    double tim = duration() ;
    cout << "Did " << cnt << " in " << tim << " rate " << cnt/tim/1e6 << endl << flush ;

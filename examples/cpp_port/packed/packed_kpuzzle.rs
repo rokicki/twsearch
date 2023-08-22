@@ -121,7 +121,7 @@ macro_rules! get_packed_orientation {
 impl PackedKPuzzle {
     pub fn start_state(&self) -> PackedKState {
         let kstate_start_state_data = self.data.kpuzzle.start_state().state_data;
-        let mut bytes: Vec<u8> = vec![0; self.data.num_bytes];
+        let mut bytes: [u8; 52] = [0; 52];
 
         for orbit_info in &self.data.orbit_iteration_info {
             let kstate_orbit_data = kstate_start_state_data

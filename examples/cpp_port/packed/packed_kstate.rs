@@ -7,7 +7,7 @@ use super::{PackedKPuzzle, PackedKTransformation};
 
 pub struct PackedKState {
     // pub packed_kpuzzle: PackedKPuzzle,
-    pub bytes: Vec<u8>,
+    pub bytes: [u8; 52],
 }
 
 impl PackedKState {
@@ -18,7 +18,7 @@ impl PackedKState {
         packed_kpuzzle: &PackedKPuzzle,
         transformation: &PackedKTransformation,
     ) -> PackedKState {
-        let mut bytes: Vec<u8> = vec![0; packed_kpuzzle.data.num_bytes];
+        let mut bytes: [u8; 52] = [0; 52];
         for orbit_info in &packed_kpuzzle.data.orbit_iteration_info {
             // TODO: optimization when either value is the identity.
             for i in 0..orbit_info.num_pieces {
