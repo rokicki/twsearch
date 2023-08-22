@@ -30,14 +30,10 @@ impl PackedKState {
                     get_packed_piece_or_permutation!(self.bytes, orbit_info, transformation_idx);
                 let previous_piece_orientation =
                     get_packed_orientation!(self.bytes, orbit_info, transformation_idx);
-                let new_piece_orientation =
-                    if previous_piece_orientation == orbit_info.unknown_orientation_value {
-                        previous_piece_orientation
-                    } else {
-                        (previous_piece_orientation
-                            + get_packed_orientation!(transformation.bytes, orbit_info, i))
-                            % orbit_info.num_orientations
-                    };
+                let new_piece_orientation = orbit_info.table[std::convert::Into::<usize>::into(
+                    previous_piece_orientation
+                        + get_packed_orientation!(transformation.bytes, orbit_info, i),
+                )];
                 set_packed_piece_or_permutation_and_orientation!(
                     bytes,
                     orbit_info,
