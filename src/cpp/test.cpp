@@ -6,13 +6,17 @@ int scramblemoves = 1 ;
 void timingtest(puzdef &pd) {
    stacksetval p1(pd), p2(pd) ;
    pd.assignpos(p1, pd.solved) ;
+   const int NUMRAND = 4096 ;
+   unsigned short randpool[NUMRAND] ;
+   for (int i=0; i<NUMRAND; i++)
+      randpool[i] = myrand(pd.moves.size()) ;
    cout << "Timing moves." << endl << flush ;
    duration() ;
    int cnt = 100000000 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = myrand(pd.moves.size()) ;
+      int rmv = randpool[i & (NUMRAND-1)] ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
-      rmv = myrand(pd.moves.size()) ;
+      rmv = randpool[i & (NUMRAND-1)] ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
    }
    double tim = duration() ;
@@ -22,10 +26,10 @@ void timingtest(puzdef &pd) {
    cnt = 100000000 ;
    ull sum = 0 ;
    for (int i=0; i<cnt; i += 2) {
-      int rmv = myrand(pd.moves.size()) ;
+      int rmv = randpool[i & (NUMRAND-1)] ;
       pd.mul(p1, pd.moves[rmv].pos, p2) ;
       sum += fasthash(pd.totsize, p2) ;
-      rmv = myrand(pd.moves.size()) ;
+      rmv = randpool[i & (NUMRAND-1)] ;
       pd.mul(p2, pd.moves[rmv].pos, p1) ;
       sum += fasthash(pd.totsize, p1) ;
    }
@@ -37,7 +41,7 @@ void timingtest(puzdef &pd) {
       cnt = 100000000 ;
       ull sum = 0 ;
       for (int i=0; i<cnt; i++) {
-         int rmv = myrand(pd.moves.size()) ;
+         int rmv = randpool[i & (NUMRAND-1)] ;
          pd.mul(p1, pd.moves[rmv].pos, p2) ;
          slowmodm2(pd, p2, p1) ;
          sum += fasthash(pd.totsize, p2) ;
@@ -53,10 +57,10 @@ void timingtest(puzdef &pd) {
       sum = 0 ;
       stacksetval looktmp(pd) ;
       for (int i=0; i<cnt; i += 2) {
-         int rmv = myrand(pd.moves.size()) ;
+         int rmv = randpool[i & (NUMRAND-1)] ;
          pd.mul(p1, pd.moves[rmv].pos, p2) ;
          sum += pt.lookup(p2, &looktmp) ;
-         rmv = myrand(pd.moves.size()) ;
+         rmv = randpool[i & (NUMRAND-1)] ;
          pd.mul(p2, pd.moves[rmv].pos, p1) ;
          sum += pt.lookup(p1, &looktmp) ;
       }
@@ -75,7 +79,7 @@ void timingtest(puzdef &pd) {
       sum = 0 ;
       if ((int)pd.rotgroup.size() > 1) {
          for (int i=0; i<cnt; i++) {
-            int rmv = myrand(pd.moves.size()) ;
+            int rmv = randpool[i & (NUMRAND-1)] ;
             pd.mul(p1, pd.moves[rmv].pos, p2) ;
             slowmodm2(pd, p2, p1) ;
             sum += pt.lookuphindexed(tgo[i&mask]) ;
@@ -84,12 +88,12 @@ void timingtest(puzdef &pd) {
          }
       } else {
          for (int i=0; i<cnt; i += 2) {
-            int rmv = myrand(pd.moves.size()) ;
+            int rmv = randpool[i & (NUMRAND-1)] ;
             pd.mul(p1, pd.moves[rmv].pos, p2) ;
             sum += pt.lookuphindexed(tgo[i&mask]) ;
             tgo[i&mask] = pt.indexhash(pd.totsize, p2) ;
             pt.prefetchindexed(tgo[i&mask]) ;
-            rmv = myrand(pd.moves.size()) ;
+            rmv = randpool[i & (NUMRAND-1)] ;
             pd.mul(p2, pd.moves[rmv].pos, p1) ;
             sum += pt.lookuphindexed(tgo[1+(i&mask)]) ;
             tgo[1+(i&mask)] = pt.indexhash(pd.totsize, p1) ;
