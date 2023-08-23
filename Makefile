@@ -25,6 +25,10 @@ test-rust-cli:
 test-cpp_port:
 	cargo run --release --example test-cpp_port
 
+.PHONY: test-cpp_port-no_orientation_mod
+test-cpp_port-no_orientation_mod:
+	cargo run --features no_orientation_mod --release --example test-cpp_port
+
 .PHONY: clean
 clean:
 	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
