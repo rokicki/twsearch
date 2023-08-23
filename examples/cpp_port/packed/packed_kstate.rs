@@ -10,6 +10,10 @@ use super::{
     packed_kpuzzle::PackedKPuzzleOrbitInfo, PackedKPuzzle, PackedKTransformation,
 };
 
+#[cfg(not(feature = "orientation_packer"))]
+#[cfg(not(feature = "no_orientation_mod"))]
+use super::packed_kpuzzle::{ORIENTATION_MASK, ORIENTATION_MOD_SHIFT_BITS};
+
 pub struct PackedKState {
     pub packed_kpuzzle: PackedKPuzzle,
     pub bytes: *mut u8,
@@ -100,6 +104,21 @@ impl PackedKState {
                 let previous_packed_orientation =
                     self.get_packed_orientation(orbit_info, u8_to_usize(transformation_idx));
 
+                #[cfg(not(feature = "orientation_packer"))]
+                #[cfg(not(feature = "no_orientation_mod"))]
+                let new_packed_orientation = {
+                    let previous_orientation_mod =
+                        previous_packed_orientation >> ORIENTATION_MOD_SHIFT_BITS;
+                    let (modulus, previous_orientation) = match previous_orientation_mod {
+                        0 => (orbit_info.num_orientations, previous_packed_orientation),
+                        modulus => (modulus, previous_packed_orientation & ORIENTATION_MASK),
+                    };
+                    let new_orientation = (previous_orientation
+                        + transformation.get_orientation(orbit_info, i))
+                        % modulus;
+                    (previous_orientation_mod << ORIENTATION_MOD_SHIFT_BITS) + new_orientation
+                };
+                #[cfg(feature = "orientation_packer")]
                 #[cfg(not(feature = "no_orientation_mod"))]
                 let new_packed_orientation = {
                     orbit_info.orientation_packer.transform(
@@ -140,11 +159,36 @@ impl PackedKState {
             let mut orientation_mod = Vec::<usize>::new();
             for i in 0..orbit_info.num_pieces {
                 pieces.push(u8_to_usize(self.get_piece_or_permutation(orbit_info, i)));
-                let orientation_with_mod = orbit_info
-                    .orientation_packer
-                    .unpack(self.get_packed_orientation(orbit_info, i));
-                orientation.push(orientation_with_mod.orientation);
-                orientation_mod.push(orientation_with_mod.orientation_mod);
+
+                #[cfg(not(feature = "orientation_packer"))]
+                #[cfg(not(feature = "no_orientation_mod"))]
+                {
+                    let packed_orientation = self.get_packed_orientation(orbit_info, i);
+                    orientation.push(u8_to_usize(packed_orientation & ORIENTATION_MASK));
+                    orientation_mod.push(u8_to_usize(
+                        packed_orientation >> ORIENTATION_MOD_SHIFT_BITS,
+                    ));
+                }
+                #[cfg(feature = "orientation_packer")]
+                #[cfg(not(feature = "no_orientation_mod"))]
+                {
+                    let orientation_with_mod = orbit_info
+                        .orientation_packer
+                        .unpack(self.get_packed_orientation(orbit_info, i));
+                    orientation.push(orientation_with_mod.orientation);
+                    orientation_mod.push(orientation_with_mod.orientation_mod);
+                };
+                #[cfg(feature = "no_orientation_mod")]
+                {
+                    let packed_orientation = self.get_packed_orientation(orbit_info, i);
+                    if packed_orientation == orbit_info.unknown_orientation_value {
+                        orientation.push(0);
+                        orientation_mod.push(1);
+                    } else {
+                        orientation.push(u8_to_usize(packed_orientation));
+                        orientation_mod.push(0);
+                    }
+                }
             }
             let orbit_data = cubing::kpuzzle::KStateOrbitData {
                 pieces,

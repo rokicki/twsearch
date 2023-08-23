@@ -5,19 +5,35 @@ use cubing::{
     kpuzzle::{InvalidAlgError, InvalidDefinitionError, KPuzzle, KPuzzleOrbitName},
 };
 
-use super::{
-    byte_conversions::usize_to_u8, orientation_packer::OrientationPacker, PackedKState,
-    PackedKTransformation,
-};
+use super::{byte_conversions::usize_to_u8, PackedKState, PackedKTransformation};
 
+#[cfg(not(feature = "orientation_packer"))]
+#[cfg(not(feature = "no_orientation_mod"))]
+pub const ORIENTATION_MOD_SHIFT_BITS: usize = 4;
+#[cfg(not(feature = "orientation_packer"))]
+#[cfg(not(feature = "no_orientation_mod"))]
+pub const ORIENTATION_MASK: u8 = 0xF;
+
+#[cfg(feature = "orientation_packer")]
 #[cfg(not(feature = "no_orientation_mod"))]
 use super::byte_conversions::u8_to_usize;
+#[cfg(feature = "orientation_packer")]
+#[cfg(not(feature = "no_orientation_mod"))]
+use super::orientation_packer::OrientationPacker;
+#[cfg(feature = "orientation_packer")]
 #[cfg(not(feature = "no_orientation_mod"))]
 use crate::cpp_port::packed::orientation_packer::OrientationWithMod;
 
 // TODO: allow certain values over 107?
 // https://github.com/cubing/twsearch/issues/25#issue-1862613355
-const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = if cfg!(no_orientation_mod) { 127 } else { 107 };
+#[cfg(not(feature = "orientation_packer"))]
+#[cfg(not(feature = "no_orientation_mod"))]
+const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 16;
+#[cfg(feature = "orientation_packer")]
+#[cfg(not(feature = "no_orientation_mod"))]
+const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 107;
+#[cfg(feature = "no_orientation_mod")]
+const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 127;
 
 #[derive(Debug)]
 pub struct PackedKPuzzleOrbitInfo {
@@ -26,6 +42,8 @@ pub struct PackedKPuzzleOrbitInfo {
     pub orientations_offset: usize,
     pub num_pieces: usize,
     pub num_orientations: u8,
+    #[cfg(feature = "orientation_packer")]
+    #[cfg(not(feature = "no_orientation_mod"))]
     pub orientation_packer: OrientationPacker,
     #[cfg(feature = "no_orientation_mod")]
     pub unknown_orientation_value: u8,
@@ -76,6 +94,8 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                     num_orientations: usize_to_u8(num_orientations),
                     pieces_or_pemutations_offset: bytes_offset,
                     orientations_offset: bytes_offset + orbit_definition.num_pieces,
+                    #[cfg(feature = "orientation_packer")]
+                    #[cfg(not(feature = "no_orientation_mod"))]
                     orientation_packer: OrientationPacker::new(orbit_definition.num_orientations),
                     #[cfg(feature = "no_orientation_mod")]
                     unknown_orientation_value: usize_to_u8(2 * num_orientations),
@@ -125,6 +145,24 @@ impl PackedKPuzzle {
                     match &kstate_orbit_data.orientation_mod {
                         None => usize_to_u8(kstate_orbit_data.orientation[i]),
                         Some(orientation_mod) => {
+                            #[cfg(not(feature = "orientation_packer"))]
+                            #[cfg(not(feature = "no_orientation_mod"))]
+                            {
+                                if std::convert::Into::<usize>::into(orbit_info.num_orientations) % orientation_mod[i] != 0 {
+                                    eprintln!(
+                                        "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. This must be a factor of `num_orientations` for the orbit ({}). See: https://js.cubing.net/cubing/api/interfaces/kpuzzle.KStateOrbitData.html#orientationMod",
+                                        orientation_mod[i],
+                                        i,
+                                        orbit_info.name,
+                                        self.data.kpuzzle.definition().name,
+                                        orbit_info.num_orientations
+                                    );
+                                    panic!("Invalid start state");
+                                };
+                                (usize_to_u8(orientation_mod[i]) << ORIENTATION_MOD_SHIFT_BITS)
+                                    + usize_to_u8(kstate_orbit_data.orientation[i])
+                            }
+                            #[cfg(feature = "orientation_packer")]
                             #[cfg(not(feature = "no_orientation_mod"))]
                             {
                                 if u8_to_usize(orbit_info.num_orientations) % orientation_mod[i] != 0 {

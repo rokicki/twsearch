@@ -1,13 +1,16 @@
-use std::{collections::HashMap, sync::Arc, time::Instant};
+use std::time::Instant;
 
-use cubing::{
-    kpuzzle::{
-        KPuzzle, KPuzzleDefinition, KPuzzleOrbitDefinition, KPuzzleOrbitName, KState, KStateData,
-        KStateOrbitData, KTransformationData, KTransformationOrbitData,
-    },
-    parse_alg, parse_move,
-    puzzles::cube3x3x3_kpuzzle,
+use cubing::{parse_alg, parse_move, puzzles::cube3x3x3_kpuzzle};
+
+#[cfg(not(feature = "no_orientation_mod"))]
+use cubing::kpuzzle::{
+    KPuzzle, KPuzzleDefinition, KPuzzleOrbitDefinition, KPuzzleOrbitName, KState, KStateData,
+    KStateOrbitData, KTransformationData, KTransformationOrbitData,
 };
+#[cfg(not(feature = "no_orientation_mod"))]
+use std::collections::HashMap;
+#[cfg(not(feature = "no_orientation_mod"))]
+use std::sync::Arc;
 
 use crate::cpp_port::PackedKPuzzle;
 
@@ -20,6 +23,7 @@ const PRINT_FINAL_STATE: bool = true;
 fn main() {
     let num_moves = 10_000_000;
     println!("Testing custom puzzle…\n--------");
+    #[cfg(not(feature = "no_orientation_mod"))]
     test_custom_puzzle();
     println!("Running timing tests…\n--------");
     test_packed(num_moves);
@@ -195,6 +199,7 @@ fn test_unpacked(num_moves: usize) {
     );
 }
 
+#[cfg(not(feature = "no_orientation_mod"))]
 fn test_custom_puzzle() {
     let def = KPuzzleDefinition {
         name: "custom".to_owned(),
@@ -203,7 +208,7 @@ fn test_custom_puzzle() {
             KPuzzleOrbitName("PIECES".to_owned()),
             KPuzzleOrbitDefinition {
                 num_pieces: 2,
-                num_orientations: 24,
+                num_orientations: 12,
             },
         )]),
         start_state_data: KStateData::from([(
@@ -211,7 +216,7 @@ fn test_custom_puzzle() {
             KStateOrbitData {
                 pieces: vec![0, 1],
                 orientation: vec![0, 0],
-                orientation_mod: Some(vec![8, 3]),
+                orientation_mod: Some(vec![3, 4]),
             },
         )])
         .into(),
@@ -222,7 +227,7 @@ fn test_custom_puzzle() {
                     KPuzzleOrbitName("PIECES".to_owned()),
                     KTransformationOrbitData {
                         permutation: vec![0, 1], // TODO: is this actually L'?
-                        orientation: vec![5, 7],
+                        orientation: vec![2, 5],
                     },
                 )])),
             ),
@@ -261,17 +266,14 @@ fn test_custom_puzzle() {
     let state = state.apply_transformation(&spin);
     // println!("{:?}", state.unpack().state_data);
 
-    let state = state.apply_transformation(&spin);
-    // println!("{:?}", state.unpack().state_data);
-
     let expected = KState {
         kpuzzle,
         state_data: KStateData::from([(
             KPuzzleOrbitName("PIECES".to_owned()),
             KStateOrbitData {
                 pieces: vec![1, 0],
-                orientation: vec![2, 3],
-                orientation_mod: Some(vec![3, 8]),
+                orientation: vec![3, 1],
+                orientation_mod: Some(vec![4, 3]),
             },
         )])
         .into(),
