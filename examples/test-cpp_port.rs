@@ -62,7 +62,7 @@ fn test_packed(num_moves: usize) {
     println!("{:?}", current.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.1}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -78,7 +78,7 @@ fn test_packed(num_moves: usize) {
     println!("{:?}", state.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing: {:?} ({:.1}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -143,7 +143,7 @@ fn test_unpacked(num_moves: usize) {
     // );
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (unpacked) without hashing: {:?} ({:.1}M moves/s)",
+        "Time elapsed for {} moves (unpacked) without hashing: {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
