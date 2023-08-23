@@ -1,14 +1,15 @@
-use std::{
-    alloc::{alloc, dealloc},
-    sync::Arc,
-};
-
-use cubing::kpuzzle::{KState, KStateData};
+use std::alloc::{alloc, dealloc};
 
 use super::{
-    byte_conversions::u8_to_usize, orientation_packer::PackedOrientationWithMod,
-    packed_kpuzzle::PackedKPuzzleOrbitInfo, PackedKPuzzle, PackedKTransformation,
+    byte_conversions::{u8_to_usize, PackedOrientationWithMod},
+    packed_kpuzzle::PackedKPuzzleOrbitInfo,
+    PackedKPuzzle, PackedKTransformation,
 };
+
+#[cfg(not(feature = "no_orientation_mod"))]
+use cubing::kpuzzle::{KState, KStateData};
+#[cfg(not(feature = "no_orientation_mod"))]
+use std::sync::Arc;
 
 #[cfg(not(feature = "orientation_packer"))]
 #[cfg(not(feature = "no_orientation_mod"))]
@@ -151,6 +152,7 @@ impl PackedKState {
         cityhash::city_hash_64(self.byte_slice())
     }
 
+    #[cfg(not(feature = "no_orientation_mod"))]
     pub fn unpack(&self) -> KState {
         let mut state_data = KStateData::new();
         for orbit_info in &self.packed_kpuzzle.data.orbit_iteration_info {

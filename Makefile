@@ -7,7 +7,7 @@ build: build/bin/twsearch
 all: build/bin/twsearch build/esm build-rust
 
 .PHONY: test
-test: test-warning lint test-cpp-cli test-rust-cli test-cpp_port test-cpp_port-orientation_packer test-cpp_port-no_orientation_mod
+test: test-warning lint test-cpp-cli test-rust-cli test-cpp_port-all
 
 .PHONY: test-warning
 test-warning:
@@ -21,8 +21,11 @@ test-cpp-cli: build/bin/twsearch
 test-rust-cli:
 	cargo run --example test-rust-cli
 
-.PHONY: test-cpp_port
-test-cpp_port:
+.PHONY: test-cpp_port-all
+test-cpp_port-all: test-cpp_port-default test-cpp_port-orientation_packer test-cpp_port-no_orientation_mod
+
+.PHONY: test-cpp_port-default
+test-cpp_port-default:
 	cargo run --release --example test-cpp_port
 
 .PHONY: test-cpp_port-orientation_packer

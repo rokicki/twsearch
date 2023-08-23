@@ -8,4 +8,5 @@ mod packed_kstate;
 pub use packed_kstate::PackedKState;
 
 mod byte_conversions;
+#[cfg(feature = "orientation_packer")]
 mod orientation_packer;
