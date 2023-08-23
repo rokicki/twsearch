@@ -4,6 +4,13 @@ use super::byte_conversions::{u8_to_usize, usize_to_u8, PackedOrientationWithMod
 
 const NUM_BYTE_VALUES: usize = 0x100;
 const BOGUS_PACKED_VALUE: PackedOrientationWithMod = 0xFF;
+// TODO: Avoid using this to hardcode the outer size of `transformation_lookup`.
+// Setting `MAX_NUM_ORIENTATIONS` is usually way larger than necessary, although
+// the wasted space is only ≈25KB per orbit. Ideally, we should allow
+// `transformation_lookup` to be much smaller by using another direct allocation
+// (without taking the performance hit of `Vec`, which is noticeable in this
+// situation).
+const MAX_NUM_ORIENTATIONS: usize = 107;
 
 #[derive(Debug)]
 pub struct OrientationWithMod {
@@ -20,7 +27,7 @@ const BOGUS_ORIENTATION_WITH_MOD: OrientationWithMod = OrientationWithMod {
 pub struct OrientationPacker {
     // from `[orientation delta][old PackedValue]` to new `PackedValue`
     // Dense for each array up the number of valid `OrientationWithMod` values.
-    transformation_lookup: [[PackedOrientationWithMod; NUM_BYTE_VALUES]; 24],
+    transformation_lookup: [[PackedOrientationWithMod; NUM_BYTE_VALUES]; MAX_NUM_ORIENTATIONS],
     // from `[PackedValue]` to `OrientationWithMod`
     // Dense for each array up the number of valid `OrientationWithMod` values.
     unpacking_table: [OrientationWithMod; NUM_BYTE_VALUES],
@@ -79,8 +86,8 @@ impl OrientationPacker {
             }
         }
 
-        let mut transformation_lookup: [[u8; NUM_BYTE_VALUES]; 24] =
-            [[BOGUS_PACKED_VALUE; NUM_BYTE_VALUES]; 24];
+        let mut transformation_lookup: [[u8; NUM_BYTE_VALUES]; MAX_NUM_ORIENTATIONS] =
+            [[BOGUS_PACKED_VALUE; NUM_BYTE_VALUES]; MAX_NUM_ORIENTATIONS];
         // Ignore an idiom suggestion by Clippy that doesn't work here (because we use `orientation_mod` as a value, not just as an index into `packing_table`).
         #[allow(clippy::needless_range_loop)]
         for orientation_delta in 0..num_orientations {
