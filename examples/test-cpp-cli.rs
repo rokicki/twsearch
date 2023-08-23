@@ -30,10 +30,7 @@ fn basic_tests() -> Result<(), ()> {
 
     test_search_succeeds(
         common::CliCommand::Cpp(),
-        &[
-            "--schreiersims",
-            "samples/main/3x3x3.tws",
-        ],
+        &["--schreiersims", "samples/main/3x3x3.tws"],
         None,
         "43252003274489856000",
         Some(Duration::from_secs(10)),
