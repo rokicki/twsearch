@@ -56,6 +56,28 @@ fn test_packed(num_moves: usize) {
         num_moves, duration
     );
 
+    let mut current = packed_kpuzzle.start_state();
+    let mut other = packed_kpuzzle.start_state();
+    let start = Instant::now();
+    for i in 0..num_moves / 2 {
+        current.apply_transformation_into(
+            &packed_kpuzzle,
+            &move_transformations[i % 18],
+            &mut other,
+        );
+        other.apply_transformation_into(
+            &packed_kpuzzle,
+            &move_transformations[i % 18],
+            &mut current,
+        );
+    }
+    println!("{:?}", state.bytes);
+    let duration = start.elapsed();
+    println!(
+        "Time elapsed for {} moves (packed) without hashing: {:?}",
+        num_moves, duration
+    );
+
     // let mut state = packed_kpuzzle.start_state();
     // let start = Instant::now();
     // for i in 0..num_moves {
