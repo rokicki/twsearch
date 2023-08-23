@@ -21,6 +21,10 @@ test-cpp-cli: build/bin/twsearch
 test-rust-cli:
 	cargo run --example test-rust-cli
 
+.PHONY: test-cpp_port
+test-cpp_port:
+	cargo run --example test-cpp_port
+
 .PHONY: clean
 clean:
 	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
