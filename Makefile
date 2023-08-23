@@ -23,7 +23,7 @@ test-rust-cli:
 
 .PHONY: test-cpp_port
 test-cpp_port:
-	cargo run --example test-cpp_port
+	cargo run --release --example test-cpp_port
 
 .PHONY: clean
 clean:
