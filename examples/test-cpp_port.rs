@@ -47,7 +47,7 @@ fn test_packed(num_moves: usize) {
     let mut current = packed_kpuzzle.start_state();
     let mut other = packed_kpuzzle.start_state();
     let start = Instant::now();
-    for i in 0..num_moves / 2 {
+    for i in (0..num_moves).step_by(2) {
         current.apply_transformation_into(
             &packed_kpuzzle,
             &move_transformations[i % 18],
@@ -55,15 +55,15 @@ fn test_packed(num_moves: usize) {
         );
         other.apply_transformation_into(
             &packed_kpuzzle,
-            &move_transformations[i % 18],
+            &move_transformations[(i + 1) % 18],
             &mut current,
         );
     }
     println!("{:?}", current.byte_slice());
-    println!("{:?}", current.hash());
+    println!("Hash: 0x{:x}", current.hash());
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
+        "--------\nTime elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -77,10 +77,10 @@ fn test_packed(num_moves: usize) {
         state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
     }
     println!("{:?}", state.byte_slice());
-    println!("{:?}", state.hash());
+    println!("Hash: 0x{:x}", state.hash());
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
+        "--------\nTime elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -91,7 +91,7 @@ fn test_packed(num_moves: usize) {
     let mut current = packed_kpuzzle.start_state();
     let mut other = packed_kpuzzle.start_state();
     let start = Instant::now();
-    for i in 0..num_moves / 2 {
+    for i in (0..num_moves).step_by(2) {
         current.apply_transformation_into(
             &packed_kpuzzle,
             &move_transformations[i % 18],
@@ -100,16 +100,16 @@ fn test_packed(num_moves: usize) {
         _ = current.hash();
         other.apply_transformation_into(
             &packed_kpuzzle,
-            &move_transformations[i % 18],
+            &move_transformations[(i + 1) % 18],
             &mut current,
         );
         _ = other.hash();
     }
     println!("{:?}", current.byte_slice());
-    println!("{:?}", current.hash());
+    println!("Hash: 0x{:x}", current.hash());
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)",
+        "--------\nTime elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -121,13 +121,13 @@ fn test_packed(num_moves: usize) {
     let start = Instant::now();
     for i in 0..num_moves {
         state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
-        _ = state.hash()
+        // _ = state.hash()
     }
     println!("{:?}", state.byte_slice());
-    println!("{:?}", state.hash());
+    println!("Hash: 0x{:x}", state.hash());
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)",
+        "--------\nTime elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -179,7 +179,7 @@ fn test_unpacked(num_moves: usize) {
     // );
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (unpacked) without hashing: {:?} ({:.2}M moves/s)",
+        "--------\nTime elapsed for {} moves (unpacked) without hashing: {:?} ({:.2}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
