@@ -125,6 +125,17 @@ impl PackedKPuzzle {
                         Some(orientation_mod) => {
                             #[cfg(not(feature = "no_orientation_mod"))]
                             {
+                                if std::convert::Into::<usize>::into(orbit_info.num_orientations) % orientation_mod[i] != 0 {
+                                    eprintln!(
+                                        "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. This must be a factor of `num_orientations` for the orbit ({}). See: https://js.cubing.net/cubing/api/interfaces/kpuzzle.KStateOrbitData.html#orientationMod",
+                                        orientation_mod[i],
+                                        i,
+                                        orbit_info.name,
+                                        self.data.kpuzzle.definition().name,
+                                        orbit_info.num_orientations
+                                    );
+                                    panic!("Invalid start state");
+                                };
                                 (usize_to_u8(orientation_mod[i]) << ORIENTATION_MOD_SHIFT_BITS)
                                     + usize_to_u8(kstate_orbit_data.orientation[i])
                             }
@@ -135,8 +146,14 @@ impl PackedKPuzzle {
                                     1 => orbit_info.unknown_orientation_value,
                                     _ =>{
                                         eprintln!(
-                                        "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. This is not supported for the `no_orientation_mod` feature flag.",
-                                orientation_mod[i], i, orbit_info.name, self.data.kpuzzle.definition().name); panic!("Unsupported")},
+                                        "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. Values other than 0 or 1 are not supported for the `no_orientation_mod` feature flag.",
+                                            orientation_mod[i],
+                                            i,
+                                            orbit_info.name,
+                                            self.data.kpuzzle.definition().name
+                                        );
+                                        panic!("Invalid start state");
+                                    },
                                 }
                             }
                         }
