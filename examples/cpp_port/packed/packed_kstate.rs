@@ -1,26 +1,22 @@
-use std::alloc::{alloc, dealloc};
+use std::alloc::{alloc, dealloc, Layout};
 
 use super::{packed_kpuzzle::PackedKPuzzleOrbitInfo, PackedKPuzzle, PackedKTransformation};
 
 pub struct PackedKState {
-    pub packed_kpuzzle: PackedKPuzzle,
-    // pub bytes: [u8; 52],
+    pub layout: Layout,
     pub bytes: *mut u8,
 }
 
 impl Drop for PackedKState {
     fn drop(&mut self) {
-        unsafe { dealloc(self.bytes, self.packed_kpuzzle.data.layout) }
+        unsafe { dealloc(self.bytes, self.layout) }
     }
 }
 
 impl PackedKState {
-    pub fn new(packed_kpuzzle: PackedKPuzzle) -> Self {
-        let bytes = unsafe { alloc(packed_kpuzzle.data.layout) };
-        Self {
-            packed_kpuzzle,
-            bytes,
-        }
+    pub fn new(layout: Layout) -> Self {
+        let bytes = unsafe { alloc(layout) };
+        Self { layout, bytes }
     }
 
     pub fn get_piece_or_permutation(&self, orbit_info: &PackedKPuzzleOrbitInfo, i: usize) -> u8 {
@@ -63,7 +59,7 @@ impl PackedKState {
         packed_kpuzzle: &PackedKPuzzle,
         transformation: &PackedKTransformation,
     ) -> PackedKState {
-        let new_state = PackedKState::new(self.packed_kpuzzle.clone());
+        let new_state = PackedKState::new(self.layout);
         for orbit_info in &packed_kpuzzle.data.orbit_iteration_info {
             // TODO: optimization when either value is the identity.
             for i in 0..orbit_info.num_pieces {

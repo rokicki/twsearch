@@ -112,7 +112,7 @@ impl PackedKPuzzle {
     pub fn start_state(&self) -> PackedKState {
         let kstate_start_state_data = self.data.kpuzzle.start_state().state_data;
 
-        let new_state = PackedKState::new(self.clone());
+        let new_state = PackedKState::new(self.data.layout);
         for orbit_info in &self.data.orbit_iteration_info {
             let kstate_orbit_data = kstate_start_state_data
                 .get(&orbit_info.name)
