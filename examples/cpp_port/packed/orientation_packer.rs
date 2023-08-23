@@ -1,7 +1,10 @@
+#[cfg(feature = "orientation_packer")]
 use super::byte_conversions::{u8_to_usize, usize_to_u8};
 
 pub type PackedOrientationWithMod = u8;
+#[cfg(feature = "orientation_packer")]
 const NUM_BYTE_VALUES: usize = 0x100;
+#[cfg(feature = "orientation_packer")]
 const BOGUS_PACKED_VALUE: PackedOrientationWithMod = 0xFF;
 
 #[derive(Debug)]
@@ -10,11 +13,13 @@ pub struct OrientationWithMod {
     pub orientation_mod: usize,
 }
 
-const BUS_ORIENTATION_WITH_MOD: OrientationWithMod = OrientationWithMod {
+#[cfg(feature = "orientation_packer")]
+const BOGUS_ORIENTATION_WITH_MOD: OrientationWithMod = OrientationWithMod {
     orientation: 0xFE,
     orientation_mod: 0xFD,
 };
 
+#[cfg(feature = "orientation_packer")]
 #[derive(Debug)]
 pub struct OrientationPacker {
     // from `[orientation delta][old PackedValue]` to new `PackedValue`
@@ -48,10 +53,11 @@ pub struct OrientationPacker {
 /// `OrientationPacker` can translate between these representations,
 /// as well as applying a transformation to the packed representation
 /// efficiently. This replaces arithmetic with simple lookups for `PackedKState` logic.
+#[cfg(feature = "orientation_packer")]
 impl OrientationPacker {
     pub fn new(num_orientations: usize) -> Self {
         let mut unpacking_table: [OrientationWithMod; NUM_BYTE_VALUES] =
-            [BUS_ORIENTATION_WITH_MOD; NUM_BYTE_VALUES];
+            [BOGUS_ORIENTATION_WITH_MOD; NUM_BYTE_VALUES];
         let mut packing_table = [BOGUS_PACKED_VALUE; NUM_BYTE_VALUES];
 
         let mut num_packed_values_sofar: u8 = 0;
