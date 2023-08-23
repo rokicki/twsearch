@@ -7,6 +7,8 @@ use crate::cpp_port::PackedKPuzzle;
 #[path = "./cpp_port/mod.rs"]
 mod cpp_port;
 
+const PRINT_FINAL_STATE: bool = false;
+
 // Run using: cargo run --release --example test-cpp_port
 fn main() {
     let num_moves = 10_000_000;
@@ -59,8 +61,10 @@ fn test_packed(num_moves: usize) {
             &mut current,
         );
     }
-    println!("{:?}", current.byte_slice());
-    println!("Hash: 0x{:x}", current.hash());
+    if PRINT_FINAL_STATE {
+        println!("{:?}", current.byte_slice());
+        println!("Hash: 0x{:x}", current.hash());
+    }
     let duration = start.elapsed();
     println!(
         "--------\nTime elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
@@ -76,8 +80,10 @@ fn test_packed(num_moves: usize) {
     for i in 0..num_moves {
         state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
     }
-    println!("{:?}", state.byte_slice());
-    println!("Hash: 0x{:x}", state.hash());
+    if PRINT_FINAL_STATE {
+        println!("{:?}", state.byte_slice());
+        println!("Hash: 0x{:x}", state.hash());
+    }
     let duration = start.elapsed();
     println!(
         "--------\nTime elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
@@ -105,8 +111,10 @@ fn test_packed(num_moves: usize) {
         );
         _ = other.hash();
     }
-    println!("{:?}", current.byte_slice());
-    println!("Hash: 0x{:x}", current.hash());
+    if PRINT_FINAL_STATE {
+        println!("{:?}", current.byte_slice());
+        println!("Hash: 0x{:x}", current.hash());
+    }
     let duration = start.elapsed();
     println!(
         "--------\nTime elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)",
@@ -123,8 +131,10 @@ fn test_packed(num_moves: usize) {
         state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
         // _ = state.hash()
     }
-    println!("{:?}", state.byte_slice());
-    println!("Hash: 0x{:x}", state.hash());
+    if PRINT_FINAL_STATE {
+        println!("{:?}", state.byte_slice());
+        println!("Hash: 0x{:x}", state.hash());
+    }
     let duration = start.elapsed();
     println!(
         "--------\nTime elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)",
@@ -169,6 +179,7 @@ fn test_unpacked(num_moves: usize) {
     for i in 0..num_moves {
         state = state.apply_transformation(&move_transformations[i % 18]);
     }
+    // println!("{:?}", state.state_data);
     // Only works for a million
     // assert_eq!(
     //     state,
