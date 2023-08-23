@@ -98,7 +98,13 @@ impl PackedKState {
         }
     }
 
-    // pub fn hash(&self) -> u64 {
-    //     cityhash::city_hash_64(&self.bytes)
-    // }
+    pub fn byte_slice(&self) -> &[u8] {
+        // yiss ☺️
+        // https://stackoverflow.com/a/27150865
+        unsafe { std::slice::from_raw_parts(self.bytes, self.packed_kpuzzle.data.num_bytes) }
+    }
+
+    pub fn hash(&self) -> u64 {
+        cityhash::city_hash_64(self.byte_slice())
+    }
 }
