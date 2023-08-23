@@ -7,7 +7,7 @@ build: build/bin/twsearch
 all: build/bin/twsearch build/esm build-rust
 
 .PHONY: test
-test: test-warning lint test-cpp-cli test-rust-cli
+test: test-warning lint test-cpp-cli test-rust-cli test-cpp_port
 
 .PHONY: test-warning
 test-warning:
