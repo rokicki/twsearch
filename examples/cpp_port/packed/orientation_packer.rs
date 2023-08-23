@@ -19,7 +19,7 @@ const BUS_ORIENTATION_WITH_MOD: OrientationWithMod = OrientationWithMod {
 pub struct OrientationPacker {
     // from `[orientation delta][old PackedValue]` to new `PackedValue`
     // Dense for each array up the number of valid `OrientationWithMod` values.
-    transformation_lookup: Vec<[PackedOrientationWithMod; NUM_BYTE_VALUES]>,
+    transformation_lookup: [[PackedOrientationWithMod; NUM_BYTE_VALUES]; 4],
     // from `[PackedValue]` to `OrientationWithMod`
     // Dense for each array up the number of valid `OrientationWithMod` values.
     unpacking_table: [OrientationWithMod; NUM_BYTE_VALUES],
@@ -77,10 +77,11 @@ impl OrientationPacker {
             }
         }
 
-        let mut transformation_lookup: Vec<[u8; NUM_BYTE_VALUES]> =
-            Vec::with_capacity(num_orientations);
+        let mut transformation_lookup: [[u8; NUM_BYTE_VALUES]; 4] =
+            [[BOGUS_PACKED_VALUE; NUM_BYTE_VALUES]; 4];
+        // Ignore an idiom suggestion by Clippy that doesn't work here (because we use `orientation_mod` as a value, not just as an index into `packing_table`).
+        #[allow(clippy::needless_range_loop)]
         for orientation_delta in 0..num_orientations {
-            let mut row = [BOGUS_PACKED_VALUE; NUM_BYTE_VALUES];
             for packed_value in 0..num_packed_values_sofar {
                 let orientation_with_mod = &unpacking_table[u8_to_usize(packed_value)];
                 let new_orientation = (orientation_with_mod.orientation + orientation_delta)
@@ -89,10 +90,10 @@ impl OrientationPacker {
                     } else {
                         orientation_with_mod.orientation_mod
                     };
-                row[u8_to_usize(packed_value)] = packing_table[orientation_with_mod.orientation_mod]
+                transformation_lookup[orientation_delta][u8_to_usize(packed_value)] = packing_table
+                    [orientation_with_mod.orientation_mod]
                     + usize_to_u8(new_orientation)
             }
-            transformation_lookup.push(row);
         }
 
         Self {
