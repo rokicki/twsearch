@@ -1,4 +1,9 @@
-use std::alloc::{alloc, dealloc};
+use std::{
+    alloc::{alloc, dealloc},
+    sync::Arc,
+};
+
+use cubing::kpuzzle::{KState, KStateData};
 
 use super::{
     byte_conversions::u8_to_usize, orientation_packer::PackedOrientationWithMod,
@@ -125,5 +130,32 @@ impl PackedKState {
 
     pub fn hash(&self) -> u64 {
         cityhash::city_hash_64(self.byte_slice())
+    }
+
+    pub fn unpack(&self) -> KState {
+        let mut state_data = KStateData::new();
+        for orbit_info in &self.packed_kpuzzle.data.orbit_iteration_info {
+            let mut pieces = Vec::<usize>::new();
+            let mut orientation = Vec::<usize>::new();
+            let mut orientation_mod = Vec::<usize>::new();
+            for i in 0..orbit_info.num_pieces {
+                pieces.push(u8_to_usize(self.get_piece_or_permutation(orbit_info, i)));
+                let orientation_with_mod = orbit_info
+                    .orientation_packer
+                    .unpack(self.get_packed_orientation(orbit_info, i));
+                orientation.push(orientation_with_mod.orientation);
+                orientation_mod.push(orientation_with_mod.orientation_mod);
+            }
+            let orbit_data = cubing::kpuzzle::KStateOrbitData {
+                pieces,
+                orientation,
+                orientation_mod: Some(orientation_mod),
+            };
+            state_data.insert(orbit_info.name.clone(), orbit_data);
+        }
+        KState {
+            kpuzzle: self.packed_kpuzzle.data.kpuzzle.clone(),
+            state_data: Arc::new(state_data),
+        }
     }
 }

@@ -19,7 +19,7 @@ const BUS_ORIENTATION_WITH_MOD: OrientationWithMod = OrientationWithMod {
 pub struct OrientationPacker {
     // from `[orientation delta][old PackedValue]` to new `PackedValue`
     // Dense for each array up the number of valid `OrientationWithMod` values.
-    transformation_lookup: [[PackedOrientationWithMod; NUM_BYTE_VALUES]; 4],
+    transformation_lookup: [[PackedOrientationWithMod; NUM_BYTE_VALUES]; 24],
     // from `[PackedValue]` to `OrientationWithMod`
     // Dense for each array up the number of valid `OrientationWithMod` values.
     unpacking_table: [OrientationWithMod; NUM_BYTE_VALUES],
@@ -77,8 +77,8 @@ impl OrientationPacker {
             }
         }
 
-        let mut transformation_lookup: [[u8; NUM_BYTE_VALUES]; 4] =
-            [[BOGUS_PACKED_VALUE; NUM_BYTE_VALUES]; 4];
+        let mut transformation_lookup: [[u8; NUM_BYTE_VALUES]; 24] =
+            [[BOGUS_PACKED_VALUE; NUM_BYTE_VALUES]; 24];
         // Ignore an idiom suggestion by Clippy that doesn't work here (because we use `orientation_mod` as a value, not just as an index into `packing_table`).
         #[allow(clippy::needless_range_loop)]
         for orientation_delta in 0..num_orientations {
