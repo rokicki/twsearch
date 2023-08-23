@@ -5,27 +5,33 @@ use cubing::{
     kpuzzle::{InvalidAlgError, InvalidDefinitionError, KPuzzle, KPuzzleOrbitName},
 };
 
-use super::{PackedKState, PackedKTransformation};
+use super::{
+    byte_conversions::usize_to_u8, orientation_packer::OrientationPacker, PackedKState,
+    PackedKTransformation,
+};
 
-// TODO: index divisors
-const MAX_NUM_ORIENTATIONS: usize = if cfg!(no_orientation_mod) { 127 } else { 16 };
 #[cfg(not(feature = "no_orientation_mod"))]
-pub const ORIENTATION_MOD_SHIFT_BITS: usize = 4;
+use super::byte_conversions::u8_to_usize;
 #[cfg(not(feature = "no_orientation_mod"))]
-pub const ORIENTATION_MASK: u8 = 0xF;
+use crate::cpp_port::packed::orientation_packer::OrientationWithMod;
 
-#[derive(Debug, Clone)]
+// TODO: allow certain values over 107?
+// https://github.com/cubing/twsearch/issues/25#issue-1862613355
+const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = if cfg!(no_orientation_mod) { 127 } else { 107 };
+
+#[derive(Debug)]
 pub struct PackedKPuzzleOrbitInfo {
     pub name: KPuzzleOrbitName,
     pub pieces_or_pemutations_offset: usize,
     pub orientations_offset: usize,
     pub num_pieces: usize,
     pub num_orientations: u8,
+    pub orientation_packer: OrientationPacker,
     #[cfg(feature = "no_orientation_mod")]
     pub unknown_orientation_value: u8,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct PackedKPuzzleData {
     pub kpuzzle: KPuzzle,
     // Private cached values.
@@ -60,8 +66,8 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                 ),
             })?;
             let num_orientations = orbit_definition.num_orientations;
-            if num_orientations > MAX_NUM_ORIENTATIONS {
-                return Err(InvalidDefinitionError { description: format!("`num_orientations` for orbit {} is too large ({}). Maximum is {} for the current build." , orbit_name, num_orientations, MAX_NUM_ORIENTATIONS)});
+            if num_orientations > MAX_NUM_ORIENTATIONS_INCLUSIVE {
+                return Err(InvalidDefinitionError { description: format!("`num_orientations` for orbit {} is too large ({}). Maximum is {} for the current build." , orbit_name, num_orientations, MAX_NUM_ORIENTATIONS_INCLUSIVE)});
             }
             orbit_iteration_info.push({
                 PackedKPuzzleOrbitInfo {
@@ -69,8 +75,8 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                     num_pieces: orbit_definition.num_pieces,
                     num_orientations: usize_to_u8(num_orientations),
                     pieces_or_pemutations_offset: bytes_offset,
-                    orientations_offset: bytes_offset
-                        + std::convert::Into::<usize>::into(orbit_definition.num_pieces),
+                    orientations_offset: bytes_offset + orbit_definition.num_pieces,
+                    orientation_packer: OrientationPacker::new(orbit_definition.num_orientations),
                     #[cfg(feature = "no_orientation_mod")]
                     unknown_orientation_value: usize_to_u8(2 * num_orientations),
                 }
@@ -98,10 +104,6 @@ pub enum ConversionError {
     InvalidDefinition(InvalidDefinitionError),
 }
 
-fn usize_to_u8(n: usize) -> u8 {
-    n.try_into().expect("Value too large!") // TODO
-}
-
 impl PackedKPuzzle {
     pub fn start_state(&self) -> PackedKState {
         let kstate_start_state_data = self.data.kpuzzle.start_state().state_data;
@@ -117,7 +119,7 @@ impl PackedKPuzzle {
                     i,
                     usize_to_u8(kstate_orbit_data.pieces[i]),
                 );
-                new_state.set_orientation(
+                new_state.set_packed_orientation(
                     orbit_info,
                     i,
                     match &kstate_orbit_data.orientation_mod {
@@ -125,7 +127,7 @@ impl PackedKPuzzle {
                         Some(orientation_mod) => {
                             #[cfg(not(feature = "no_orientation_mod"))]
                             {
-                                if std::convert::Into::<usize>::into(orbit_info.num_orientations) % orientation_mod[i] != 0 {
+                                if u8_to_usize(orbit_info.num_orientations) % orientation_mod[i] != 0 {
                                     eprintln!(
                                         "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. This must be a factor of `num_orientations` for the orbit ({}). See: https://js.cubing.net/cubing/api/interfaces/kpuzzle.KStateOrbitData.html#orientationMod",
                                         orientation_mod[i],
@@ -136,8 +138,10 @@ impl PackedKPuzzle {
                                     );
                                     panic!("Invalid start state");
                                 };
-                                (usize_to_u8(orientation_mod[i]) << ORIENTATION_MOD_SHIFT_BITS)
-                                    + usize_to_u8(kstate_orbit_data.orientation[i])
+                                orbit_info.orientation_packer.pack(OrientationWithMod {
+                                    orientation: kstate_orbit_data.orientation[i],
+                                    orientation_mod: orientation_mod[i],
+                                })
                             }
                             #[cfg(feature = "no_orientation_mod")]
                             {
