@@ -11,7 +11,7 @@ mod cpp_port;
 fn main() {
     let num_moves = 10_000_000;
     test_packed(num_moves);
-    test_unpacked(num_moves);
+    test_unpacked(num_moves / 10);
 }
 
 fn test_packed(num_moves: usize) {
@@ -62,13 +62,12 @@ fn test_packed(num_moves: usize) {
     println!("{:?}", current.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.1}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
             / duration.as_secs_f64()
             / std::convert::TryInto::<f64>::try_into(1_000_000).unwrap())
-        .floor()
     );
 
     let mut state = packed_kpuzzle.start_state();
@@ -79,13 +78,12 @@ fn test_packed(num_moves: usize) {
     println!("{:?}", state.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing: {:?} ({}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing: {:?} ({:.1}M moves/s)",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
             / duration.as_secs_f64()
             / std::convert::TryInto::<f64>::try_into(1_000_000).unwrap())
-        .floor()
     );
 
     // let mut state = packed_kpuzzle.start_state();
@@ -145,7 +143,13 @@ fn test_unpacked(num_moves: usize) {
     // );
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (unpacked): {:?}",
-        num_moves, duration
+        "Time elapsed for {} moves (unpacked) without hashing: {:?} ({:.1}M moves/s)",
+        num_moves,
+        duration,
+        (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
+            / duration.as_secs_f64()
+            / std::convert::TryInto::<f64>::try_into(1_000_000).unwrap())
+        .round()
+            / std::convert::TryInto::<f64>::try_into(10).unwrap()
     );
 }
