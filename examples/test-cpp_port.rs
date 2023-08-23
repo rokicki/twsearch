@@ -9,7 +9,7 @@ mod cpp_port;
 
 // Run using: cargo run --release --example test-cpp_port
 fn main() {
-    let num_moves = 100000000;
+    let num_moves = 100_000_000;
     test_packed(num_moves);
     test_unpacked(num_moves);
 }
