@@ -9,7 +9,7 @@ mod cpp_port;
 
 // Run using: cargo run --release --example test-cpp_port
 fn main() {
-    let num_moves = 100_000_000;
+    let num_moves = 10_000_000;
     test_packed(num_moves);
     test_unpacked(num_moves);
 }
@@ -52,7 +52,20 @@ fn test_packed(num_moves: usize) {
     println!("{:?}", state.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed): {:?}",
+        "Time elapsed for {} moves (packed) without hashing: {:?}",
+        num_moves, duration
+    );
+
+    let mut state = packed_kpuzzle.start_state();
+    let start = Instant::now();
+    for i in 0..num_moves {
+        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+        _ = state.hash();
+    }
+    println!("{:?}", state.bytes);
+    let duration = start.elapsed();
+    println!(
+        "Time elapsed for {} moves (packed) with hashing:: {:?}",
         num_moves, duration
     );
 }

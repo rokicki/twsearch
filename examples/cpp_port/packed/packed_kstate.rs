@@ -46,4 +46,8 @@ impl PackedKState {
 
         PackedKState { bytes }
     }
+
+    pub fn hash(&self) -> u64 {
+        cityhash::city_hash_64(&self.bytes)
+    }
 }
