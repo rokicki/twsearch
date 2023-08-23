@@ -56,18 +56,18 @@ fn test_packed(num_moves: usize) {
         num_moves, duration
     );
 
-    let mut state = packed_kpuzzle.start_state();
-    let start = Instant::now();
-    for i in 0..num_moves {
-        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
-        _ = state.hash();
-    }
-    println!("{:?}", state.bytes);
-    let duration = start.elapsed();
-    println!(
-        "Time elapsed for {} moves (packed) with hashing:: {:?}",
-        num_moves, duration
-    );
+    // let mut state = packed_kpuzzle.start_state();
+    // let start = Instant::now();
+    // for i in 0..num_moves {
+    //     state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+    //     // _ = state.hash();
+    // }
+    // println!("{:?}", state.bytes);
+    // let duration = start.elapsed();
+    // println!(
+    //     "Time elapsed for {} moves (packed) with hashing:: {:?}",
+    //     num_moves, duration
+    // );
 }
 
 fn test_unpacked(num_moves: usize) {
