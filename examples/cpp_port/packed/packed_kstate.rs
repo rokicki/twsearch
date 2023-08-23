@@ -60,13 +60,9 @@ impl PackedKState {
 
     // Adapted from https://github.com/cubing/cubing.rs/blob/b737c6a36528e9984b45b29f9449a9a330c272fb/src/kpuzzle/state.rs#L31-L82
     // TODO: dedup the implementation (but avoid runtime overhead for the shared abstraction).
-    pub fn apply_transformation(
-        &self,
-        packed_kpuzzle: &PackedKPuzzle,
-        transformation: &PackedKTransformation,
-    ) -> PackedKState {
+    pub fn apply_transformation(&self, transformation: &PackedKTransformation) -> PackedKState {
         let mut new_state = PackedKState::new(self.packed_kpuzzle.clone());
-        self.apply_transformation_into(packed_kpuzzle, transformation, &mut new_state);
+        self.apply_transformation_into(transformation, &mut new_state);
         new_state
     }
 
@@ -74,11 +70,10 @@ impl PackedKState {
     // TODO: dedup the implementation (but avoid runtime overhead for the shared abstraction).
     pub fn apply_transformation_into(
         &self,
-        packed_kpuzzle: &PackedKPuzzle,
         transformation: &PackedKTransformation,
         into_state: &mut PackedKState,
     ) {
-        for orbit_info in &packed_kpuzzle.data.orbit_iteration_info {
+        for orbit_info in &self.packed_kpuzzle.data.orbit_iteration_info {
             // TODO: optimization when either value is the identity.
             for i in 0..orbit_info.num_pieces {
                 let transformation_idx = transformation.get_piece_or_permutation(orbit_info, i);

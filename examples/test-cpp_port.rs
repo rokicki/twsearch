@@ -50,16 +50,8 @@ fn test_packed(num_moves: usize) {
     let mut other = packed_kpuzzle.start_state();
     let start = Instant::now();
     for i in (0..num_moves).step_by(2) {
-        current.apply_transformation_into(
-            &packed_kpuzzle,
-            &move_transformations[i % 18],
-            &mut other,
-        );
-        other.apply_transformation_into(
-            &packed_kpuzzle,
-            &move_transformations[(i + 1) % 18],
-            &mut current,
-        );
+        current.apply_transformation_into(&move_transformations[i % 18], &mut other);
+        other.apply_transformation_into(&move_transformations[(i + 1) % 18], &mut current);
     }
     if PRINT_FINAL_STATE {
         println!("{:?}", current.byte_slice());
@@ -78,7 +70,7 @@ fn test_packed(num_moves: usize) {
     let mut state = packed_kpuzzle.start_state();
     let start = Instant::now();
     for i in 0..num_moves {
-        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+        state = state.apply_transformation(&move_transformations[i % 18]);
     }
     if PRINT_FINAL_STATE {
         println!("{:?}", state.byte_slice());
@@ -98,17 +90,9 @@ fn test_packed(num_moves: usize) {
     let mut other = packed_kpuzzle.start_state();
     let start = Instant::now();
     for i in (0..num_moves).step_by(2) {
-        current.apply_transformation_into(
-            &packed_kpuzzle,
-            &move_transformations[i % 18],
-            &mut other,
-        );
+        current.apply_transformation_into(&move_transformations[i % 18], &mut other);
         _ = current.hash();
-        other.apply_transformation_into(
-            &packed_kpuzzle,
-            &move_transformations[(i + 1) % 18],
-            &mut current,
-        );
+        other.apply_transformation_into(&move_transformations[(i + 1) % 18], &mut current);
         _ = other.hash();
     }
     if PRINT_FINAL_STATE {
@@ -128,7 +112,7 @@ fn test_packed(num_moves: usize) {
     let mut state = packed_kpuzzle.start_state();
     let start = Instant::now();
     for i in 0..num_moves {
-        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+        state = state.apply_transformation(&move_transformations[i % 18]);
         // _ = state.hash()
     }
     if PRINT_FINAL_STATE {
