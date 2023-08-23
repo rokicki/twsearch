@@ -11,6 +11,7 @@ const PRINT_FINAL_STATE: bool = true;
 
 // Run using: cargo run --release --example test-cpp_port
 fn main() {
+    println!("Running timing tests…\n--------");
     let num_moves = 10_000_000;
     test_packed(num_moves);
     test_unpacked(num_moves / 10);
@@ -59,7 +60,7 @@ fn test_packed(num_moves: usize) {
     }
     let duration = start.elapsed();
     println!(
-        "--------\nTime elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)\n--------",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -78,7 +79,7 @@ fn test_packed(num_moves: usize) {
     }
     let duration = start.elapsed();
     println!(
-        "--------\nTime elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
+        "Time elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)\n--------",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -101,7 +102,7 @@ fn test_packed(num_moves: usize) {
     }
     let duration = start.elapsed();
     println!(
-        "--------\nTime elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)",
+        "Time elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)\n--------",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -121,7 +122,7 @@ fn test_packed(num_moves: usize) {
     }
     let duration = start.elapsed();
     println!(
-        "--------\nTime elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)",
+        "Time elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)\n--------",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
@@ -174,7 +175,7 @@ fn test_unpacked(num_moves: usize) {
     // );
     let duration = start.elapsed();
     println!(
-        "--------\nTime elapsed for {} moves (unpacked) without hashing: {:?} ({:.2}M moves/s)",
+        "Time elapsed for {} moves (unpacked) without hashing: {:?} ({:.2}M moves/s)\n--------",
         num_moves,
         duration,
         (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
