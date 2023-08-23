@@ -60,6 +60,7 @@ fn test_packed(num_moves: usize) {
         );
     }
     println!("{:?}", current.byte_slice());
+    println!("{:?}", current.hash());
     let duration = start.elapsed();
     println!(
         "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({:.2}M moves/s)",
@@ -76,6 +77,7 @@ fn test_packed(num_moves: usize) {
         state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
     }
     println!("{:?}", state.byte_slice());
+    println!("{:?}", state.hash());
     let duration = start.elapsed();
     println!(
         "Time elapsed for {} moves (packed) without hashing: {:?} ({:.2}M moves/s)",
@@ -104,6 +106,7 @@ fn test_packed(num_moves: usize) {
         _ = other.hash();
     }
     println!("{:?}", current.byte_slice());
+    println!("{:?}", current.hash());
     let duration = start.elapsed();
     println!(
         "Time elapsed for {} moves (packed) with hashing (minimal allocation): {:?} ({:.2}M moves/s)",
@@ -121,6 +124,7 @@ fn test_packed(num_moves: usize) {
         _ = state.hash()
     }
     println!("{:?}", state.byte_slice());
+    println!("{:?}", state.hash());
     let duration = start.elapsed();
     println!(
         "Time elapsed for {} moves (packed) with hashing: {:?} ({:.2}M moves/s)",
