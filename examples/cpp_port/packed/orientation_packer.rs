@@ -111,9 +111,10 @@ impl OrientationPacker {
         self.transformation_lookup[orientation_delta][u8_to_usize(packed_value)]
     }
 
-    // pub fn unpack(&self, packed_value: PackedOrientationWithMod) -> &OrientationWithMod {
-    //     &self.unpacking_table[u8_to_usize(packed_value)]
-    // }
+    #[allow(dead_code)]
+    pub fn unpack(&self, packed_value: PackedOrientationWithMod) -> &OrientationWithMod {
+        &self.unpacking_table[u8_to_usize(packed_value)]
+    }
 
     pub fn pack(&self, orientation_with_mod: OrientationWithMod) -> PackedOrientationWithMod {
         self.packing_table[orientation_with_mod.orientation_mod]
