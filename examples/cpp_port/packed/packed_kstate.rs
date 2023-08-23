@@ -90,9 +90,17 @@ impl PackedKState {
                     orbit_info,
                     std::convert::Into::<usize>::into(transformation_idx),
                 );
-                let new_piece_orientation = orbit_info.table[std::convert::Into::<usize>::into(
-                    previous_piece_orientation + transformation.get_orientation(orbit_info, i),
-                )];
+                // TODO: the lookup table doesn't seem to be significantly faster on M1 Max. Test if it helps significantly in other environments.
+                // let new_piece_orientation = orbit_info.table[std::convert::Into::<usize>::into(
+                //     previous_piece_orientation + transformation.get_orientation(orbit_info, i),
+                // )];
+                let new_piece_orientation =
+                    if previous_piece_orientation == orbit_info.unknown_orientation_value {
+                        previous_piece_orientation
+                    } else {
+                        (previous_piece_orientation + transformation.get_orientation(orbit_info, i))
+                            % orbit_info.num_orientations
+                    };
                 into_state.set_orientation(orbit_info, i, new_piece_orientation);
             }
         }

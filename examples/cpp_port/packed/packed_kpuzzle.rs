@@ -15,7 +15,6 @@ pub struct PackedKPuzzleOrbitInfo {
     pub num_pieces: usize,
     pub num_orientations: u8,
     pub unknown_orientation_value: u8,
-    pub table: [u8; 16],
 }
 
 #[derive(Debug, Clone)]
@@ -26,8 +25,6 @@ pub struct PackedKPuzzleData {
     pub orbit_iteration_info: Vec<PackedKPuzzleOrbitInfo>,
     pub layout: Layout,
 }
-
-const X: u8 = 255;
 
 #[derive(Debug, Clone)]
 pub struct PackedKPuzzle {
@@ -55,30 +52,15 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                 ),
             })?;
             let unknown_orientation_value = usize_to_u8(2 * orbit_definition.num_orientations);
-            let num_orientations = usize_to_u8(orbit_definition.num_orientations);
-            let table: [u8; 16] = match num_orientations {
-                1 => [0, 0, X, X, X, X, X, X, X, X, X, X, X, X, X, X],
-                2 => [0, 1, 0, X, 4, 4, X, X, X, X, X, X, X, X, X, X],
-                3 => [0, 1, 2, 0, 1, X, 6, 6, 6, X, X, X, X, X, X, X],
-                4 => [0, 1, 2, 3, 0, 1, 2, X, 8, 8, 8, 8, X, X, X, X],
-                5 => [0, 1, 2, 3, 4, 0, 1, 2, 3, X, 10, 10, 10, 10, 10, X],
-                _ => {
-                    return Err(InvalidDefinitionError {
-                        description: "`num_orientations` higher than currently supported"
-                            .to_owned(),
-                    })
-                }
-            };
             orbit_iteration_info.push({
                 PackedKPuzzleOrbitInfo {
                     name: orbit_name.clone(),
                     num_pieces: orbit_definition.num_pieces,
-                    num_orientations,
+                    num_orientations: usize_to_u8(orbit_definition.num_orientations),
                     pieces_or_pemutations_offset: bytes_offset,
                     orientations_offset: bytes_offset
                         + std::convert::Into::<usize>::into(orbit_definition.num_pieces),
                     unknown_orientation_value,
-                    table,
                 }
             });
             bytes_offset += orbit_definition.num_pieces * 2;
