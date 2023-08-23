@@ -132,8 +132,11 @@ impl PackedKPuzzle {
                             {
                                 match orientation_mod[i] {
                                     0 => usize_to_u8(kstate_orbit_data.orientation[i]),
-                                    1 => orbit_info.unknown_orientation_value, // TODO
-                                    _ => panic!("Unsupported!"),               // TODO
+                                    1 => orbit_info.unknown_orientation_value,
+                                    _ =>{
+                                        eprintln!(
+                                        "`orientation_mod` of {} seen for piece at index {} in orbit {} in the start state for puzzle {}. This is not supported for the `no_orientation_mod` feature flag.",
+                                orientation_mod[i], i, orbit_info.name, self.data.kpuzzle.definition().name); panic!("Unsupported")},
                                 }
                             }
                         }
