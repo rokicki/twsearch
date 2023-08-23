@@ -44,18 +44,6 @@ fn test_packed(num_moves: usize) {
         m("D'"),
     ];
 
-    let mut state = packed_kpuzzle.start_state();
-    let start = Instant::now();
-    for i in 0..num_moves {
-        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
-    }
-    println!("{:?}", state.bytes);
-    let duration = start.elapsed();
-    println!(
-        "Time elapsed for {} moves (packed) without hashing: {:?}",
-        num_moves, duration
-    );
-
     let mut current = packed_kpuzzle.start_state();
     let mut other = packed_kpuzzle.start_state();
     let start = Instant::now();
@@ -71,11 +59,33 @@ fn test_packed(num_moves: usize) {
             &mut current,
         );
     }
+    println!("{:?}", current.bytes);
+    let duration = start.elapsed();
+    println!(
+        "Time elapsed for {} moves (packed) without hashing (minimal allocation): {:?} ({}M moves/s)",
+        num_moves,
+        duration,
+        (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
+            / duration.as_secs_f64()
+            / std::convert::TryInto::<f64>::try_into(1_000_000).unwrap())
+        .floor()
+    );
+
+    let mut state = packed_kpuzzle.start_state();
+    let start = Instant::now();
+    for i in 0..num_moves {
+        state = state.apply_transformation(&packed_kpuzzle, &move_transformations[i % 18]);
+    }
     println!("{:?}", state.bytes);
     let duration = start.elapsed();
     println!(
-        "Time elapsed for {} moves (packed) without hashing: {:?}",
-        num_moves, duration
+        "Time elapsed for {} moves (packed) without hashing: {:?} ({}M moves/s)",
+        num_moves,
+        duration,
+        (std::convert::TryInto::<f64>::try_into(num_moves as u32).unwrap()
+            / duration.as_secs_f64()
+            / std::convert::TryInto::<f64>::try_into(1_000_000).unwrap())
+        .floor()
     );
 
     // let mut state = packed_kpuzzle.start_state();
