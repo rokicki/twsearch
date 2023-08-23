@@ -2,6 +2,9 @@ use std::alloc::{alloc, dealloc};
 
 use super::{packed_kpuzzle::PackedKPuzzleOrbitInfo, PackedKPuzzle, PackedKTransformation};
 
+#[cfg(not(feature = "no_orientation_mod"))]
+use super::packed_kpuzzle::{ORIENTATION_MASK, ORIENTATION_MOD_SHIFT_BITS};
+
 pub struct PackedKState {
     pub packed_kpuzzle: PackedKPuzzle,
     pub bytes: *mut u8,
@@ -86,7 +89,7 @@ impl PackedKState {
                 );
                 into_state.set_piece_or_permutation(orbit_info, i, new_piece_permutation);
 
-                let previous_piece_orientation = self.get_orientation(
+                let previous_piece_encoded_orientation = self.get_orientation(
                     orbit_info,
                     std::convert::Into::<usize>::into(transformation_idx),
                 );
@@ -94,14 +97,36 @@ impl PackedKState {
                 // let new_piece_orientation = orbit_info.table[std::convert::Into::<usize>::into(
                 //     previous_piece_orientation + transformation.get_orientation(orbit_info, i),
                 // )];
-                let new_piece_orientation =
-                    if previous_piece_orientation == orbit_info.unknown_orientation_value {
-                        previous_piece_orientation
+
+                #[cfg(not(feature = "no_orientation_mod"))]
+                let new_orientation = {
+                    let previous_orientation_mod =
+                        previous_piece_encoded_orientation >> ORIENTATION_MOD_SHIFT_BITS;
+                    let (modulus, previous_orientation) = match previous_orientation_mod {
+                        0 => (
+                            orbit_info.num_orientations,
+                            previous_piece_encoded_orientation,
+                        ),
+                        modulus => (
+                            modulus,
+                            previous_piece_encoded_orientation & ORIENTATION_MASK,
+                        ),
+                    };
+                    let new_orientation = (previous_orientation
+                        + transformation.get_orientation(orbit_info, i))
+                        % modulus;
+                    (previous_orientation_mod << ORIENTATION_MOD_SHIFT_BITS) + new_orientation
+                };
+                #[cfg(feature = "no_orientation_mod")]
+                let new_orientation =
+                    if previous_piece_encoded_orientation == orbit_info.unknown_orientation_value {
+                        orbit_info.unknown_orientation_value
                     } else {
-                        (previous_piece_orientation + transformation.get_orientation(orbit_info, i))
+                        (previous_piece_encoded_orientation
+                            + transformation.get_orientation(orbit_info, i))
                             % orbit_info.num_orientations
                     };
-                into_state.set_orientation(orbit_info, i, new_piece_orientation);
+                into_state.set_orientation(orbit_info, i, new_orientation);
             }
         }
     }

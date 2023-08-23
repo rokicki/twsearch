@@ -7,7 +7,7 @@ use crate::cpp_port::PackedKPuzzle;
 #[path = "./cpp_port/mod.rs"]
 mod cpp_port;
 
-const PRINT_FINAL_STATE: bool = false;
+const PRINT_FINAL_STATE: bool = true;
 
 // Run using: cargo run --release --example test-cpp_port
 fn main() {

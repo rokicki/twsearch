@@ -7,6 +7,13 @@ use cubing::{
 
 use super::{PackedKState, PackedKTransformation};
 
+// TODO: index divisors
+const MAX_NUM_ORIENTATIONS: usize = if cfg!(no_orientation_mod) { 127 } else { 16 };
+#[cfg(not(feature = "no_orientation_mod"))]
+pub const ORIENTATION_MOD_SHIFT_BITS: usize = 4;
+#[cfg(not(feature = "no_orientation_mod"))]
+pub const ORIENTATION_MASK: u8 = 0xF;
+
 #[derive(Debug, Clone)]
 pub struct PackedKPuzzleOrbitInfo {
     pub name: KPuzzleOrbitName,
@@ -14,6 +21,7 @@ pub struct PackedKPuzzleOrbitInfo {
     pub orientations_offset: usize,
     pub num_pieces: usize,
     pub num_orientations: u8,
+    #[cfg(feature = "no_orientation_mod")]
     pub unknown_orientation_value: u8,
 }
 
@@ -51,16 +59,20 @@ impl TryFrom<KPuzzle> for PackedKPuzzle {
                     orbit_name
                 ),
             })?;
-            let unknown_orientation_value = usize_to_u8(2 * orbit_definition.num_orientations);
+            let num_orientations = orbit_definition.num_orientations;
+            if num_orientations > MAX_NUM_ORIENTATIONS {
+                return Err(InvalidDefinitionError { description: format!("`num_orientations` for orbit {} is too large ({}). Maximum is {} for the current build." , orbit_name, num_orientations, MAX_NUM_ORIENTATIONS)});
+            }
             orbit_iteration_info.push({
                 PackedKPuzzleOrbitInfo {
                     name: orbit_name.clone(),
                     num_pieces: orbit_definition.num_pieces,
-                    num_orientations: usize_to_u8(orbit_definition.num_orientations),
+                    num_orientations: usize_to_u8(num_orientations),
                     pieces_or_pemutations_offset: bytes_offset,
                     orientations_offset: bytes_offset
                         + std::convert::Into::<usize>::into(orbit_definition.num_pieces),
-                    unknown_orientation_value,
+                    #[cfg(feature = "no_orientation_mod")]
+                    unknown_orientation_value: usize_to_u8(2 * num_orientations),
                 }
             });
             bytes_offset += orbit_definition.num_pieces * 2;
@@ -111,10 +123,18 @@ impl PackedKPuzzle {
                     match &kstate_orbit_data.orientation_mod {
                         None => usize_to_u8(kstate_orbit_data.orientation[i]),
                         Some(orientation_mod) => {
-                            match orientation_mod[i] {
-                                0 => usize_to_u8(kstate_orbit_data.orientation[i]),
-                                1 => orbit_info.num_orientations * 2, // TODO
-                                _ => panic!("Unsupported!"),          // TODO
+                            #[cfg(not(feature = "no_orientation_mod"))]
+                            {
+                                (usize_to_u8(orientation_mod[i]) << ORIENTATION_MOD_SHIFT_BITS)
+                                    + usize_to_u8(kstate_orbit_data.orientation[i])
+                            }
+                            #[cfg(feature = "no_orientation_mod")]
+                            {
+                                match orientation_mod[i] {
+                                    0 => usize_to_u8(kstate_orbit_data.orientation[i]),
+                                    1 => orbit_info.unknown_orientation_value, // TODO
+                                    _ => panic!("Unsupported!"),               // TODO
+                                }
                             }
                         }
                     },
