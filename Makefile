@@ -7,34 +7,71 @@ build: build/bin/twsearch
 all: build/bin/twsearch build/esm build-rust
 
 .PHONY: test
-test: test-warning lint test-cpp-cli test-twsearch-cpp-wrapper-cli test-cpp_port-all
+test: \
+	test-warning \
+	lint \
+	test-cpp-cli \
+	test-twsearch-cpp-wrapper-cli \
+	test-rs-all \
+	benchmark-rs-all
 
 .PHONY: test-warning
 test-warning:
 	@echo "Warning: tests are slow to run right now."
 
+# C++ and `twsearch-cpp-wrapper` testing
+
 .PHONY: test-cpp-cli
 test-cpp-cli: build/bin/twsearch
-	cargo run --package twsearch-cpp-wrapper --example test-cpp-cli
+	cargo run --package twsearch-cpp-wrapper \
+		--example test-cpp-cli
 
 .PHONY: test-twsearch-cpp-wrapper-cli
 test-twsearch-cpp-wrapper-cli:
-	cargo run --package twsearch-cpp-wrapper --example test-twsearch-cpp-wrapper-cli
+	cargo run --package twsearch-cpp-wrapper \
+		--example test-twsearch-cpp-wrapper-cli
 
-.PHONY: test-cpp_port-all
-test-cpp_port-all: test-cpp_port-default test-cpp_port-orientation_packer test-cpp_port-no_orientation_mod
+# Rust testing
 
-.PHONY: test-cpp_port-default
-test-cpp_port-default:
-	cargo run --release --example test-cpp_port
+.PHONY: test-rs-all
+test-rs-all: \
+	test-rs-default \
+	test-rs-orientation_packer \
+	test-rs-no_orientation_mod
 
-.PHONY: test-cpp_port-orientation_packer
-test-cpp_port-orientation_packer:
-	cargo run --features orientation_packer --release --example test-cpp_port
+TEST_RS = cargo test --package twsearch
 
-.PHONY: test-cpp_port-no_orientation_mod
-test-cpp_port-no_orientation_mod:
-	cargo run --features no_orientation_mod --release --example test-cpp_port
+.PHONY: test-rs-default
+test-rs-default:
+	${TEST_RS}
+
+.PHONY: test-rs-orientation_packer
+test-rs-orientation_packer:
+	${TEST_RS} --features orientation_packer
+
+.PHONY: test-rs-no_orientation_mod
+test-rs-no_orientation_mod:
+	${TEST_RS} --features no_orientation_mod
+
+BENCHMARK_RS = cargo run --package twsearch --release --example benchmark
+
+.PHONY: benchmark-rs-all
+benchmark-rs-all: \
+	benchmark-rs-default \
+	benchmark-rs-orientation_packer \
+	benchmark-rs-no_orientation_mod
+
+.PHONY: benchmark-rs-default
+benchmark-rs-default:
+	${BENCHMARK_RS}
+
+.PHONY: benchmark-rs-orientation_packer
+benchmark-rs-orientation_packer:
+	${BENCHMARK_RS} --features orientation_packer
+
+.PHONY: benchmark-rs-no_orientation_mod
+benchmark-rs-no_orientation_mod:
+	${BENCHMARK_RS} --features no_orientation_mod
 
 .PHONY: clean
 clean:
@@ -43,7 +80,6 @@ clean:
 .PHONY: cpp-clean
 cpp-clean:
 	rm -rf ./build
-
 
 .PHONY: reset
 reset: clean
