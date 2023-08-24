@@ -36,40 +36,40 @@ test-twsearch-cpp-wrapper-cli:
 .PHONY: test-rs-all
 test-rs-all: \
 	test-rs-default \
-	test-rs-orientation_packer \
+	test-rs-no-default-features \
 	test-rs-no_orientation_mod
 
 .PHONY: test-rs-default
 test-rs-default:
 	cargo test
 
-.PHONY: test-rs-orientation_packer
-test-rs-orientation_packer:
-	cargo test --features orientation_packer
+.PHONY: test-rs-no-default-features
+test-rs-no-default-features:
+	cargo test --no-default-features
 
 .PHONY: test-rs-no_orientation_mod
 test-rs-no_orientation_mod:
-	cargo test --features no_orientation_mod
+	cargo test --no-default-features --features no_orientation_mod
 
 BENCHMARK_RS = cargo run --release --example benchmark
 
 .PHONY: benchmark-rs-all
 benchmark-rs-all: \
 	benchmark-rs-default \
-	benchmark-rs-orientation_packer \
+	benchmark-rs-no-default-features \
 	benchmark-rs-no_orientation_mod
 
 .PHONY: benchmark-rs-default
 benchmark-rs-default:
 	${BENCHMARK_RS}
 
-.PHONY: benchmark-rs-orientation_packer
-benchmark-rs-orientation_packer:
-	${BENCHMARK_RS} --features orientation_packer
+.PHONY: benchmark-rs-no-default-features
+benchmark-rs-no-default-features:
+	${BENCHMARK_RS} --no-default-features
 
 .PHONY: benchmark-rs-no_orientation_mod
 benchmark-rs-no_orientation_mod:
-	${BENCHMARK_RS} --features no_orientation_mod
+	${BENCHMARK_RS} --no-default-features --features no_orientation_mod
 
 .PHONY: clean
 clean:
