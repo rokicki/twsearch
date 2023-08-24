@@ -24,13 +24,13 @@ use super::orientation_packer::OrientationPacker;
 #[cfg(not(feature = "no_orientation_mod"))]
 use crate::cpp_port::packed::orientation_packer::OrientationWithMod;
 
-// TODO: allow certain values over 107?
 // https://github.com/cubing/twsearch/issues/25#issue-1862613355
 #[cfg(not(feature = "orientation_packer"))]
 #[cfg(not(feature = "no_orientation_mod"))]
 const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 16;
 #[cfg(feature = "orientation_packer")]
 #[cfg(not(feature = "no_orientation_mod"))]
+// TODO: allow certain values over 107?
 const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 107;
 #[cfg(feature = "no_orientation_mod")]
 const MAX_NUM_ORIENTATIONS_INCLUSIVE: usize = 127;
