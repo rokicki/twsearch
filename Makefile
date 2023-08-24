@@ -41,17 +41,17 @@ test-rs-all: \
 
 .PHONY: test-rs-default
 test-rs-default:
-	cargo test
+	cargo test --quiet
 
 .PHONY: test-rs-no-default-features
 test-rs-no-default-features:
-	cargo test --no-default-features
+	cargo test --quiet --no-default-features
 
 .PHONY: test-rs-no_orientation_mod
 test-rs-no_orientation_mod:
-	cargo test --no-default-features --features no_orientation_mod
+	cargo test --quiet --no-default-features --features no_orientation_mod
 
-BENCHMARK_RS = cargo run --release --example benchmark
+BENCHMARK_RS = cargo run --quiet --release --example benchmark
 
 .PHONY: benchmark-rs-all
 benchmark-rs-all: \
