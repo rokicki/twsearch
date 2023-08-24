@@ -39,21 +39,19 @@ test-rs-all: \
 	test-rs-orientation_packer \
 	test-rs-no_orientation_mod
 
-TEST_RS = cargo test --package twsearch
-
 .PHONY: test-rs-default
 test-rs-default:
-	${TEST_RS}
+	cargo test
 
 .PHONY: test-rs-orientation_packer
 test-rs-orientation_packer:
-	${TEST_RS} --features orientation_packer
+	cargo test --features orientation_packer
 
 .PHONY: test-rs-no_orientation_mod
 test-rs-no_orientation_mod:
-	${TEST_RS} --features no_orientation_mod
+	cargo test --features no_orientation_mod
 
-BENCHMARK_RS = cargo run --package twsearch --release --example benchmark
+BENCHMARK_RS = cargo run --release --example benchmark
 
 .PHONY: benchmark-rs-all
 benchmark-rs-all: \
