@@ -225,30 +225,6 @@ Things to consider:
 * Ignore pieces
 * Blocking moves
 
-## `twsearch-rs`
-
-This repo also contains a Rust build that wraps the C++ implementation (in a single binary). This allows running a server to connect with web UIs:
-
-```
-cargo run -- serve
-// Now open https://experiments.cubing.net/cubing.js/twsearch/text-ui.html
-```
-
-To run commands similar to the examples above:
-
-```shell
-cargo run -- search samples/main/3x3x3.tws samples/main/tperm.scr
-cargo run -- gods-algorithm samples/main/2x2x2.tws
-cargo run -- search --check-before-solve never --min-num-solutions 20 --moves 2L,2R,U,F samples/main/4x4x4.tws samples/main/flip.scr
-cargo run -- search --moves F,R,D,B,L --scramble-alg U samples/main/3x3x3.tws
-cargo run -- gods-algorithm --quantum-metric --moves U,R,F samples/main/kilominx.tws
-```
-
-To get completions in your shell, install using one of:
-
-- `brew install --HEAD cubing/cubing/twsearch-rs`
-- `cargo install --path .; twsearch-rs completions <your shell>`
-
 ## License
 
 This work is dual-licensed under the Mozilla Public License 2.0 and GPL 3.0 (or
