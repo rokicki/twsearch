@@ -12,8 +12,8 @@ test: \
 	lint \
 	test-cpp-cli \
 	test-twsearch-cpp-wrapper-cli \
-	test-rs-all \
-	benchmark-rs-all
+	test-rs \
+	benchmark-rs
 
 .PHONY: test-warning
 test-warning:
@@ -33,43 +33,15 @@ test-twsearch-cpp-wrapper-cli:
 
 # Rust testing
 
-.PHONY: test-rs-all
-test-rs-all: \
-	test-rs-default \
-	test-rs-no-default-features \
-	test-rs-no_orientation_mod
-
-.PHONY: test-rs-default
-test-rs-default:
+.PHONY: test-rs
+test-rs:
 	cargo test --quiet
-
-.PHONY: test-rs-no-default-features
-test-rs-no-default-features:
-	cargo test --quiet --no-default-features
-
-.PHONY: test-rs-no_orientation_mod
-test-rs-no_orientation_mod:
-	cargo test --quiet --no-default-features --features no_orientation_mod
 
 BENCHMARK_RS = cargo run --quiet --release --example benchmark
 
-.PHONY: benchmark-rs-all
-benchmark-rs-all: \
-	benchmark-rs-default \
-	benchmark-rs-no-default-features \
-	benchmark-rs-no_orientation_mod
-
-.PHONY: benchmark-rs-default
-benchmark-rs-default:
+.PHONY: benchmark-rs
+benchmark-rs:
 	${BENCHMARK_RS}
-
-.PHONY: benchmark-rs-no-default-features
-benchmark-rs-no-default-features:
-	${BENCHMARK_RS} --no-default-features
-
-.PHONY: benchmark-rs-no_orientation_mod
-benchmark-rs-no_orientation_mod:
-	${BENCHMARK_RS} --no-default-features --features no_orientation_mod
 
 .PHONY: clean
 clean:
