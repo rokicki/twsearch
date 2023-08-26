@@ -37,11 +37,9 @@ test-twsearch-cpp-wrapper-cli:
 test-rs:
 	cargo test --quiet
 
-BENCHMARK_RS = cargo run --quiet --release --example benchmark
-
 .PHONY: benchmark-rs
 benchmark-rs:
-	${BENCHMARK_RS}
+	cargo run --quiet --release --example benchmark
 
 .PHONY: clean
 clean:
