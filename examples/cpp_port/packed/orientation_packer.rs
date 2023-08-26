@@ -48,7 +48,7 @@ pub struct OrientationPacker {
 ///
 /// `OrientationPacker` can translate between these representations,
 /// as well as applying a transformation to the packed representation
-/// efficiently. This replaces arithmetic with simple lookups for `PackedKState` logic.
+/// efficiently. This replaces arithmetic with simple lookups for `PackedKPattern` logic.
 impl OrientationPacker {
     pub fn new(num_orientations: usize) -> Self {
         let mut unpacking_table: [OrientationWithMod; NUM_BYTE_VALUES] =
