@@ -469,6 +469,8 @@ puzdef makepuzdef(string s) {
    return makepuzdef(&is) ;
 }
 int main_search(const char* def_file, const char* scramble_file) {
+   if (scramblealgo && doshortenseqs)
+      error("! --shortenseqs takes input from stdin, not from a command line algorithm.") ;
    ifstream f ;
    f.open(def_file, ifstream::in) ;
    if (f.fail())

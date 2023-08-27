@@ -65,7 +65,7 @@ void makecanonstates(puzdef &pd) {
    pd.commutes = commutes ;
    using trip = tuple<ull, int, int> ;
    map<trip, int> statemap ;
-   vector<trip > statebits ;
+   vector<trip> statebits ;
    trip firststate = make_tuple(0LL, -1, 0) ;
    statemap[firststate] = 0 ;
    statebits.push_back(firststate) ;
