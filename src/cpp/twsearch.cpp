@@ -557,7 +557,7 @@ int main_search(const char* def_file, const char* scramble_file) {
       prunetable pt(pd, maxmem) ;
       string emptys ;
       processlines(pd, [&](const puzdef &pd, setval p, const char *) {
-                          solveit(pd, pt, emptys, p) ;
+                          solveit(pd, pt, emptys, p, gs) ;
                        }) ;
    }
    if (docoset) {
