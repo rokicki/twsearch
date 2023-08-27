@@ -35,7 +35,7 @@ void makecanonstates(puzdef &pd) {
       commutes[i] = (1LL << nbase) - 1 ;
    /*
     *   All moves in a particular class must commute against all moves in
-    *   another class, or we treat the enture class as not commuting.
+    *   another class, or we treat the entire class as not commuting.
     *   For instance, on the 5x5x5, 3U2 and 3R2 commute, but 3U and 3R does
     *   not, so we mark the entire 3U class as not commuting with the entire
     *   3R class.
