@@ -7,6 +7,6 @@
  *   generation of new pruning tables; right now pruning tables cannot be
  *   shared across move subsets.
  */
-void filtermovelist(puzdef &pd, const char *movelist) ;
+void filtermovelist(puzdef &pd, const char *movelist);
 #define FILTERMOVES_H
 #endif

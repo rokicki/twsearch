@@ -1,7 +1,7 @@
 #ifndef CANON_H
-#include <vector>
 #include "puzdef.h"
-using namespace std ;
+#include <vector>
+using namespace std;
 /*
  *   This set of routines calculates the canonical sequences for a given
  *   puzzle.  The normal, default version does this by calculating what
@@ -12,13 +12,13 @@ using namespace std ;
  *   you can see how effective each strategy is for a given puzzle, and
  *   from that decide which to use.
  */
-void makecanonstates(puzdef &pd) ;
-extern vector<ull> canonmask ;
-extern vector<vector<int> > canonnext ;
-extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq) ;
-extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) ;
-extern int ccount, canonlim ;
-void makecanonstates2(puzdef &pd) ;
-void showcanon(const puzdef &pd, int show) ;
+void makecanonstates(puzdef &pd);
+extern vector<ull> canonmask;
+extern vector<vector<int>> canonnext;
+extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq);
+extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq);
+extern int ccount, canonlim;
+void makecanonstates2(puzdef &pd);
+void showcanon(const puzdef &pd, int show);
 #define CANON_H
 #endif

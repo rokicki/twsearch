@@ -57,7 +57,12 @@ reset: clean
 lint: lint-js
 
 .PHONY: format
-format: format-js
+format: format-cpp format-js
+	
+
+.PHONY: format-cpp
+format-cpp:
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format -i
 
 TWSEARCH_VERSION=v0.0.0
 

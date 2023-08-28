@@ -7,6 +7,6 @@
  *   It is not fully ready yet, and should be considered highly
  *   experimental.
  */
-void gensymm(const puzdef &pd) ;
+void gensymm(const puzdef &pd);
 #define CALCSYMM_H
 #endif

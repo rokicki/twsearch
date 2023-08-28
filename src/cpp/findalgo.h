@@ -8,7 +8,7 @@
  *   brute force; more intelligence can be added later through the
  *   consideration of support.
  */
-void findalgos(const puzdef &pd, int which) ;
-extern int algostrict ;
+void findalgos(const puzdef &pd, int which);
+extern int algostrict;
 #define FINDALGO_H
 #endif

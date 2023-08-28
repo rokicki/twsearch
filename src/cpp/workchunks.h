@@ -5,9 +5,9 @@
  *   routine calculates the work chunks and parcels them out as
  *   needed.
  */
-extern vector<ull> workchunks ;
-extern vector<int> workstates ;
-extern int workat ;
-void makeworkchunks(const puzdef &pd, int d, int symmreduce) ;
+extern vector<ull> workchunks;
+extern vector<int> workstates;
+extern int workat;
+void makeworkchunks(const puzdef &pd, int d, int symmreduce);
 #define WORKCHUNKS_H
 #endif
