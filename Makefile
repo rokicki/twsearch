@@ -54,11 +54,14 @@ reset: clean
 	rm -rf ./emsdk ./node_modules
 
 .PHONY: lint
-lint: lint-js
+lint: lint-cpp lint-js
+
+.PHONY: lint-cpp
+lint-cpp:
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format --dry-run -Werror
 
 .PHONY: format
 format: format-cpp format-js
-	
 
 .PHONY: format-cpp
 format-cpp:
