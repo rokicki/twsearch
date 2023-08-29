@@ -456,6 +456,53 @@ not on the critical path.
 
 Canonical sequences
 
+The notion of canonical sequences is at the root of effective search
+in twisty puzzles.  Solving twisty puzzles usually involves doing
+a meet-in-the-middle search from both a given position and the solved
+position, attempting to identify a position approximately midway for
+which we have or can easily constract a path from the given position
+to solved through that position.  Since the solved position is fixed
+for any position we might want to solve, we can precalculate the
+solved half of the meet-in-the-middle search and store it in what's
+called a pattern database or pruning table, and reuse that computation
+across many positions.
+
+Calculating all the positions near a given position would normally
+be done with a breadth-first search, but a breadth-first search requires
+all the positions at one or more levels to be in memory at one time.
+Managing a large set of positions in memory like this, and checking
+whether a position is new or has been seen before, can be slow and
+consume a lot of memory.  On the other hand, naive depth-first search
+can explore duplicated positions an excessive number of times.  The
+concept of canonical sequences, and restricting the search tree to
+these sequences, can give search in twisty puzzles the speed of dfs
+with very close to the node efficiency of breadth-first search.
+
+The basic concept is to identify redundancies in the search tree that
+are caused by moves that commute, and restrict the search to the first
+lexicographical path among those that have commuting moves.  For instance,
+on the 3x3x3, the moves L and R commute.  So, the path L R leads to the
+same position as R L, and so we can simply restrict search from going
+down any path that has an R immediately followed by an L.  This would
+also apply to moves such as R2 L'.
+
+For the 3x3x3, the restriction is very simple; we can simply disallow
+any R followed by any L, or any F followed by any B, or any U followed
+by any D, and we've eliminated most redundancies in the search graph.
+There are still a few (such as D2 U2 L2 R2 leading to the same position
+as L2 R2 D2 U2), but these remaining redundancies do not significantly
+increase the runtime.
+
+The 3x3x3 and larger cubes can be handled so simply because the commutes
+relation between moves is associative; if A commutes with B, and B commutes
+with C, so simply ordering the sets of moves that commute solves the
+problem.  But other puzzles, like the megaminx, have a more complicated
+commutes relation, and thus require somewhat more sophistication.  On
+the megaminx, L commutes with R, and L commutes with BR, but R does not
+commute with BR.  The solution is to say a path is legal if there is no
+other path that can be reached just by swapping adjacent commuting
+moves, and get a path that is lexicographically smaller.
+
 Hashing
 
 Indexing
