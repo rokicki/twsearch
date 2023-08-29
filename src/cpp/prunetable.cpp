@@ -252,8 +252,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
     bytesize *= 2;
   subshift = 42;
   for (int sh = 1;
-       (bytesize | (bytesize >> 1)) <= maxmem &&
-       (bytesize >> sh) &&
+       (bytesize | (bytesize >> 1)) <= maxmem && (bytesize >> sh) &&
        (pd.logstates > 55 || 4 * (bytesize | (bytesize >> 1)) < pd.llstates);
        sh++) {
     subshift = sh + 1;
