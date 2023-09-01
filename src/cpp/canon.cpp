@@ -26,6 +26,11 @@ void makecanonstates(puzdef &pd) {
       mv.cs = mv.base;
     }
   }
+  /*
+   *   If you raise this limit to 64, which may be possible, be sure to
+   *   add a test at the ">> (m + 1)" line to prevent shifting by 64
+   *   which may be undefined in C++.
+   */
   if (nbase > 63)
     error("! too many base moves for canonicalization calculation");
   pd.ncs = nbase;
@@ -83,9 +88,9 @@ void makecanonstates(puzdef &pd) {
     int fromst = qg++;
     int ms = 0;
     for (int m = 0; m < nbase; m++) {
-      // if there's a lesser move in the state that commutes with this
+      // if there's a greater move in the state that commutes with this
       // move m, we can't move m.
-      if ((stateb & commutes[m] & ((1LL << m) - 1)) != 0) { // ordering
+      if ((stateb & commutes[m]) >> (m + 1)) {
         canonmask[fromst] |= 1LL << m;
         continue;
       }
@@ -102,7 +107,7 @@ void makecanonstates(puzdef &pd) {
         if ((nstb >> i) & 1)
           for (int j = i + 1; nstb >> j; j++)
             if (((nstb >> j) & 1) && commutes[i] == commutes[j])
-              nstb &= ~(1LL << j);
+              nstb &= ~(1LL << i);
       int thism = -1;
       int thiscnt = 0;
       if (quarter) {
