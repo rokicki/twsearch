@@ -546,9 +546,87 @@ moves, and since any move that is lexicographically less than 4U is
 also lexicographically less than 6U.  For the 20x20x20, this reduces
 our state machine size to 61 states in the face-turn metric.
 
-newcanon
+Returning to our original objective, which was to gain the memory
+efficiency and speed of depth-first search with the redundancy
+elimination of breadth-first search, let's see how well our approach
+works.  There are a total of 232,248,063,316 unique positions at
+distance 10 for the Rubik's cube.  If we perform a depth-first
+search without any move restrictions, we'd explore 18^10 or 
+3,570,467,226,624 leaves, which is about 15 times too many.  Just
+ensuring that we don't repeat moves on a face reduces this to
+18 * 15^9 or 691,980,468,750, still very close to three times too
+many.  But our canonical sequence approach as described above
+only explores 244,686,773,808 nodes at distance 10, which is an
+excess of only 5.3%.  That's an excellent result.
 
-use to bound God's number
+For puzzles where one piece always remains in place, like the
+core on odd cubes or the megaminx, this approach works great.  But
+some puzzles, like the pentultimate, the 2x2x2, the 4x4x4, and
+others, permute all parts of the puzzle with some moves.  Thus,
+there are combinations of moves that simply spatially rotate the
+puzzle without effectively changing the relation of pieces to one
+another.  For these puzzles, the canonical sequences approach does
+not perform quite as well.  For instance, on the 2x2x2, allowing
+all six face turns, the branching factor is 13.33.  Yet, we can
+solve the 3x3x3 only turning three of the faces; any twist of one
+of the other faces can be performed by a twist of the opposite
+face followed by a whole cube rotation.
+
+The best approach to remedy this is to generate a move set that
+fixes some part of the puzzle.  For instance, a corner cubie can be
+fixed on even cubies, and other moves changed to compensate.  For
+the 4x4x4 and outer block turn metric, we simply eliminate all
+outer block turns that turn (say) the BLD corner and perform our
+search; postprocessing the results can expand given solutions into
+many alternate solutions using all moves, if desired.  For the 
+slice turn metric on the 4x4x4, we'd again fix the BLD corner, but
+now we'd transform the D move into 3u and require postprocessing
+to fix the sequence.  Note that cubing.js can easily generate .tws
+files with fixed corners or edges using the --fixcorner or
+--fixedge option.
+
+But twsearch does have a facility for helping to improve search
+for puzzles like this in cases where you do not want to, or cannot,
+generate a modified set of moves.  If you specify --newcanon n where
+n is an integer number greater than zero, it will generate only
+sequences where every subsequence of length n or shorter is the
+lexicographically first that generates a particular sequence.  You
+will need to experiment with what number n works for a given puzzle;
+larger n will take longer and generate larger finite state machines.
+But with a reasonable value of n, some portion of the branching
+factor inflation due to full-puzzle rotations, or other types of
+short identity sequences, will be reduced.  For example, on the
+2x2x2, we list here the options and the resulting branching factor:
+
+      option       states  branching factor
+    ------------  -------  ----------------
+    (default)           7          13.3485
+    --newcanon 1       19          13.3485
+    --newcanon 2      262          11.8098
+    --newcanon 3     3136          10.1869
+    --newcanon 4    31136           8.0426
+    --newcanon 5   236552           6.2356
+
+Now let's do the same for the pentultimate:
+
+      option       states  branching factor
+    ------------  -------  ----------------
+    (default)          13          41.9089
+    --newcanon 1       49          41.9089
+    --newcanon 2     2065          40.2458
+    --newcanon 3    83065          38.0152
+    --newcanon 4  3138180          35.0140
+
+As you can see, this approach is very effective on the 2x2x2, but that's
+a trivial puzzle anyway; on the Pentultimate, it's only a little effective.
+For comparison, using a fixed-corner metric on the 2x2x2 gives a branching
+factor of 6, and on the pentultimate it gives a branching factor of 24.
+
+With the -C option to twsearch, the count of canonical sequences at
+each distance is generated; this can be used to calculate a lower bound
+on God's number for a particular puzzle (if you know the number of states
+of the puzzle, which you can get with the --schreiersims option and
+possibly take into account full-puzzle rotations and identical pieces).
 
 Hashing
 
