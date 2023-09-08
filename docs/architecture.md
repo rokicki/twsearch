@@ -503,6 +503,53 @@ commute with BR.  The solution is to say a path is legal if there is no
 other path that can be reached just by swapping adjacent commuting
 moves, and get a path that is lexicographically smaller.
 
+In order to do this in the half-turn metric, we can simply remember the
+set of moves in the search sequence so far that are not followed by a
+move that does not commute with that move.  This set of moves can be
+considered a representation of the state in a state machine, and when
+in that state, if a move commutes with any of the moves in this state
+and occurs earlier lexicographically, then this move is not allowed.
+Also, if a move twists the same grip as one of the moves in the set,
+it's also not allowed as being redundant.
+
+To make the code to perform this calculation during search as simple
+as possible, we precalculate a finite state machine, with an integer
+state, a next state table indexed by the state and the move class, and a
+bitmask of unpermitted moves for each state.  The move class is just
+an integer referring to the base move, so U, U2, and U' all have the
+same move class.  Twsearch currently limits the number of move classes
+to 63 when using canonical sequences; this should suffice for some
+very large puzzles, and it's unlikely search will be performed for
+puzzles with more classes.
+
+For the quarter-turn metric, the approach is the same, except in
+addition to commuting moves, we need to track how many quarter turns
+have been performed for the most recent move, and what direction
+they are in; for instance, on the 3x3x3 we permit U, U U, and U',
+but no other sequence of U moves.  This is blended into the state
+machine (and each distinct direction of a particular move gets
+its own move class).
+
+The number of states of such a machine might get very large if there
+are a lot of commuting moves.  For instance, on the 20x20x20, there
+are roughly three million states in the finite state machine that is
+computed using the above procedure.  To help limit the number of
+states without changing the semantics, we perform the following
+"big cube optimization".  If any two move classes have an exactly
+identical commutes-with relation (as do any pair of move classes on
+the same axis of a big cube), then we only retain the lexicographically
+least of these in our set of moves state.  Thus, if 4U < 6U in our
+move class ordering, and the current state includes 6U, and we move
+4U, we would drop 6U.  This will not change the set of moves
+permitted, since the commutes-with relation is the same between these
+moves, and since any move that is lexicographically less than 4U is
+also lexicographically less than 6U.  For the 20x20x20, this reduces
+our state machine size to 61 states in the face-turn metric.
+
+newcanon
+
+use to bound God's number
+
 Hashing
 
 Indexing
