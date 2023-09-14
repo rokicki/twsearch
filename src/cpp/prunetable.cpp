@@ -70,8 +70,7 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
     pd.mul(posns[sp], pd.moves[mv].pos, posns[sp + 1]);
     if (!pd.legalstate(posns[sp + 1]))
       return 0;
-    if (pd.rotgroup.size() <= 1)
-      st = canonnext[st][pd.moves[mv].cs];
+    st = canonnext[st][pd.moves[mv].cs];
     sp++;
     togo--;
     initmoves /= nmoves;

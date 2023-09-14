@@ -8,6 +8,6 @@
 extern vector<ull> workchunks;
 extern vector<int> workstates;
 extern int workat;
-int makeworkchunks(const puzdef &pd, int d, const setval symmreduce);
+void makeworkchunks(const puzdef &pd, int d, const setval symmreduce);
 #define WORKCHUNKS_H
 #endif

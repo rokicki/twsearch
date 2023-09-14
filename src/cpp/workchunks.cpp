@@ -9,12 +9,11 @@ vector<int> workstates;
 int workat;
 static vector<allocsetval> seen;
 static int lastsize;
-int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
+void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
   workchunks.clear();
   workstates.clear();
   workchunks.push_back(1);
   workstates.push_back(0);
-  int r = 0;
   if (numthreads > 1 && d >= 3) {
     if (pd.totsize != lastsize) {
       lastsize = pd.totsize;
@@ -31,6 +30,8 @@ int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
       if (pd.rotgroup.size() > 1) {
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
+          int st = workstates[i];
+          ull mask = canonmask[st];
           ull t = pmv;
           pd.assignpos(p1, symmreduce);
           while (t > 1) {
@@ -39,6 +40,8 @@ int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
           }
           for (int mv = 0; mv < nmoves; mv++) {
             if (quarter && pd.moves[mv].cost > 1)
+              continue;
+            if ((mask >> pd.moves[mv].cs) & 1)
               continue;
             pd.mul(p1, pd.moves[mv].pos, p2);
             if (!pd.legalstate(p2))
@@ -52,15 +55,13 @@ int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
               }
             if (isnew) {
               wc2.push_back(pmv + (nmoves + mv - 1) * mul);
-              ws2.push_back(0);
+              ws2.push_back(canonnext[st][pd.moves[mv].cs]);
               if (seensize < (int)seen.size()) {
                 pd.assignpos(seen[seensize], p3);
               } else {
                 seen.push_back(allocsetval(pd, p3));
               }
               seensize++;
-            } else {
-              r = 1; // we did some reduction
             }
           }
         }
@@ -94,5 +95,4 @@ int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
       }
     }
   }
-  return r;
 }
