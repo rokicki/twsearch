@@ -10,6 +10,7 @@ int optmindepth;
 int randomstart;
 string lastsolution;
 int didprepass;
+static int reduced;
 solveworker solveworkers[MAXTHREADS];
 int (*callback)(setval &pos, const vector<int> &moves, int d, int id);
 int (*flushback)(int d);
@@ -158,7 +159,8 @@ int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
     if (!pd.legalstate(posns[sp + 1]))
       return -1;
     movehist[sp] = mv;
-    st = canonnext[st][pd.moves[mv].cs];
+    if (!reduced)
+      st = canonnext[st][pd.moves[mv].cs];
     sp++;
     togo--;
     initmoves /= nmoves;
@@ -215,9 +217,9 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       continue;
     hid = d;
     if (d - initd > 3)
-      makeworkchunks(pd, d, 0);
+      reduced = makeworkchunks(pd, d, p);
     else
-      makeworkchunks(pd, 0, 0);
+      reduced = makeworkchunks(pd, 0, p);
     int wthreads = setupthreads(pd, pt);
     for (int t = 0; t < wthreads; t++)
       solveworkers[t].init(pd, d, t, p);

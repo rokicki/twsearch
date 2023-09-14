@@ -308,7 +308,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
   wbval = min(d, 14);
   if (quiet == 0)
     cout << "Filling table at depth " << d << " with val " << wval << flush;
-  makeworkchunks(pd, d, true);
+  makeworkchunks(pd, d, pd.solved);
   int wthreads = setupthreads(pd, *this);
   for (int t = 0; t < wthreads; t++)
     fillworkers[t].init(pd, d);

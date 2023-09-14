@@ -9,11 +9,12 @@ vector<int> workstates;
 int workat;
 static vector<allocsetval> seen;
 static int lastsize;
-void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
+int makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
   workchunks.clear();
   workstates.clear();
   workchunks.push_back(1);
   workstates.push_back(0);
+  int r = 0;
   if (numthreads > 1 && d >= 3) {
     if (pd.totsize != lastsize) {
       lastsize = pd.totsize;
@@ -27,11 +28,11 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
       vector<ull> wc2;
       vector<int> ws2;
       int seensize = 0;
-      if (symmreduce && pd.rotgroup.size() > 1) {
+      if (pd.rotgroup.size() > 1) {
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
           ull t = pmv;
-          pd.assignpos(p1, pd.solved);
+          pd.assignpos(p1, symmreduce);
           while (t > 1) {
             domove(pd, p1, t % nmoves);
             t /= nmoves;
@@ -58,6 +59,8 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
                 seen.push_back(allocsetval(pd, p3));
               }
               seensize++;
+            } else {
+              r = 1; // we did some reduction
             }
           }
         }
@@ -91,4 +94,5 @@ void makeworkchunks(const puzdef &pd, int d, int symmreduce) {
       }
     }
   }
+  return r;
 }
