@@ -196,11 +196,11 @@ test-build-js: build/esm-test
 
 .PHONY: lint-js
 lint-js:
-	npx rome check src/js/**/*.ts
+	npx @biomejs/biome check ./script ./src/js/**/*.ts
 
 .PHONY: format-js
 format-js:
-	npx rome format src/js/**/*.ts
+	npx @biomejs/biome format ./script ./src/js/**/*.ts
 
 # Rust
 
