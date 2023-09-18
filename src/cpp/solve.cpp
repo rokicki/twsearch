@@ -39,6 +39,8 @@ void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
   }
   pd.assignpos(posns[0], p);
   lookups = 0;
+  checkincrement = 10000 + myrand(10000) ;
+  checktarget = lookups + checkincrement ;
   d = d_;
   id = id_;
 }
@@ -74,6 +76,16 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, int togo, int sp,
     int v = innerfetch(pd, pt, togo, sp, st, h);
     if (v != 3)
       return v;
+    if (lookups > checktarget) {
+       int finished = 0 ;
+       get_global_lock() ;
+       finished = (solutionsfound >= solutionsneeded);
+       checkincrement += checkincrement / 30 ;
+       checktarget = lookups + checkincrement ;
+       release_global_lock() ;
+       if (finished)
+          return 0 ;
+    }
     h = innersetup(pt, sp);
   }
 }

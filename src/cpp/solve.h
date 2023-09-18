@@ -24,7 +24,7 @@ struct solveworker {
   vector<allocsetval> posns;
   vector<solvestate> solvestates;
   vector<int> movehist;
-  long long lookups;
+  long long lookups, checktarget, checkincrement;
   int d, id;
   setval *looktmp;
   char padding[256]; // kill false sharing
