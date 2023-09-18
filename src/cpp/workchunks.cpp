@@ -14,7 +14,7 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
   workstates.clear();
   workchunks.push_back(1);
   workstates.push_back(0);
-  if (numthreads > 1 && d >= 3) {
+  if (d >= 3) {
     if (pd.totsize != lastsize) {
       lastsize = pd.totsize;
       seen.clear();
