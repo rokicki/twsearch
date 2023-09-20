@@ -23,10 +23,13 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
     int nmoves = pd.moves.size();
     int chunkmoves = 0;
     ull mul = 1;
+    ll hashmod = 100 * numthreads;
+    vector<int> hashfront(hashmod, -1);
+    vector<int> hashprev;
+    int seensize = 0;
     while (chunkmoves + 3 < d && (int)workchunks.size() < 40 * numthreads) {
       vector<ull> wc2;
       vector<int> ws2;
-      int seensize = 0;
       if (pd.rotgroup.size() > 1) {
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
@@ -47,9 +50,10 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
             if (!pd.legalstate(p2))
               continue;
             slowmodm2(pd, p2, p3);
+            int h = fasthash(pd.totsize, p3) % hashmod;
             int isnew = 1;
-            for (int j = 0; j < (int)seensize; j++)
-              if (pd.comparepos(p3, seen[j]) == 0) {
+            for (int i=hashfront[h]; i>=0; i=hashprev[i])
+              if (pd.comparepos(p3, seen[i]) == 0) {
                 isnew = 0;
                 break;
               }
@@ -61,6 +65,8 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
               } else {
                 seen.push_back(allocsetval(pd, p3));
               }
+              hashprev.push_back(hashfront[h]);
+              hashfront[h] = seensize;
               seensize++;
             }
           }
