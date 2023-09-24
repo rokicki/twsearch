@@ -489,9 +489,9 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
     error("! packing issue 3");
 }
 void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
-  int bytectr = 0;
   int havebits = 0;
   ull accum = 0;
+  ull bitptr = 0 ;
   for (ull i = 0; i < longcnt; i++) {
     ull v = 0;
     for (int j = 0; j < 8; j++) {
@@ -499,11 +499,9 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
       int k = 0;
       while (1) {
         if (havebits < bitsneeded) {
-          int c = 0;
-          if (bytectr < bytecnt)
-            c = block[bytectr++];
-          accum = (accum << 8) + c;
-          havebits += 8;
+          accum = __builtin_bswap64(*(ull *)(block + (bitptr >> 3))) &
+                                    ((0xffffffffffffffffULL) >> (bitptr & 7)) ;
+          havebits = 64 - (bitptr & 7) ;
         }
         int cp = tabs[k][accum >> (havebits - bitsneeded)];
         if (cp >= 0) {
@@ -511,14 +509,14 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
             if (j != 0)
               error("! unexpected high code");
             v = cp - 256;
-            havebits -= codewidths[cp];
+            bitptr += codewidths[cp] ;
+            havebits -= codewidths[cp] ;
             accum &= ((1LL << havebits) - 1);
             goto setval;
           } else {
             v += ((ull)cp) << (8 * j);
-            havebits -= codewidths[cp];
-            if (havebits > 14)
-              error("! oops; should not have this many bits left");
+            bitptr += codewidths[cp] ;
+            havebits -= codewidths[cp] ;
             accum &= ((1LL << havebits) - 1);
             break;
           }
@@ -532,7 +530,7 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
   setval:
     mem[i] = v;
   }
-  if (bytecnt != bytectr)
+  if (bytecnt != (bitptr + 7) >> 3)
     error("! error when unpacking bytes");
 }
 void prunetable::writeblock(ull *mem, ull longcnt) {
@@ -552,7 +550,7 @@ void prunetable::readblock(ull *mem, ull explongcnt, istream *inf) {
   longcnt += inf->get() << 24;
   if (longcnt != explongcnt || bytecnt <= 0 || bytecnt > 32 * BLOCKSIZE)
     error("! I/O error while reading block");
-  uchar *buf = (uchar *)malloc(bytecnt);
+  uchar *buf = (uchar *)malloc(bytecnt + 8); // for unaligned reads
   inf->read((char *)buf, bytecnt);
   if (inf->fail())
     error("! I/O error while reading block");
