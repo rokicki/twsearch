@@ -9,6 +9,7 @@
 #else
 #define SIGNATURE UNCOMPSIGNATURE
 #endif
+const int UNPACKBITS = 12; // must be at least 8
 fillworker fillworkers[MAXTHREADS];
 struct ioqueue ioqueue;
 string inputbasename = "unknownpuzzle";
@@ -286,7 +287,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   fillcnt = 0;
   justread = 0;
   for (int i = 0; i < 7; i++)
-    tabs[i] = 0;
+    dtabs[i] = 0;
   if (!readpt(pd)) {
     if (quiet == 0)
       cout << "Initializing memory in " << duration() << endl << flush;
@@ -488,50 +489,82 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
   if (bytectr != bytecnt)
     error("! packing issue 3");
 }
-void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
+/*
+ *   Define this and use these longer versions if you suspect your
+ *   compiler might not "do the right thing" when doing the pointer
+ *   casts in the technically undefined behavior code below.  The first
+ *   one is written carefully to permit the compiler to recognize the
+ *   unaligned load pattern.
+ *
+ *   For now we go conservative and use the routines that *should* be
+ *   compiled to single instructions (or two instructions for the byteway)
+ *   but might not be, because on the platforms we care about they seem
+ *   to be handled okay.
+ */
+#define CAREFUL_UNDEFINED
+#ifdef CAREFUL_UNDEFINED
+static ull getull_swap_unaligned(unsigned char *p) {
+  return __builtin_bswap64((((ull)p[7]) << 56) + (((ull)p[6]) << 48) +
+     (((ull)p[5]) << 40) + (((ull)p[4]) << 32) + (((ull)p[3]) << 24) +
+     (((ull)p[2]) << 16) + (((ull)p[1]) << 8) + (((ull)p[0])));
+}
+static void setull_unaligned(unsigned char *p, ull v) {
+   *p = v;
+   p[1] = v>>8;
+   p[2] = v>>16;
+   p[3] = v>>24;
+   p[4] = v>>32;
+   p[5] = v>>40;
+   p[6] = v>>48;
+   p[7] = v>>56;
+}
+#else
+static ull getull_swap_unaligned(unsigned char *p) {
+   return __builtin_bswap64(*(ull *)p);
+}
+static void setull_unaligned(unsigned char *p, ull v) {
+   *(ull *)p = v;
+}
+#endif
+void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
   int havebits = 0;
   ull accum = 0;
-  ull bitptr = 0 ;
-  for (ull i = 0; i < longcnt; i++) {
-    ull v = 0;
-    for (int j = 0; j < 8; j++) {
-      int bitsneeded = 8;
-      int k = 0;
-      while (1) {
-        if (havebits < bitsneeded) {
-          accum = __builtin_bswap64(*(ull *)(block + (bitptr >> 3))) &
-                                    ((0xffffffffffffffffULL) >> (bitptr & 7)) ;
-          havebits = 64 - (bitptr & 7) ;
-        }
-        int cp = tabs[k][accum >> (havebits - bitsneeded)];
-        if (cp >= 0) {
-          if (cp >= 256) {
-            if (j != 0)
-              error("! unexpected high code");
-            v = cp - 256;
-            bitptr += codewidths[cp] ;
-            havebits -= codewidths[cp] ;
-            accum &= ((1LL << havebits) - 1);
-            goto setval;
-          } else {
-            v += ((ull)cp) << (8 * j);
-            bitptr += codewidths[cp] ;
-            havebits -= codewidths[cp] ;
-            accum &= ((1LL << havebits) - 1);
-            break;
-          }
-        }
-        bitsneeded += 8;
-        k++;
-        if (k >= 7)
-          error("! failure while decoding");
+  ull bitptr = 0;
+  unsigned char *memb = (unsigned char *)mem;
+  longcnt *= 8;
+  for (ll i = longcnt; i>0; ) {
+    int bitsneeded = UNPACKBITS;
+    int k = 0;
+    while (1) {
+      if (havebits < bitsneeded) {
+        accum = getull_swap_unaligned(block + (bitptr >> 3)) &
+                                  ((0xffffffffffffffffULL) >> (bitptr & 7));
+        havebits = 64 - (bitptr & 7);
       }
+      auto dc = &(dtabs[k][accum >> (havebits - bitsneeded)]);
+      if (dc->bytewidth > 0) {
+        bitptr += dc->bitwidth;
+        havebits -= dc->bitwidth;
+        accum &= ((1ULL << havebits) - 1);
+        if (i >= 8) {
+           setull_unaligned(memb, dc->d);
+           memb += dc->bytewidth;
+        } else {
+           auto t = dc->d;
+           for (int ii=0; ii<dc->bytewidth; ii++) {
+              *memb++ = t;
+              t >>= 8;
+           }
+        }
+        i -= dc->bytewidth;
+        break;
+      }
+      bitsneeded += UNPACKBITS;
+      if (bitsneeded > 56)
+         bitsneeded = 56;
+      k++;
     }
-  setval:
-    mem[i] = v;
   }
-  if (bytecnt != (bitptr + 7) >> 3)
-    error("! error when unpacking bytes");
 }
 void prunetable::writeblock(ull *mem, ull longcnt) {
   ull bytecnt = calcblocksize(mem, longcnt);
@@ -764,7 +797,7 @@ int prunetable::readpt(const puzdef &pd) {
   }
   ull temp = 0;
   r.read((char *)&temp, sizeof(temp));
-  // error("! I/O error in reading pruning table") ;
+  // error("! I/O error in reading pruning table");
   if (temp != size) {
     cout << "Pruning table size is different; recreating pruning table" << endl;
     r.close();
@@ -814,43 +847,79 @@ int prunetable::readpt(const puzdef &pd) {
     }
   at = 0; // restore the widthbases
   int theight[8];
+  for (int i = 0; i < 8; i++)
+    theight[i] = 0;
   for (int i = 63; i > 0; i--) {
     if (widthcounts[i]) {
       widthbases[i] = at >> (maxwidth - i);
       at += ((ull)widthcounts[i]) << (maxwidth - i);
     }
-    if ((i & 7) == 1) {
-      int t = maxwidth - i - 7;
+    if ((i % UNPACKBITS) == 1) {
+      int t = maxwidth - i - UNPACKBITS + 1;
       if (t < 0) {
-        theight[i >> 3] = (at << -t);
+        theight[i / UNPACKBITS] = (at << -t);
       } else {
-        theight[i >> 3] = (at + (1LL << t) - 1) >> t;
+        theight[i / UNPACKBITS] = (at + (1LL << t) - 1) >> t;
       }
     }
   }
-  for (int i = 0; i < 7; i++)
-    if (theight[i]) {
-      tabs[i] = (short *)malloc(theight[i] * sizeof(short));
-      memset(tabs[i], -1, theight[i] * sizeof(short));
-    }
+  for (int i = 0; i < 8; i++)
+    if (theight[i])
+      dtabs[i] = (struct decompinfo *)calloc(theight[i], sizeof(struct decompinfo));
   at = 0;
-  int twidth = (maxwidth + 7) & -8;
+  int twidth = (maxwidth + UNPACKBITS - 1) / UNPACKBITS * UNPACKBITS;
   for (int i = 63; i > 0; i--) {
     if (widthcounts[i]) {
       for (int cp = 0; cp < 272; cp++)
         if (codewidths[cp] == i) {
-          int k = (i - 1) >> 3;
-          int incsh = twidth - 8 * k - 8;
+          int k = (i - 1) / UNPACKBITS;
+          int incsh = twidth - UNPACKBITS * (k + 1);
           ull inc = 1LL << incsh;
           ull nextat = at + (1LL << (twidth - i));
           while (at < nextat) {
-            tabs[k][at >> incsh] = cp;
+            if (cp >= 256) {
+               dtabs[k][at >> incsh] = {(unsigned int)(cp - 256), (uchar)i, 8};
+            } else {
+               dtabs[k][at >> incsh] = {(unsigned int)cp, (uchar)i, 1};
+            }
             at += inc;
           }
           at = nextat;
         }
     }
   }
+  // now expand the arrays we created so we can unpack multiple bytes at once.
+  // the challenge here is we need the unmodified table as we modify it, but we don't
+  // want to allocate whole new copies.  we also want to be careful to limit the
+  // byte count to 4.
+  // <><>
+  decompinfo *expander = (decompinfo *)malloc(theight[0] * sizeof(struct decompinfo));
+  memcpy(expander, dtabs[0], theight[0] * sizeof(struct decompinfo));
+  for (int k=0; k<8; k++) {
+    // don't consider expanding anything that would push us past 56 needed bits
+    if (UNPACKBITS * (k + 1) > 56)
+      break;
+    if (theight[k])
+      for (int i=0; i<theight[k]; i++) {
+        auto dc = &(dtabs[k][i]);
+        if (dc->bitwidth && dc->bytewidth < 4) {
+          int xtra = (k + 1) * UNPACKBITS - dc->bitwidth;
+          int added = 0;
+          while (xtra > 0) {
+             int leftover = i & ((1 << xtra) - 1);
+             auto dc2 = &(expander[leftover << (UNPACKBITS - xtra)]);
+             if (dc2->bitwidth == 0 || dc2->bitwidth > xtra || dc->bytewidth + dc2->bytewidth > 4)
+                break;
+             xtra -= dc2->bitwidth;
+             added++;
+             dc->bytewidth += dc2->bytewidth;
+             dc->d += dc2->d << (8 * added);
+             dc->bitwidth += dc2->bitwidth;
+          }
+        }
+      }
+  }
+  free(expander);
   ll longcnt = (size + 31) >> 5;
   if (longcnt % BLOCKSIZE != 0)
     error("! when reading, expected multiple of BLOCKSIZE");

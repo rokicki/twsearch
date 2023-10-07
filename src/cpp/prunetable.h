@@ -76,12 +76,16 @@ struct ioqueue {
   ostream *outf;
 };
 extern struct ioqueue ioqueue;
+struct decompinfo {
+   unsigned int d;
+   uchar bitwidth, bytewidth;
+};
 struct prunetable {
   prunetable() {
     amem = 0;
     mem = 0;
     for (int i = 0; i < 7; i++)
-      tabs[i] = 0;
+      dtabs[i] = 0;
   }
   prunetable(const puzdef &pd, ull maxmem);
   prunetable(const prunetable &) = delete;
@@ -131,9 +135,9 @@ struct prunetable {
       mem = 0;
     }
     for (int i = 0; i < 7; i++)
-      if (tabs[i]) {
-        free(tabs[i]);
-        tabs[i] = 0;
+      if (dtabs[i]) {
+        free(dtabs[i]);
+        dtabs[i] = 0;
       }
   }
   // if someone set options that affect the hash, we add a suffix to the
@@ -159,7 +163,7 @@ struct prunetable {
   int wval, wbval;
   uchar codewidths[544];
   ull codevals[544];
-  short *tabs[7];
+  decompinfo *dtabs[7];
   char justread;
 };
 #define PRUNETABLE_H
