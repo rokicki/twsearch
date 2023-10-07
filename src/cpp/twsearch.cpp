@@ -29,6 +29,7 @@
 #include <iostream>
 #include <math.h>
 #include <sstream>
+#include <thread>
 #include <vector>
 using namespace std;
 int checkbeforesolve;
@@ -136,7 +137,7 @@ void reseteverything() {
   didprepass = 0;
   scramblemoves = 1;
 #ifdef USE_PTHREADS
-  numthreads = 4;
+  numthreads = min((unsigned int)MAXTHREADS, thread::hardware_concurrency());
 #else
   numthreads = 1;
 #endif
