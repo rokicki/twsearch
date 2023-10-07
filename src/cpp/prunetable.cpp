@@ -489,43 +489,14 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
   if (bytectr != bytecnt)
     error("! packing issue 3");
 }
-/*
- *   Define this and use these longer versions if you suspect your
- *   compiler might not "do the right thing" when doing the pointer
- *   casts in the technically undefined behavior code below.  The first
- *   one is written carefully to permit the compiler to recognize the
- *   unaligned load pattern.
- *
- *   For now we go conservative and use the routines that *should* be
- *   compiled to single instructions (or two instructions for the byteway)
- *   but might not be, because on the platforms we care about they seem
- *   to be handled okay.
- */
-#define CAREFUL_UNDEFINED
-#ifdef CAREFUL_UNDEFINED
 static ull getull_swap_unaligned(unsigned char *p) {
-  return __builtin_bswap64((((ull)p[7]) << 56) + (((ull)p[6]) << 48) +
-     (((ull)p[5]) << 40) + (((ull)p[4]) << 32) + (((ull)p[3]) << 24) +
-     (((ull)p[2]) << 16) + (((ull)p[1]) << 8) + (((ull)p[0])));
+   ull v ;
+   memcpy(&v, p, sizeof(v)) ;
+   return __builtin_bswap64(v) ;
 }
 static void setull_unaligned(unsigned char *p, ull v) {
-   *p = v;
-   p[1] = v>>8;
-   p[2] = v>>16;
-   p[3] = v>>24;
-   p[4] = v>>32;
-   p[5] = v>>40;
-   p[6] = v>>48;
-   p[7] = v>>56;
+   memcpy(p, &v, sizeof(v)) ;
 }
-#else
-static ull getull_swap_unaligned(unsigned char *p) {
-   return __builtin_bswap64(*(ull *)p);
-}
-static void setull_unaligned(unsigned char *p, ull v) {
-   *(ull *)p = v;
-}
-#endif
 void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
   int havebits = 0;
   ull accum = 0;
