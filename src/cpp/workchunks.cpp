@@ -52,7 +52,7 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
             slowmodm2(pd, p2, p3);
             int h = fasthash(pd.totsize, p3) % hashmod;
             int isnew = 1;
-            for (int i=hashfront[h]; i>=0; i=hashprev[i])
+            for (int i = hashfront[h]; i >= 0; i = hashprev[i])
               if (pd.comparepos(p3, seen[i]) == 0) {
                 isnew = 0;
                 break;

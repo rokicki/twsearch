@@ -490,12 +490,12 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
     error("! packing issue 3");
 }
 static ull getull_swap_unaligned(unsigned char *p) {
-   ull v ;
-   memcpy(&v, p, sizeof(v)) ;
-   return __builtin_bswap64(v) ;
+  ull v;
+  memcpy(&v, p, sizeof(v));
+  return __builtin_bswap64(v);
 }
 static void setull_unaligned(unsigned char *p, ull v) {
-   memcpy(p, &v, sizeof(v)) ;
+  memcpy(p, &v, sizeof(v));
 }
 void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
   int havebits = 0;
@@ -503,13 +503,13 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
   ull bitptr = 0;
   unsigned char *memb = (unsigned char *)mem;
   longcnt *= 8;
-  for (ll i = longcnt; i>0; ) {
+  for (ll i = longcnt; i > 0;) {
     int bitsneeded = UNPACKBITS;
     int k = 0;
     while (1) {
       if (havebits < bitsneeded) {
         accum = getull_swap_unaligned(block + (bitptr >> 3)) &
-                                  ((0xffffffffffffffffULL) >> (bitptr & 7));
+                ((0xffffffffffffffffULL) >> (bitptr & 7));
         havebits = 64 - (bitptr & 7);
       }
       auto dc = &(dtabs[k][accum >> (havebits - bitsneeded)]);
@@ -518,21 +518,21 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
         havebits -= dc->bitwidth;
         accum &= ((1ULL << havebits) - 1);
         if (i >= 8) {
-           setull_unaligned(memb, dc->d);
-           memb += dc->bytewidth;
+          setull_unaligned(memb, dc->d);
+          memb += dc->bytewidth;
         } else {
-           auto t = dc->d;
-           for (int ii=0; ii<dc->bytewidth; ii++) {
-              *memb++ = t;
-              t >>= 8;
-           }
+          auto t = dc->d;
+          for (int ii = 0; ii < dc->bytewidth; ii++) {
+            *memb++ = t;
+            t >>= 8;
+          }
         }
         i -= dc->bytewidth;
         break;
       }
       bitsneeded += UNPACKBITS;
       if (bitsneeded > 56)
-         bitsneeded = 56;
+        bitsneeded = 56;
       k++;
     }
   }
@@ -836,7 +836,8 @@ int prunetable::readpt(const puzdef &pd) {
   }
   for (int i = 0; i < 8; i++)
     if (theight[i])
-      dtabs[i] = (struct decompinfo *)calloc(theight[i], sizeof(struct decompinfo));
+      dtabs[i] =
+          (struct decompinfo *)calloc(theight[i], sizeof(struct decompinfo));
   at = 0;
   int twidth = (maxwidth + UNPACKBITS - 1) / UNPACKBITS * UNPACKBITS;
   for (int i = 63; i > 0; i--) {
@@ -849,9 +850,9 @@ int prunetable::readpt(const puzdef &pd) {
           ull nextat = at + (1LL << (twidth - i));
           while (at < nextat) {
             if (cp >= 256) {
-               dtabs[k][at >> incsh] = {(unsigned int)(cp - 256), (uchar)i, 8};
+              dtabs[k][at >> incsh] = {(unsigned int)(cp - 256), (uchar)i, 8};
             } else {
-               dtabs[k][at >> incsh] = {(unsigned int)cp, (uchar)i, 1};
+              dtabs[k][at >> incsh] = {(unsigned int)cp, (uchar)i, 1};
             }
             at += inc;
           }
@@ -860,32 +861,34 @@ int prunetable::readpt(const puzdef &pd) {
     }
   }
   // now expand the arrays we created so we can unpack multiple bytes at once.
-  // the challenge here is we need the unmodified table as we modify it, but we don't
-  // want to allocate whole new copies.  we also want to be careful to limit the
-  // byte count to 4.
+  // the challenge here is we need the unmodified table as we modify it, but we
+  // don't want to allocate whole new copies.  we also want to be careful to
+  // limit the byte count to 4.
   // <><>
-  decompinfo *expander = (decompinfo *)malloc(theight[0] * sizeof(struct decompinfo));
+  decompinfo *expander =
+      (decompinfo *)malloc(theight[0] * sizeof(struct decompinfo));
   memcpy(expander, dtabs[0], theight[0] * sizeof(struct decompinfo));
-  for (int k=0; k<8; k++) {
+  for (int k = 0; k < 8; k++) {
     // don't consider expanding anything that would push us past 56 needed bits
     if (UNPACKBITS * (k + 1) > 56)
       break;
     if (theight[k])
-      for (int i=0; i<theight[k]; i++) {
+      for (int i = 0; i < theight[k]; i++) {
         auto dc = &(dtabs[k][i]);
         if (dc->bitwidth && dc->bytewidth < 4) {
           int xtra = (k + 1) * UNPACKBITS - dc->bitwidth;
           int added = 0;
           while (xtra > 0) {
-             int leftover = i & ((1 << xtra) - 1);
-             auto dc2 = &(expander[leftover << (UNPACKBITS - xtra)]);
-             if (dc2->bitwidth == 0 || dc2->bitwidth > xtra || dc->bytewidth + dc2->bytewidth > 4)
-                break;
-             xtra -= dc2->bitwidth;
-             added++;
-             dc->bytewidth += dc2->bytewidth;
-             dc->d += dc2->d << (8 * added);
-             dc->bitwidth += dc2->bitwidth;
+            int leftover = i & ((1 << xtra) - 1);
+            auto dc2 = &(expander[leftover << (UNPACKBITS - xtra)]);
+            if (dc2->bitwidth == 0 || dc2->bitwidth > xtra ||
+                dc->bytewidth + dc2->bytewidth > 4)
+              break;
+            xtra -= dc2->bitwidth;
+            added++;
+            dc->bytewidth += dc2->bytewidth;
+            dc->d += dc2->d << (8 * added);
+            dc->bitwidth += dc2->bitwidth;
           }
         }
       }

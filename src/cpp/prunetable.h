@@ -77,8 +77,8 @@ struct ioqueue {
 };
 extern struct ioqueue ioqueue;
 struct decompinfo {
-   unsigned int d;
-   uchar bitwidth, bytewidth;
+  unsigned int d;
+  uchar bitwidth, bytewidth;
 };
 struct prunetable {
   prunetable() {
