@@ -228,3 +228,7 @@ build-rust-wasm:
 	cat dist/wasm/package.json | jq ".type = \"module\"" > /tmp/twsearch.package.json.temp
 	mv /tmp/twsearch.package.json.temp dist/wasm/package.json
 	bun script/node-esm-compat.ts
+
+.PHONY: test-rust-wasm
+test-rust-wasm:
+	node "script/test-dist-wasm.js"
