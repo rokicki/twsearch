@@ -43,7 +43,7 @@ benchmark-rust:
 
 .PHONY: clean
 clean:
-	rm -rf ./.temp ./build ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
+	rm -rf ./.temp ./build ./dist ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
 
 .PHONY: cpp-clean
 cpp-clean:
@@ -219,3 +219,16 @@ build-rust:
 .PHONY: lint-rust
 lint-rust:
 	cargo clippy
+
+# Rust WASM
+
+.PHONY: build-rust-wasm
+build-rust-wasm:
+	wasm-pack build --release --target web --out-dir "../../dist/wasm" src/rs
+	cat dist/wasm/package.json | jq ".type = \"module\"" > /tmp/twsearch.package.json.temp
+	mv /tmp/twsearch.package.json.temp dist/wasm/package.json
+	bun script/node-esm-compat.ts
+
+.PHONY: test-rust-wasm
+test-rust-wasm:
+	node "script/test-dist-wasm.js"
