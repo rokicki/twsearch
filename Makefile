@@ -224,7 +224,7 @@ lint-rust:
 
 .PHONY: build-rust-wasm
 build-rust-wasm:
-	wasm-pack build --debug --target web --out-dir "../../dist/wasm" src/rs
+	wasm-pack build --release --target web --out-dir "../../dist/wasm" src/rs
 	cat dist/wasm/package.json | jq ".type = \"module\"" > /tmp/twsearch.package.json.temp
 	mv /tmp/twsearch.package.json.temp dist/wasm/package.json
 	bun script/node-esm-compat.ts
