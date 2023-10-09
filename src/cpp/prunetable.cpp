@@ -306,8 +306,9 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
 void prunetable::filltable(const puzdef &pd, int d) {
   popped = 0;
   wbval = min(d, 14);
+  ll ofillcnt = fillcnt;
   if (quiet == 0)
-    cout << "Filling table at depth " << d << " with val " << wval << flush;
+    cout << "Filling depth " << d << " val " << wval << flush;
   makeworkchunks(pd, d, pd.solved);
   int wthreads = setupthreads(pd, *this);
   for (int t = 0; t < wthreads; t++)
@@ -320,10 +321,12 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #else
   fillthreadworker((void *)&workerparams[0]);
 #endif
-  if (quiet == 0)
-    cout << " saw " << popped << " (" << fillcnt << ") in " << duration()
-         << endl
-         << flush;
+  if (quiet == 0) {
+    double dur = duration();
+    double rate = (fillcnt - ofillcnt) / dur / 1e6 ;
+    cout << " saw " << popped << " (" << (fillcnt - ofillcnt)
+         << ") in " << dur << " rate " << rate << endl << flush;
+  }
   ptotpop = totpop;
   totpop += popped;
   justread = 0;

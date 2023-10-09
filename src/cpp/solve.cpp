@@ -209,6 +209,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   int hid = 0;
   randomized.clear();
   for (int d = initd; d <= maxdepth; d++) {
+    ll olookups = pt.lookupcnt;
     if (randomstart) {
       while ((int)randomized.size() <= d) {
         randomized.push_back({});
@@ -250,16 +251,18 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       duration();
       double actualtime = start - starttime;
       cout << "Found " << solutionsfound << " solution"
-           << (solutionsfound != 1 ? "s" : "") << " at maximum depth " << d
+           << (solutionsfound != 1 ? "s" : "") << " max depth " << d
            << " lookups " << totlookups << " in " << actualtime << " rate "
-           << (totlookups / actualtime) << endl
+           << (totlookups / actualtime / 1e6) << endl
            << flush;
       return d;
     }
     double dur = duration();
+    ll lookups = pt.lookupcnt - olookups;
+    double rate = lookups / dur / 1e6;
     if (verbose) {
       if (verbose > 1 || dur > 1)
-        cout << "Depth " << d << " finished in " << dur << endl << flush;
+        cout << "Depth " << d << " in " << dur << " lookups " << lookups << " rate " << rate << endl << flush;
     }
     if (flushback)
       if (flushback(d))
