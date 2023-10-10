@@ -98,10 +98,8 @@ int solveworker::innerfetch(const puzdef &pd, prunetable &pt, int &togo,
   int v = pt.lookuphindexed(h);
   int m, mi;
   ull mask, skipbase;
-  if (v > togo + 1) {
-    v = -1;
-  } else if (v > togo) {
-    v = 0;
+  if (v > togo) {
+    v = togo - v + 1 ;
   } else if (v == 0 && togo == 1 && didprepass &&
              pd.comparepos(posns[sp], pd.solved) == 0) {
     v = 0;
@@ -131,10 +129,14 @@ upstack:
   solvestates.pop_back();
   if (v == 1)
     goto upstack;
-  if (!quarter && v == -1) {
-    m = randomstart ? randomized[togo][mi] : mi;
-    if (pd.moves[m].base < 64)
-      skipbase |= 1LL << pd.moves[m].base;
+  if (v < 0) {
+    if (!quarter && v == -1) {
+       m = randomstart ? randomized[togo][mi] : mi;
+       if (pd.moves[m].base < 64)
+         skipbase |= 1LL << pd.moves[m].base;
+    } else {
+       skipbase = -1 ; // skip *all* remaining moves!
+    }
   }
 downstack:
   mi++;
