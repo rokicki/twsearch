@@ -55,6 +55,7 @@ void timingtest(puzdef &pd) {
          << flush;
   }
   prunetable pt(pd, maxmem);
+  duration();
   for (int tt = 0; tt < 2; tt++) {
     cout << "Timing moves plus lookup." << endl << flush;
     duration();
@@ -74,7 +75,7 @@ void timingtest(puzdef &pd) {
          << " sum " << sum << endl
          << flush;
   }
-  const int MAXLOOK = 128;
+  const int MAXLOOK = 8;
   ull tgo[MAXLOOK];
   for (int look = 2; look <= MAXLOOK; look *= 2) {
     int mask = look - 1;
