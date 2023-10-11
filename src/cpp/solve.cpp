@@ -99,7 +99,7 @@ int solveworker::innerfetch(const puzdef &pd, prunetable &pt, int &togo,
   int m, mi;
   ull mask, skipbase;
   if (v > togo) {
-    v = togo - v + 1 ;
+    v = togo - v + 1;
   } else if (v == 0 && togo == 1 && didprepass &&
              pd.comparepos(posns[sp], pd.solved) == 0) {
     v = 0;
@@ -131,11 +131,11 @@ upstack:
     goto upstack;
   if (v < 0) {
     if (!quarter && v == -1) {
-       m = randomstart ? randomized[togo][mi] : mi;
-       if (pd.moves[m].base < 64)
-         skipbase |= 1LL << pd.moves[m].base;
+      m = randomstart ? randomized[togo][mi] : mi;
+      if (pd.moves[m].base < 64)
+        skipbase |= 1LL << pd.moves[m].base;
     } else {
-       skipbase = -1 ; // skip *all* remaining moves!
+      skipbase = -1; // skip *all* remaining moves!
     }
   }
 downstack:
@@ -264,7 +264,9 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     double rate = lookups / dur / 1e6;
     if (verbose) {
       if (verbose > 1 || dur > 1)
-        cout << "Depth " << d << " in " << dur << " lookups " << lookups << " rate " << rate << endl << flush;
+        cout << "Depth " << d << " in " << dur << " lookups " << lookups
+             << " rate " << rate << endl
+             << flush;
     }
     if (flushback)
       if (flushback(d))

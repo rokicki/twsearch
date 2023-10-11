@@ -323,9 +323,10 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #endif
   if (quiet == 0) {
     double dur = duration();
-    double rate = (fillcnt - ofillcnt) / dur / 1e6 ;
-    cout << " saw " << popped << " (" << (fillcnt - ofillcnt)
-         << ") in " << dur << " rate " << rate << endl << flush;
+    double rate = (fillcnt - ofillcnt) / dur / 1e6;
+    cout << " saw " << popped << " (" << (fillcnt - ofillcnt) << ") in " << dur
+         << " rate " << rate << endl
+         << flush;
   }
   ptotpop = totpop;
   totpop += popped;
