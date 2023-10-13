@@ -20,26 +20,35 @@ struct solvestate {
   int st, mi;
   ull mask, skipbase;
 };
-struct solveworker {
+const int MAXMICROTHREADING = 16 ;
+extern int requesteduthreading ;
+extern int workinguthreading ;
+struct microthread {
   vector<allocsetval> posns;
   vector<solvestate> solvestates;
   vector<int> movehist;
-  long long lookups, checktarget, checkincrement;
-  int d, id;
   setval *looktmp;
-  char padding[256]; // kill false sharing
-  void init(const puzdef &pd, int d_, int id_, const setval &p);
-  int solveiter(const puzdef &pd, prunetable &pt, int togo, int sp, int st);
-  ull innersetup(prunetable &pt, int sp);
-  int innerfetch(const puzdef &pd, prunetable &pt, int &togo, int &sp, int &st,
-                 ull h);
-  int possibsolution(const puzdef &pd, int sp);
+  int sp, st, d, togo, finished, tid ;
+  ull h ;
+  void init(const puzdef &pd, int d_, int tid_, const setval p);
+  void innersetup(prunetable &pt);
+  int innerfetch(const puzdef &pd, prunetable &pt);
+  int possibsolution(const puzdef &pd);
   int solvestart(const puzdef &pd, prunetable &pt, int w);
-  void dowork(const puzdef &pd, prunetable &pt);
+  int getwork(const puzdef &pd, prunetable &pt);
+};
+struct solveworker {
+  long long lookups, checktarget, checkincrement;
+  setval p;
+  int d, numuthr, rover, tid ;
+  struct microthread uthr[MAXMICROTHREADING] ;
+  char padding[256]; // kill false sharing
+  void init(int d_, int tid_, const setval p) ;
+  int solveiter(const puzdef &pd, prunetable &pt, const setval p) ;
 };
 extern solveworker solveworkers[MAXTHREADS];
 extern int maxdepth, didprepass;
-void setsolvecallback(int (*)(setval &, const vector<int> &, int, int),
+void setsolvecallback(int (*)(setval, const vector<int> &, int, int),
                       int (*)(int));
 int solve(const puzdef &pd, prunetable &pt, const setval p,
           generatingset *gs = 0);

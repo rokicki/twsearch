@@ -141,6 +141,7 @@ void reseteverything() {
 #else
   numthreads = 1;
 #endif
+  requesteduthreading = 4 ;
   verbose = 1;
   curline.clear();
   start = walltime();
@@ -232,6 +233,10 @@ void processargs(int &argc, argvtype &argv) {
         doorderedgs = 1;
       } else if (strcmp(argv[0], "--showsymmetry") == 0) {
         dosyms = 1;
+      } else if (strcmp(argv[0], "--microthreads") == 0) {
+        requesteduthreading = atol(argv[1]);
+        argc--;
+        argv++;
       } else if (strcmp(argv[0], "--nowrite") == 0) {
         writeprunetables = 0; // never
       } else if (strcmp(argv[0], "--writeprunetables") == 0) {

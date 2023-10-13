@@ -10,11 +10,13 @@ int optmindepth;
 int randomstart;
 string lastsolution;
 int didprepass;
+int requesteduthreading = 4 ;
+int workinguthreading = 0 ;
 solveworker solveworkers[MAXTHREADS];
-int (*callback)(setval &pos, const vector<int> &moves, int d, int id);
+int (*callback)(setval pos, const vector<int> &moves, int d, int id);
 int (*flushback)(int d);
 static vector<vector<int>> randomized;
-void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
+void setsolvecallback(int (*f)(setval pos, const vector<int> &moves, int d,
                                int id),
                       int (*g)(int)) {
   callback = f;
@@ -22,10 +24,10 @@ void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
 }
 void *threadworker(void *o) {
   workerparam *wp = (workerparam *)o;
-  solveworkers[wp->tid].dowork(wp->pd, wp->pt);
+  solveworkers[wp->tid].solveiter(wp->pd, wp->pt, solveworkers[wp->tid].p) ;
   return 0;
 }
-void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
+void microthread::init(const puzdef &pd, int d_, int tid_, const setval p_) {
   if (looktmp) {
     delete[] looktmp->dat;
     delete looktmp;
@@ -37,16 +39,22 @@ void solveworker::init(const puzdef &pd, int d_, int id_, const setval &p) {
     posns.push_back(allocsetval(pd, pd.solved));
     movehist.push_back(-1);
   }
-  pd.assignpos(posns[0], p);
+  pd.assignpos(posns[0], p_);
+  d = d_;
+  tid = tid_;
+}
+void solveworker::init(int d_, int tid_, const setval p_) {
   lookups = 0;
   checkincrement = 10000 + myrand(10000);
   checktarget = lookups + checkincrement;
   d = d_;
-  id = id_;
+  tid = tid_;
+  p = p_;
+  rover = 0;
 }
-int solveworker::possibsolution(const puzdef &pd, int sp) {
+int microthread::possibsolution(const puzdef &pd) {
   if (callback) {
-    return callback(posns[sp], movehist, d, id);
+    return callback(posns[sp], movehist, d, tid);
   }
   if (pd.comparepos(posns[sp], pd.solved) == 0) {
     int r = 1;
@@ -69,11 +77,49 @@ int solveworker::possibsolution(const puzdef &pd, int sp) {
   } else
     return 0;
 }
-int solveworker::solveiter(const puzdef &pd, prunetable &pt, int togo, int sp,
-                           int st) {
-  ull h = innersetup(pt, sp);
+int microthread::getwork(const puzdef &pd, prunetable &pt) {
   while (1) {
-    int v = innerfetch(pd, pt, togo, sp, st, h);
+    int w = -1;
+    int finished = 0;
+    get_global_lock();
+    finished = (solutionsfound >= solutionsneeded);
+    if (workat < (int)workchunks.size())
+      w = workat++;
+    release_global_lock();
+    if (finished || w < 0) {
+      this->finished = 1 ;
+      return 0;
+    }
+    if (solvestart(pd, pt, w)) 
+      return 1;
+  }
+}
+int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
+  int active = 0;
+  for (int uid=0; uid<workinguthreading; uid++) {
+    uthr[uid].init(pd, d, tid, p) ;
+    uthr[uid].finished = 0;
+    if (uthr[uid].getwork(pd, pt)) {
+      active++;
+      lookups++ ;
+    }
+  }
+  while (active) {
+    int uid = rover++;
+    if (rover >= workinguthreading)
+      rover = 0;
+    if (uthr[uid].finished)
+      continue ;
+    int v = uthr[uid].innerfetch(pd, pt) ;
+    if (v == 0) {
+      if (uthr[uid].getwork(pd, pt)) {
+        lookups++;
+        v = 3 ;
+      } else {
+        active--;
+        continue; // this one is done; go to next one
+      }
+    }
     if (v != 3)
       return v;
     if (lookups > checktarget) {
@@ -86,15 +132,15 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, int togo, int sp,
       if (finished)
         return 0;
     }
-    h = innersetup(pt, sp);
+    uthr[uid].innersetup(pt);
+    lookups++;
   }
+  return 0;
 }
-ull solveworker::innersetup(prunetable &pt, int sp) {
-  lookups++;
-  return pt.prefetchindexed(pt.gethashforlookup(posns[sp], looktmp));
+void microthread::innersetup(prunetable &pt) {
+  h = pt.prefetchindexed(pt.gethashforlookup(posns[sp], looktmp));
 }
-int solveworker::innerfetch(const puzdef &pd, prunetable &pt, int &togo,
-                            int &sp, int &st, ull h) {
+int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
   int v = pt.lookuphindexed(h);
   int m, mi;
   ull mask, skipbase;
@@ -107,7 +153,7 @@ int solveworker::innerfetch(const puzdef &pd, prunetable &pt, int &togo,
              pd.comparepos(posns[sp], pd.solved) == 0) {
     v = 0;
   } else if (togo == 0) {
-    v = possibsolution(pd, sp);
+    v = possibsolution(pd);
   } else {
     mask = canonmask[st];
     skipbase = 0;
@@ -160,17 +206,18 @@ downstack:
   st = canonnext[st][mv.cs];
   return 3;
 }
-int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
+int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
   ull initmoves = workchunks[w];
   int nmoves = pd.moves.size();
-  int sp = 0;
-  int st = 0;
-  int togo = d;
+  sp = 0;
+  st = 0;
+  togo = d;
   while (initmoves > 1) {
     int mv = initmoves % nmoves;
     pd.mul(posns[sp], pd.moves[mv].pos, posns[sp + 1]);
-    if (!pd.legalstate(posns[sp + 1]))
-      return -1;
+    if (!pd.legalstate(posns[sp + 1])) {
+      return 0;
+    }
     movehist[sp] = mv;
     st = canonnext[st][pd.moves[mv].cs];
     sp++;
@@ -178,22 +225,8 @@ int solveworker::solvestart(const puzdef &pd, prunetable &pt, int w) {
     initmoves /= nmoves;
   }
   solvestates.clear();
-  return solveiter(pd, pt, togo, sp, st);
-}
-void solveworker::dowork(const puzdef &pd, prunetable &pt) {
-  while (1) {
-    int w = -1;
-    int finished = 0;
-    get_global_lock();
-    finished = (solutionsfound >= solutionsneeded);
-    if (workat < (int)workchunks.size())
-      w = workat++;
-    release_global_lock();
-    if (finished || w < 0)
-      return;
-    if (solvestart(pd, pt, w) == 1)
-      return;
-  }
+  innersetup(pt) ;
+  return 1;
 }
 int maxdepth = 1000000000;
 int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
@@ -230,12 +263,14 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       continue;
     hid = d;
     if (d - initd > 3)
-      makeworkchunks(pd, d, p);
+      makeworkchunks(pd, d, p, requesteduthreading);
     else
-      makeworkchunks(pd, 0, p);
+      makeworkchunks(pd, 0, p, requesteduthreading);
     int wthreads = setupthreads(pd, pt);
+    workinguthreading = min(requesteduthreading,
+                            (int)(workchunks.size()+numthreads-1)/numthreads) ;
     for (int t = 0; t < wthreads; t++)
-      solveworkers[t].init(pd, d, t, p);
+      solveworkers[t].init(d, t, p);
 #ifdef USE_PTHREADS
     for (int i = 1; i < wthreads; i++)
       spawn_thread(i, threadworker, &(workerparams[i]));

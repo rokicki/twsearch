@@ -89,7 +89,7 @@ void setindex(ull ind, setval pos) {
     ind /= fact;
   }
 }
-int cosetcallback(setval &pos, const vector<int> &moves, int d, int id) {
+int cosetcallback(setval pos, const vector<int> &moves, int d, int id) {
   puzdef &pd = *cosetpd;
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     setdef &sd = pd.setdefs[i];

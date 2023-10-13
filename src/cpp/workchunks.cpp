@@ -9,7 +9,7 @@ vector<int> workstates;
 int workat;
 static vector<allocsetval> seen;
 static int lastsize;
-void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
+void makeworkchunks(const puzdef &pd, int d, setval symmreduce, int microthreadcount) {
   workchunks.clear();
   workstates.clear();
   workchunks.push_back(1);
@@ -23,11 +23,12 @@ void makeworkchunks(const puzdef &pd, int d, setval symmreduce) {
     int nmoves = pd.moves.size();
     int chunkmoves = 0;
     ull mul = 1;
-    ll hashmod = 100 * numthreads;
+    int mythreads = microthreadcount * numthreads ;
+    ll hashmod = 100 * mythreads;
     vector<int> hashfront(hashmod, -1);
     vector<int> hashprev;
     int seensize = 0;
-    while (chunkmoves + 3 < d && (int)workchunks.size() < 40 * numthreads) {
+    while (chunkmoves + 3 < d && (int)workchunks.size() < 40 * mythreads) {
       vector<ull> wc2;
       vector<int> ws2;
       if (pd.rotgroup.size() > 1) {
