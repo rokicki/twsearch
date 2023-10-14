@@ -141,7 +141,7 @@ void reseteverything() {
 #else
   numthreads = 1;
 #endif
-  requesteduthreading = 4 ;
+  requesteduthreading = 4;
   verbose = 1;
   curline.clear();
   start = walltime();

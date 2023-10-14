@@ -20,16 +20,16 @@ struct solvestate {
   int st, mi;
   ull mask, skipbase;
 };
-const int MAXMICROTHREADING = 16 ;
-extern int requesteduthreading ;
-extern int workinguthreading ;
+const int MAXMICROTHREADING = 16;
+extern int requesteduthreading;
+extern int workinguthreading;
 struct microthread {
   vector<allocsetval> posns;
   vector<solvestate> solvestates;
   vector<int> movehist;
   setval *looktmp;
-  int sp, st, d, togo, finished, tid ;
-  ull h ;
+  int sp, st, d, togo, finished, tid;
+  ull h;
   void init(const puzdef &pd, int d_, int tid_, const setval p);
   void innersetup(prunetable &pt);
   int innerfetch(const puzdef &pd, prunetable &pt);
@@ -40,11 +40,11 @@ struct microthread {
 struct solveworker {
   long long lookups, checktarget, checkincrement;
   setval p;
-  int d, numuthr, rover, tid ;
-  struct microthread uthr[MAXMICROTHREADING] ;
+  int d, numuthr, rover, tid;
+  struct microthread uthr[MAXMICROTHREADING];
   char padding[256]; // kill false sharing
-  void init(int d_, int tid_, const setval p) ;
-  int solveiter(const puzdef &pd, prunetable &pt, const setval p) ;
+  void init(int d_, int tid_, const setval p);
+  int solveiter(const puzdef &pd, prunetable &pt, const setval p);
 };
 extern solveworker solveworkers[MAXTHREADS];
 extern int maxdepth, didprepass;
