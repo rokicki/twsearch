@@ -39,7 +39,7 @@ test-rust:
 
 .PHONY: benchmark-rust
 benchmark-rust:
-	cargo run --quiet --release --example benchmark
+	cargo run --release -- benchmark samples/json/benchmark/benchmark-3x3x3.def.json
 
 .PHONY: clean
 clean:
