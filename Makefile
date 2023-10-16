@@ -13,6 +13,7 @@ test: \
 	test-cpp-cli \
 	test-twsearch-cpp-wrapper-cli \
 	test-rust \
+	test-rust-ffi \
 	benchmark-rust
 
 .PHONY: test-warning
@@ -237,3 +238,14 @@ test-rust-wasm:
 .PHONY: publish
 publish:
 	cargo publish --package twsearch
+
+# Rust FFI
+
+.PHONY: build-rust-ffi
+build-rust-ffi:
+	cargo build --release --package twsearch-ffi
+
+.PHONY: test-rust-ffi # TODO: non-PHONY?
+test-rust-ffi: build-rust-ffi
+	cargo test --package twsearch-ffi;
+	bun run "src/rs-ffi/test/js_test.ts"
