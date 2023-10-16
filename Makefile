@@ -69,6 +69,9 @@ format: format-cpp format-js
 format-cpp:
 	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format -i
 
+.PHONY: publish
+publish: publish-rust
+
 TWSEARCH_VERSION=v0.0.0
 
 # MAKEFLAGS += -j
@@ -222,6 +225,13 @@ build-rust:
 lint-rust:
 	cargo clippy
 
+.PHONY: publish-rust
+publish-rust: publish-rust-main publish-rust-ffi
+
+.PHONY: publish-rust-main
+publish-rust-main:
+	cargo publish --package twsearch
+
 # Rust WASM
 
 .PHONY: build-rust-wasm
@@ -235,10 +245,6 @@ build-rust-wasm:
 test-rust-wasm:
 	node "script/test-dist-wasm.js"
 
-.PHONY: publish
-publish:
-	cargo publish --package twsearch
-
 # Rust FFI
 
 .PHONY: build-rust-ffi
@@ -249,3 +255,7 @@ build-rust-ffi:
 test-rust-ffi: build-rust-ffi
 	cargo test --package twsearch-ffi;
 	bun run "src/rs-ffi/test/js_test.ts"
+
+.PHONY: publish-rust-ffi
+publish-rust-ffi:
+	cargo publish --package twsearch-ffi
