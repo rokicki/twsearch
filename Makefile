@@ -36,6 +36,7 @@ test-twsearch-cpp-wrapper-cli:
 .PHONY: test-rust
 test-rust:
 	cargo test --quiet
+	cargo run --release --example random_scramble_for_event
 
 .PHONY: benchmark-rust
 benchmark-rust:
