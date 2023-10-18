@@ -256,6 +256,9 @@ test-rust-ffi: build-rust-ffi
 	cargo test --package twsearch-ffi;
 	bun run "src/rs-ffi/test/js_test.ts"
 
+	gcc ./target/release/libtwsearch_ffi.dylib ./src/rs-ffi/test/c_test.c -o ./src/rs-ffi/test/c_test.bin
+	./src/rs-ffi/test/c_test.bin
+
 .PHONY: publish-rust-ffi
 publish-rust-ffi:
 	cargo publish --package twsearch-ffi
