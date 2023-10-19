@@ -35,8 +35,11 @@ test-twsearch-cpp-wrapper-cli:
 # Rust testing
 
 .PHONY: test-rust
-test-rust:
-	cargo test --quiet
+test-rust: test-rust-lib test-rust-wasm test-rust-ffi
+
+.PHONY: test-rust-lib
+test-rust-lib:
+	cargo test
 	cargo run --release --example random_scramble_for_event
 
 .PHONY: benchmark-rust
@@ -236,13 +239,13 @@ publish-rust-main:
 
 .PHONY: build-rust-wasm
 build-rust-wasm:
-	wasm-pack build --release --target web --out-dir "../../dist/wasm" src/rs
+	wasm-pack build --release --target web --out-dir "../../dist/wasm" src/rs-wasm
 	cat dist/wasm/package.json | jq ".type = \"module\"" > /tmp/twsearch.package.json.temp
 	mv /tmp/twsearch.package.json.temp dist/wasm/package.json
 	bun script/node-esm-compat.ts
 
 .PHONY: test-rust-wasm
-test-rust-wasm:
+test-rust-wasm: build-rust-wasm
 	node "script/test-dist-wasm.js"
 
 # Rust FFI
