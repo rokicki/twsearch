@@ -8,6 +8,7 @@
 extern vector<ull> workchunks;
 extern vector<int> workstates;
 extern int workat;
-void makeworkchunks(const puzdef &pd, int d, const setval symmreduce);
+void makeworkchunks(const puzdef &pd, int d, const setval symmreduce,
+                    int microthreadcounts = 1);
 #define WORKCHUNKS_H
 #endif
