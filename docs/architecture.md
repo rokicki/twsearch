@@ -379,11 +379,91 @@ reduction, which can increase the speed and memory effectiveness
 of the algorithms.  Twsearch will calculate the full rotation group
 from the given rotations and perform symmetry reduction on that
 group.  Twsearch does not yet perform mirror symmetry reduction or
-inverse "symmetry" reduction (but it may in the fugure).  If a move
+inverse "symmetry" reduction (but it may in the future).  If a move
 subset is specified, it will only use the symmetries that preserve
 that move subset; for instance, on the 3x3x3, if you specify the
 move subset U,R,F, then only the three-element symmetry group that
 preserves the URF corner will be used.
+
+Symmetry reduction is used for generating and using pruning tables.
+For instance, on the 3x3x3 cube, instead of having separate entries
+in the pruning table for all 18 positions at depth 1, it uses just
+3 entries, one for each of the possible twists for a single face.
+With the 24-way symmetry reduction on the 3x3x3, this makes the
+pruning table effectively act as though it were 24 times as large;
+you get 192GB worth of effective pruning table goodness with just
+8GB of memory.
+
+But symmetry reduction does have a cost.  Each position must be
+converted to a symmetry representative before accessing the pruning
+table (either to write an entry or read a heuristic value).  This
+is done by considering each of the elements of the symmetry group
+(24 for the 3x3x3), and conjugating the position with each element.
+For instance, for the symmetry element Uv and a given position p, we
+consider the position [Uv: p] or Uv p Uv'.  For all these positions,
+we choose the one that is lexicographically least (in its packed
+binary representation).
+
+(It may not be clear that we can calculate this for puzzles that have
+identical pieces, since generally the state of such a puzzle must
+only occur on the left hand side of a multiplication, and in the
+conjugation it appears on both the left and right hand side.  But
+for the specific case of symmetries restricted to those that preserve
+identical piece sets, we can indeed do such a conjugation.  So for
+instance on the 4x4x4, each set of centers has four identical pieces,
+so normally you cannot perform a multiplication of a move by a state,
+just of a state by a move.  But for conjugations, since each of the
+24 rotations maps one set of 4 identical pieces to a different set of
+identical pieces, the conjugation may indeed be performed, and twsearch
+knows how to do this.)
+
+The symmetry reduction operation as described so far would be very
+slow.  Normally, for each node in a search, we perform a move, a hash,
+and a memory lookup; performance is limited by how fast we can do these
+operations.  If we add a symmetry reduction as described above, we
+also do 24 conjugations (each about as expensive as two moves) along
+with 23 comparisons (to determine which is lexicographically least).
+And indeed, if the symmetry reduction was done exactly as described,
+performance would suffer dramatically, likely negating any improvement
+offered by the more effective pruning table.  So instead of computing
+a full position for each of the elements of the symmetry group, we
+use the following trick.  We only compute the value of the first
+permutation element of the first set for each symmetry element.  We
+take the least resulting value, and identify only those symmetry
+elements that give us that value.  If there is only one symmetry element
+left, we know precisely which full conjugation to perform, and we
+do that one and return.  Otherwise, with the remaining symmetry elements
+that give us the least value for the first element, we calculate the
+second permutation element of the first set, and find the least
+possible value for that.  And so on.  Almost always we end up only needing
+to do a single full conjugation, reducing the cost of the symmetry
+reduction significantly.
+
+This algorithm assumes that the permutations of the first set of the
+puzzle do vary sufficiently with the moves so that we can identify the
+symmetry properly.  If this is not the case, as for instance if the
+centers of the 3x3x3 were the first set, then the symmetry reduction
+will be significantly slower.
+
+Symmetry reduction is also used in search.  We do the first several
+levels of a search slowly, tracking all the positions and their
+symmetry reductions.  If we see duplicated positions among the
+symmetry reductions, we know we can prune such duplicated positions
+from the search.  For positions that exhibit symmetry, such as
+superflip, this can reduce the size of the search tree by the symmetry
+found (in this case about a factor of 24).  Populating the pruning
+table is a form of search, but from the start position; since the
+start position has full symmetry, this means that generating the
+pruning table to a particular depth is similarly reduced.
+
+So for instance, on the 3x3x3, with symmetry, we see the node rate
+for search and pruning table generation slow down by around a factor
+of two, but the pruning table generation requires 1/24th the number
+of nodes and is thus more effective, speeding up overall search
+significantly.  At shallow levels that are not limited by memory
+(when the pruning table is not very full), the speedup is modest,
+but as the pruning table fills, the improved effectiveness of the
+table at a given memory size yields a signficant speed boost.
 
 Internal puzzle representation
 
