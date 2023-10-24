@@ -259,7 +259,8 @@ test-rust-ffi: build-rust-ffi
 	cargo test --package twsearch-ffi;
 	bun run "src/rs-ffi/test/js_test.ts"
 
-	gcc ./target/release/libtwsearch_ffi.dylib ./src/rs-ffi/test/c_test.c -o ./src/rs-ffi/test/c_test.bin
+	# TODO: `??*` is just a hack to match two or more chars. We should replace this with something less hacky.
+	gcc ./target/release/libtwsearch_ffi.??* ./src/rs-ffi/test/c_test.c -o ./src/rs-ffi/test/c_test.bin
 	./src/rs-ffi/test/c_test.bin
 
 .PHONY: publish-rust-ffi
