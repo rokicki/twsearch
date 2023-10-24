@@ -258,7 +258,9 @@ build-rust-ffi:
 test-rust-ffi: build-rust-ffi
 	cargo test --package twsearch-ffi
 	bun run "src/rs-ffi/test/js_test.ts"
-	bun run "src/rs-ffi/test/run_c_test.ts"
+	
+	gcc -o src/rs-ffi/test/c_test.bin -L./target/release src/rs-ffi/test/c_test.c -ltwsearch_ffi
+	env LD_LIBRARY_PATH=./target/release src/rs-ffi/test/c_test.bin
 
 .PHONY: publish-rust-ffi
 publish-rust-ffi:
