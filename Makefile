@@ -239,10 +239,10 @@ publish-rust-main:
 
 .PHONY: build-rust-wasm
 build-rust-wasm:
-	wasm-pack build --release --target web --out-dir "../../dist/wasm" src/rs-wasm
-	cat dist/wasm/package.json | jq ".type = \"module\"" > /tmp/twsearch.package.json.temp
-	mv /tmp/twsearch.package.json.temp dist/wasm/package.json
+	rm -rf "./.temp/rust-wasm"
+	wasm-pack build --release --target web --out-dir "../../.temp/rust-wasm" src/rs-wasm
 	bun script/node-esm-compat.ts
+	bun run "/Users/lgarron/Code/git/github.com/cubing/twsearch/script/build-wasm-package.ts"
 
 .PHONY: test-rust-wasm
 test-rust-wasm: build-rust-wasm
