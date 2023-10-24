@@ -256,12 +256,9 @@ build-rust-ffi:
 
 .PHONY: test-rust-ffi # TODO: non-PHONY?
 test-rust-ffi: build-rust-ffi
-	cargo test --package twsearch-ffi;
+	cargo test --package twsearch-ffi
 	bun run "src/rs-ffi/test/js_test.ts"
-
-	# TODO: `??*` is just a hack to match two or more chars. We should replace this with something less hacky.
-	gcc ./target/release/libtwsearch_ffi.??* ./src/rs-ffi/test/c_test.c -o ./src/rs-ffi/test/c_test.bin
-	./src/rs-ffi/test/c_test.bin
+	bun run "src/rs-ffi/test/run_c_test.ts"
 
 .PHONY: publish-rust-ffi
 publish-rust-ffi:
