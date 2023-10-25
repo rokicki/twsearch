@@ -283,7 +283,7 @@ int slowmodmip(const puzdef &pd, const setval p1, setval p2,
 int slowmodmip(const puzdef &pd, const setval p1, setval p2) {
   return slowmodmip(pd, p1, p2, pd.rotgroup, pd.rotinv);
 }
-//  This should generally work on pusitions.
+//  This should generally work on positions.
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   int cnt = 1;
   if (pd.rotgroup.size() <= 64) {
