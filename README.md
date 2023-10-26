@@ -18,13 +18,13 @@ make build
 
 ### Usage
 
-Important options (you should specify these):
+Important options (you likely want to specify these):
 
    `-M` *#* megabytes of memory to use max; should be ~ 1/2 of your RAM and ideally a power of two; defaults to 8192 (8GB).
 
-   `-t` *#*  number of threads to use; defaults to 4.
+   `-t` *#*  number of threads to use; defaults to the number of threads your CPU makes available.
 
-   `--nowrite`  don't write pruning tables to disk (regenerate each time).
+   `--nowrite`  don't write pruning tables to disk (regenerate in memory each time).
 
 Sample usage:
 
