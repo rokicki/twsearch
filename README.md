@@ -20,7 +20,7 @@ make build
 
 Important options (you likely want to specify these):
 
-   `-M` *#* megabytes of memory to use max; should be ~ 1/2 of your RAM and ideally a power of two; defaults to 8192 (8GB).
+   `-M` *#* megabytes of memory to use max; should be ~ 1/2 of your RAM; defaults to 8192 (8GB).
 
    `-t` *#*  number of threads to use; defaults to the number of threads your CPU makes available.
 
@@ -44,13 +44,9 @@ The maximum memory setting should be used carefully; on a machine running
 Windows or OS-X with heavy browser usage and other programs, you may want
 to set it to only one quarter of your physical RAM.  On a dedicated Linux
 or BSD machine, you can probably set it to 90% of your physical RAM.
-When using large pruning tables (such as when searching for solutions),
-the pruning tables are always a power of two in size, so specify a value
-somewhat larger than a power of two (so on a 64GB machine you might specify
--M 40000 to permit it to build a 32GB pruning table).  Be aware that the
-memory size you set also sets the size of the pruning tables that are
+The memory size you set also sets the size of the pruning tables that are
 written to disk.  Although they are compressed, the compression can
-vary from 1.1X to more than 5X, but in general the longer the pruning
+vary from 1.1X to more than 30X, but in general the longer the pruning
 table takes to generate, the worse the compression.  All pruning tables
 are written with extensions of .dat, so you might want to clean them
 up occasionally if you start to run out of disk space.
