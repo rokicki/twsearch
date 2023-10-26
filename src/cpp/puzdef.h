@@ -132,7 +132,7 @@ struct puzdef {
     return memcmp(a.dat, b.dat, totsize);
   }
   int canpackdense() const { return uniq; }
-  int invertible() const { return canpackdense(); }
+  int invertible() const { return uniq; }
   void assignpos(setval a, const setval b) const {
     memcpy(a.dat, b.dat, totsize);
   }
