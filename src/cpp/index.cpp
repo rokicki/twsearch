@@ -2,7 +2,7 @@
 #include "city.h"
 #include <iostream>
 vector<pair<ull, int>> parts;
-long long permtoindex(const uchar *perm, int n) {
+ull permtoindex(const uchar *perm, int n) {
   int i, j;
   ull r = 0;
   ull m = 1;
@@ -70,6 +70,88 @@ void indextoperm2(uchar *perm, ull ind, int n) {
     perm[n - 2] = state[n - 2];
     perm[n - 1] = state[n - 1];
   }
+}
+/*
+ *   This will work for perms where the total count is less than 2^58,
+ *   and the maximum value is <= 64, and the intermediate calculations
+ *   don't overflow.  No input value should be > 63.  The highest value
+ *   of n should be 64.
+ *
+ *   We do check for overflow, and bail if it happens.  It will only
+ *   happen if the total state space is so large that this routine
+ *   will likely not even be used (as with, for instance, 64 pieces
+ *   with 32 0's and 32 1's).
+ */
+ull mpermtoindex(const uchar *perm, int n) {
+  ull r = 0;
+  int cnt[64], obit[64];
+  int cntn = -1;
+  for (int i = 0; i < n; i++) {
+    cntn = max(cntn, (int)perm[i]);
+  }
+  cntn++;
+  for (int i = 0; i < cntn; i++) {
+    cnt[i] = 0;
+    obit[i] = 0;
+  }
+  for (int i = 0; i < n; i++) {
+    cnt[perm[i]]++;
+  }
+  for (int i = 1; i < cntn; i++)
+    obit[i] = obit[i - 1] + cnt[i - 1];
+  ull seen = ~0ULL;
+  ull x = 1;
+  for (int i = 0; i < n; i++) {
+    int pi = perm[i];
+    r = r * (n - i) + __builtin_popcountll(seen & ((1ULL << obit[pi]) - 1)) * x;
+    x = x * cnt[pi]--;
+    if (r >= (1ULL << 58)) {
+      cout << "Reducing " << (unsigned long long)r << " "
+           << (unsigned long long)x << endl;
+      ull g = gcd(r, x);
+      r /= g;
+      x /= g;
+      if (r >= (1ULL << 58))
+        error("! overflow in multiperm calculation", "");
+    }
+    seen &= ~(1ULL << (obit[pi] + cnt[pi]));
+  }
+  return r / x;
+}
+void indextomperm(uchar *perm, ull ind, const vector<int> &cnts) {
+  int n = 0;
+  int dcnts[64];
+  for (int i = 0; i < (int)cnts.size(); i++) {
+    dcnts[i] = cnts[i];
+    n += cnts[i];
+  }
+  int dn = n;
+  ull x = 1;
+  for (int i = 0; i < (int)cnts.size(); i++)
+    for (int j = 1; j <= cnts[i]; j++) {
+      if (x < (1ULL << 58))
+        x = x * dn / j;
+      else
+        x = x / j * dn + x % j * dn / j;
+      dn--;
+    }
+  for (int i = 0; i < n; i++)
+    for (int j = 0; j < (int)cnts.size(); j++) {
+      if (dcnts[j] == 0)
+        continue;
+      ull x2;
+      if (x < (1ULL << 58))
+        x2 = x * dcnts[j] / (n - i);
+      else
+        x2 = x / (n - i) * dcnts[j] + x % (n - i) * dcnts[j] / (n - i);
+      if (ind < x2) {
+        dcnts[j]--;
+        perm[i] = j;
+        x = x2;
+        break;
+      }
+      ind -= x2;
+    }
 }
 ll ordstoindex(const uchar *p, int omod, int n) {
   ull r = 0;

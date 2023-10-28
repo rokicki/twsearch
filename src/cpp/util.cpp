@@ -46,14 +46,14 @@ double myrand(int n) {
   static double mul = 1.0 / (rng->max() - rng->min() + 1.0);
   return (int)(((*rng)() - rng->min()) * mul * n);
 }
-ll gcd(ll a, ll b) {
+ull gcd(ull a, ull b) {
   if (a > b)
     swap(a, b);
   if (a == 0)
     return b;
   return gcd(b % a, a);
 }
-ll lcm(ll a, ll b) { return a / gcd(a, b) * b; }
+ull lcm(ull a, ull b) { return a / gcd(a, b) * b; }
 int ceillog2(int v) {
   int r = 0;
   while (v > (1 << r))

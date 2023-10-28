@@ -9,10 +9,12 @@
 extern vector<pair<ull, int>> parts;
 extern int looseper, looseiper, basebits, usehashenc;
 void calclooseper(const puzdef &pd);
-long long permtoindex(const uchar *perm, int n);
+ull permtoindex(const uchar *perm, int n);
 void indextoperm(uchar *perm, ull ind, int n);
 ull permtoindex2(const uchar *perm, int n);
 void indextoperm2(uchar *perm, ull ind, int n);
+ull mpermtoindex(const uchar *perm, int n);
+void indextomperm(uchar *perm, ull ind, const vector<int> &cnts);
 ll ordstoindex(const uchar *p, int omod, int n);
 void indextoords(uchar *p, ull v, int omod, int n);
 void indextoords2(uchar *p, ull v, int omod, int n);
