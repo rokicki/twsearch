@@ -106,8 +106,6 @@ ull mpermtoindex(const uchar *perm, int n) {
     r = r * (n - i) + __builtin_popcountll(seen & ((1ULL << obit[pi]) - 1)) * x;
     x = x * cnt[pi]--;
     if (r >= (1ULL << 58)) {
-      cout << "Reducing " << (unsigned long long)r << " "
-           << (unsigned long long)x << endl;
       ull g = gcd(r, x);
       r /= g;
       x /= g;
@@ -189,12 +187,16 @@ ull densepack(const puzdef &pd, setval pos) {
     const setdef &sd = pd.setdefs[i];
     int n = sd.size;
     if (n > 1) {
-      if (!sd.uniq)
-        error("! we don't support dense packing of non-unique yet");
-      if (sd.pparity)
-        r += m * permtoindex2(p, n);
-      else
-        r += m * permtoindex(p, n);
+      if (!sd.dense)
+        error("! we don't support dense packing of this puzzle");
+      if (sd.uniq) {
+        if (sd.pparity)
+          r += m * permtoindex2(p, n);
+        else
+          r += m * permtoindex(p, n);
+      } else {
+        r += m * mpermtoindex(p, n);
+      }
       m *= sd.llperms;
     }
     p += n;
@@ -218,10 +220,14 @@ void denseunpack(const puzdef &pd, ull v, setval pos) {
     int n = sd.size;
     if (n > 1) {
       ull nv = v / sd.llperms;
-      if (sd.pparity)
-        indextoperm2(p, v - nv * sd.llperms, n);
-      else
-        indextoperm(p, v - nv * sd.llperms, n);
+      if (sd.uniq) {
+        if (sd.pparity)
+          indextoperm2(p, v - nv * sd.llperms, n);
+        else
+          indextoperm(p, v - nv * sd.llperms, n);
+      } else {
+        indextomperm(p, v - nv * sd.llperms, sd.cnts);
+      }
       v = nv;
     } else {
       *p = 0;
@@ -254,10 +260,14 @@ ull densepack_ordered(const puzdef &pd, setval pos) {
         r = ordstoindex(p, sd.omod, n) + sd.llords * r;
     } else {
       uchar *p = pos.dat + sd.off;
-      if (sd.pparity)
-        r = permtoindex2(p, n) + sd.llperms * r;
-      else
-        r = permtoindex(p, n) + sd.llperms * r;
+      if (sd.uniq) {
+        if (sd.pparity)
+          r = permtoindex2(p, n) + sd.llperms * r;
+        else
+          r = permtoindex(p, n) + sd.llperms * r;
+      } else {
+        r = mpermtoindex(p, n) + sd.llperms * r;
+      }
     }
   }
   return r;
@@ -281,10 +291,14 @@ ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) {
     } else {
       uchar *p = pos.dat + sd.off;
       ull nv = v / sd.llperms;
-      if (sd.pparity)
-        indextoperm2(p, v - nv * sd.llperms, n);
-      else
-        indextoperm(p, v - nv * sd.llperms, n);
+      if (sd.uniq) {
+        if (sd.pparity)
+          indextoperm2(p, v - nv * sd.llperms, n);
+        else
+          indextoperm(p, v - nv * sd.llperms, n);
+      } else {
+        indextomperm(p, v - nv * sd.llperms, sd.cnts);
+      }
       v = nv;
     }
   }

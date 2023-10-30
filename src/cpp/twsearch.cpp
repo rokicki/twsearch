@@ -513,8 +513,7 @@ int main_search(const char *def_file, const char *scramble_file) {
         forcearray ||
         (pd.logstates <= 50 &&
          ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
-    if (!forcearray && statesfit2 && pd.canpackdense() &&
-        pd.rotgroup.size() == 0) {
+    if (!forcearray && statesfit2 && pd.canpackdense()) {
       cout << "Using twobit arrays." << endl;
       dotwobitgod2(pd);
     } else if (statesfitsa) {

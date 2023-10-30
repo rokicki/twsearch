@@ -32,7 +32,7 @@ struct setdef {
   string name;
   uchar omod;
   int pbits, obits, pibits, psum;
-  bool uniq, pparity, oparity, wildo;
+  bool dense, uniq, pparity, oparity, wildo;
   double logstates;
   unsigned long long llperms, llords, llstates;
   vector<int> cnts; // only not empty when not unique.
@@ -107,7 +107,7 @@ struct movealias {
 struct puzdef {
   puzdef()
       : name(), setdefs(), solved(), totsize(0), id(), logstates(0),
-        llstates(0), checksum(0), haveillegal(0), wildo(0), uniq(1) {}
+        llstates(0), checksum(0), haveillegal(0), wildo(0), dense(1), uniq(1) {}
   string name;
   setdefs_t setdefs;
   allocsetval solved;
@@ -127,11 +127,11 @@ struct puzdef {
   ull checksum;
   ull optionssum;
   vector<illegal_t> illegal;
-  char haveillegal, wildo, uniq;
+  char haveillegal, wildo, dense, uniq;
   int comparepos(const setval a, const setval b) const {
     return memcmp(a.dat, b.dat, totsize);
   }
-  int canpackdense() const { return uniq; }
+  int canpackdense() const { return dense; }
   int invertible() const { return uniq; }
   void assignpos(setval a, const setval b) const {
     memcpy(a.dat, b.dat, totsize);

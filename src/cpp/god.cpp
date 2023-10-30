@@ -197,16 +197,22 @@ void recur(puzdef &pd, int at, int back, int seek, int newv, ull sofar,
   } else {
     ull sz = sd.llperms;
     for (ull val = 0; val < sz; val++) {
-      if (sd.pparity)
-        indextoperm2(wmem, val, sd.size);
-      else
-        indextoperm(wmem, val, sd.size);
+      if (sd.uniq) {
+        if (sd.pparity)
+          indextoperm2(wmem, val, sd.size);
+        else
+          indextoperm(wmem, val, sd.size);
+      } else
+        indextomperm(wmem, val, sd.cnts);
       for (int m = 0; m < nmoves; m++) {
         sd.mulp(wmem, pd.moves[movemap[m]].pos.dat + sd.off, wmem2);
-        if (sd.pparity)
-          muld2[m] = permtoindex2(wmem2, sd.size) + sz * muld[m];
-        else
-          muld2[m] = permtoindex(wmem2, sd.size) + sz * muld[m];
+        if (sd.uniq) {
+          if (sd.pparity)
+            muld2[m] = permtoindex2(wmem2, sd.size) + sz * muld[m];
+          else
+            muld2[m] = permtoindex(wmem2, sd.size) + sz * muld[m];
+        } else
+          muld2[m] = mpermtoindex(wmem2, sd.size) + sz * muld[m];
       }
       recur(pd, at + 1, back, seek, newv, val + sofar * sz, muld2);
     }
@@ -226,10 +232,9 @@ void dotwobitgod2(puzdef &pd) {
   nmoves = movemap.size();
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     setdef &sd = pd.setdefs[i];
-    if (!sd.uniq)
-      error("! we don't support dense packing of non-unique yet");
-    if (sd.llperms > 1)
-      parts.push_back(make_pair(sd.llperms, i * 2));
+    if (!sd.dense)
+      error("! we don't support dense packing of this puzzle yet");
+    parts.push_back(make_pair(sd.llperms, i * 2));
     if (sd.llords > 1)
       parts.push_back(make_pair(sd.llords, i * 2 + 1));
   }
@@ -301,15 +306,21 @@ void dotwobitgod2(puzdef &pd) {
         ull val = u % sz;
         u /= sz;
         for (int m = 0; m < nmoves; m++) {
-          if (sd.pparity)
-            indextoperm2(wmem, val, sd.size);
-          else
-            indextoperm(wmem, val, sd.size);
+          if (sd.uniq) {
+            if (sd.pparity)
+              indextoperm2(wmem, val, sd.size);
+            else
+              indextoperm(wmem, val, sd.size);
+          } else
+            indextomperm(wmem, val, sd.cnts);
           sd.mulp(wmem, pd.moves[movemap[m]].pos.dat + sd.off, wmem2);
-          if (sd.pparity)
-            ss[m] += mul * permtoindex2(wmem2, sd.size);
-          else
-            ss[m] += mul * permtoindex(wmem2, sd.size);
+          if (sd.uniq) {
+            if (sd.pparity)
+              ss[m] += mul * permtoindex2(wmem2, sd.size);
+            else
+              ss[m] += mul * permtoindex(wmem2, sd.size);
+          } else
+            ss[m] += mul * mpermtoindex(wmem2, sd.size);
         }
         mul *= sz;
       }

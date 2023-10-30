@@ -56,10 +56,13 @@ ull getindex(setval pos) {
         perm[pn++] = pos.dat[off + j] - staticv[i];
         finalind *= pn;
       }
-    if (sd.pparity)
-      finalind = (finalind >> 1) + permtoindex2(perm, pn);
-    else
-      finalind += permtoindex(perm, pn);
+    if (sd.uniq) {
+      if (sd.pparity)
+        finalind = (finalind >> 1) + permtoindex2(perm, pn);
+      else
+        finalind += permtoindex(perm, pn);
+    } else
+      finalind += mpermtoindex(perm, pn);
   }
   return finalind;
 }
@@ -76,12 +79,15 @@ void setindex(ull ind, setval pos) {
         fact *= ++pn;
       else
         pos.dat[off + j] = 0;
-    if (sd.pparity) {
-      fact >>= 1;
-      indextoperm2(perm, ind % fact, pn);
-    } else {
-      indextoperm(perm, ind % fact, pn);
-    }
+    if (sd.uniq) {
+      if (sd.pparity) {
+        fact >>= 1;
+        indextoperm2(perm, ind % fact, pn);
+      } else {
+        indextoperm(perm, ind % fact, pn);
+      }
+    } else
+      error("! don't support duplicate pieces in coset yet");
     pn = 0;
     for (int j = 0; j < sd.size; j++)
       if (cosetmoving->dat[off + j])

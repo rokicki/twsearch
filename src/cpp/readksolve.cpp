@@ -232,6 +232,10 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
           pz.setdefs[i].uniq = 0;
           pz.uniq = 0;
           pz.setdefs[i].pbits = ceillog2(cnts.size());
+          if (n > 64) {
+            pz.setdefs[i].dense = 0;
+            pz.dense = 0;
+          }
         }
       } else {
         if (typ != 'S' && oddperm(p, n))
@@ -344,6 +348,7 @@ puzdef readdef(istream *f) {
         sd.obits = ceillog2(sd.omod);
       }
       sd.uniq = 1;
+      sd.dense = 1;
       sd.off = pz.totsize;
       pz.setdefs.push_back(sd);
       pz.totsize += 2 * sd.size;
