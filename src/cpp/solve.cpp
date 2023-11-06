@@ -13,10 +13,10 @@ int didprepass;
 int requesteduthreading = 4;
 int workinguthreading = 0;
 solveworker solveworkers[MAXTHREADS];
-int (*callback)(setval pos, const vector<int> &moves, int d, int id);
+int (*callback)(setval &pos, const vector<int> &moves, int d, int id);
 int (*flushback)(int d);
 static vector<vector<int>> randomized;
-void setsolvecallback(int (*f)(setval pos, const vector<int> &moves, int d,
+void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
                                int id),
                       int (*g)(int)) {
   callback = f;

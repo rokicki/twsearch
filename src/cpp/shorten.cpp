@@ -8,7 +8,7 @@
 vector<loosetype> shenc;
 vector<int> srcsol;
 int solseen;
-int shortencb(setval, const vector<int> &moves, int d, int) {
+int shortencb(setval &, const vector<int> &moves, int d, int) {
   get_global_lock();
   srcsol.resize(d);
   for (int i = 0; i < d; i++)
