@@ -4,7 +4,6 @@
  *   This file contains various implementations of God's algorithm,
  *   depending on the size and complexity of the puzzle.
  */
-extern vector<ull> cnts;
 extern ull symcoordgoal;
 void dotwobitgod(puzdef &pd);
 void dotwobitgod2(puzdef &pd);

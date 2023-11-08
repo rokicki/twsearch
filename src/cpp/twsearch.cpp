@@ -105,7 +105,6 @@ void reseteverything() {
   listcosets = 0;
   relaxcosets = 0;
   algostrict = 0;
-  cnts.clear();
   symcoordgoal = 20000;
   parts.clear();
   looseper = 0;
