@@ -3,8 +3,6 @@
 uchar *gmoda[256];
 int origroup;
 double dllstates;
-vector<allocsetval> posns;
-vector<int> movehist;
 void puzdef::pow(const setval a, setval b, ll cnt) const {
   if (cnt == 0) {
     assignpos(b, id);

@@ -7,6 +7,7 @@
 #include <unordered_map>
 vector<loosetype> urenc;
 unordered_map<vector<loosetype>, pair<int, int>, hashvector<loosetype>> urseen;
+static vector<allocsetval> posns;
 void urinsert(const puzdef &pd, int m1, int m2) {
   loosepack(pd, posns[0], urenc.data(), 1);
   auto it = urseen.find(urenc);
@@ -16,6 +17,7 @@ void urinsert(const puzdef &pd, int m1, int m2) {
 }
 static int ur_inited = 0;
 void unrotate_setup(const puzdef &pd) {
+  posns.clear();
   while (posns.size() <= 10)
     posns.push_back(allocsetval(pd, pd.id));
   urenc.resize(looseiper);

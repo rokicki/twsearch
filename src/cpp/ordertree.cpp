@@ -8,6 +8,8 @@ static unsigned char oneside[MOSN], twoside[MOSN];
 static int osseq, tsseq;
 static int mape[] = {16, 19, 18, 17};
 static int mapc[] = {17, 16, 19, 18};
+static vector<allocsetval> posns;
+static vector<int> movehist;
 void recurorder(const puzdef &pd, int togo, int sp, int st) {
   if (togo == 0) {
     int o = 0;

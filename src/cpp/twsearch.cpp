@@ -90,8 +90,6 @@ void reseteverything() {
   writeprunetables = 1; // auto
 #endif
   antipodecount = 20;
-  canonmask.clear();
-  canonnext.clear();
   ccount = 0;
   canonlim = 0;
   globalinputmovecount = 0;
@@ -108,8 +106,6 @@ void reseteverything() {
   startprunedepth = 3;
   workerparams.clear();
   origroup = 0;
-  posns.clear();
-  movehist.clear();
   nocorners = 0;
   nocenters = 0;
   noedges = 0;
@@ -123,7 +119,6 @@ void reseteverything() {
   optmindepth = 0;
   onlyimprovements = 0;
   randomstart = 0;
-  lastsolution.clear();
   maxdepth = 1000000000;
   didprepass = 0;
   scramblemoves = 1;

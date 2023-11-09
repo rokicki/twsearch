@@ -7,6 +7,8 @@
 #include <unordered_set>
 vector<ull> canonmask;
 vector<vector<int>> canonnext;
+static vector<allocsetval> posns;
+static vector<int> movehist;
 void makecanonstates(puzdef &pd) {
   int nbase = pd.basemoves.size();
   if (quarter) { // rewrite base
@@ -76,6 +78,8 @@ void makecanonstates(puzdef &pd) {
   statebits.push_back(firststate);
   int qg = 0;
   int statecount = 1;
+  canonmask.clear();
+  canonnext.clear();
   while (qg < (int)statebits.size()) {
     vector<int> nextstate(nbase);
     for (int i = 0; i < nbase; i++)
@@ -239,6 +243,8 @@ void makecanonstates2(puzdef &pd) {
   movebits = ceillog2(ccnbase);
   pd.ncs = ccnbase;
   ccenc = vector<loosetype>(looseiper);
+  posns.clear();
+  movehist.clear();
   while (posns.size() <= 100) {
     posns.push_back(allocsetval(pd, pd.id));
     movehist.push_back(-1);
@@ -248,6 +254,8 @@ void makecanonstates2(puzdef &pd) {
   ccnextstate[0] = -1;
   for (int j = 0; j < ccnbase; j++)
     ccnextstate[j] = -1;
+  canonmask.clear();
+  canonnext.clear();
   for (int d = 0; d <= ccount + 1; d++)
     recurcanonstates2(pd, d, 1, 0);
   cout << "Canonical states: " << canonmask.size() << endl;

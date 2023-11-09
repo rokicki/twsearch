@@ -13,6 +13,8 @@
  *   God's algorithm using two bits per state.
  */
 vector<ull> cnts, scnts;
+static vector<allocsetval> posns;
+static vector<int> movehist;
 void dotwobitgod(puzdef &pd) {
   ull nlongs = (pd.llstates + 31) >> 5;
   ull memneeded = nlongs * 8;
@@ -745,6 +747,8 @@ void doarraygod2(const puzdef &pd) {
   writer = mem;
   s_1 = mem;
   s_2 = mem;
+  movehist.clear();
+  posns.clear();
   for (int d = 0;; d++) {
     resetantipodes();
     while ((int)posns.size() <= d + 1) {

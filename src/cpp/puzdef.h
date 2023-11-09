@@ -401,8 +401,6 @@ inline allocsetval &allocsetval::operator=(allocsetval &&v) {
   sz = v.sz;
   return *this;
 }
-extern vector<allocsetval> posns;
-extern vector<int> movehist;
 void calculatesizes(puzdef &pd);
 void domove(const puzdef &pd, setval p, setval pos, setval pt);
 void domove(const puzdef &pd, setval p, setval pos);
