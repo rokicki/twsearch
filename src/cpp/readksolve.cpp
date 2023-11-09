@@ -305,6 +305,7 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
   return r;
 }
 puzdef readdef(istream *f) {
+  curline.clear();
   puzdef pz;
   int state = 0;
   ull checksum = 0;
@@ -434,6 +435,7 @@ puzdef readdef(istream *f) {
     pz.solved = pz.id;
   }
   pz.checksum = checksum;
+  curline.clear();
   return pz;
 }
 void expandmoveset(const puzdef &pd, vector<moove> &moves,

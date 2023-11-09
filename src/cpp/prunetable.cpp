@@ -20,6 +20,7 @@ ull fasthash(int n, const setval sv) {
 }
 vector<workerparam> workerparams;
 void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
+  workerparams.clear();
   while ((int)workerparams.size() < numthreads) {
     int i = workerparams.size();
     workerparams.push_back(workerparam(pd, pt, i));

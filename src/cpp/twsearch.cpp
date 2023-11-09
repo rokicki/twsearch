@@ -104,7 +104,6 @@ void reseteverything() {
   symcoordgoal = 20000;
   inputbasename = UNKNOWNPUZZLE;
   startprunedepth = 3;
-  workerparams.clear();
   origroup = 0;
   nocorners = 0;
   nocenters = 0;
@@ -129,7 +128,6 @@ void reseteverything() {
 #endif
   requesteduthreading = 4;
   verbose = 1;
-  curline.clear();
   start = walltime();
   quarter = 0;
   quiet = 0;
