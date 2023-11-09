@@ -27,7 +27,6 @@ void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
 }
 int setupthreads(const puzdef &pd, prunetable &pt) {
   int wthreads = min(numthreads, (int)workchunks.size());
-  workat = 0;
   setupparams(pd, pt, wthreads);
   return wthreads;
 }

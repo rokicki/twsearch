@@ -94,8 +94,6 @@ void reseteverything() {
   canonnext.clear();
   ccount = 0;
   canonlim = 0;
-  uniqwork.clear();
-  uniqseen.clear();
   globalinputmovecount = 0;
   proclim = 1'000'000'000'000'000'000LL;
   compact = 0;
@@ -106,14 +104,9 @@ void reseteverything() {
   relaxcosets = 0;
   algostrict = 0;
   symcoordgoal = 20000;
-  parts.clear();
-  looseper = 0;
-  looseiper = 0;
-  basebits = 0;
   inputbasename = UNKNOWNPUZZLE;
   startprunedepth = 3;
   workerparams.clear();
-  dllstates = 0;
   origroup = 0;
   posns.clear();
   movehist.clear();
@@ -145,9 +138,6 @@ void reseteverything() {
   start = walltime();
   quarter = 0;
   quiet = 0;
-  workchunks.clear();
-  workstates.clear();
-  workat = 0;
 }
 void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
               const char *p1str) {
