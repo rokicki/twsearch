@@ -79,7 +79,7 @@ TWSEARCH_VERSION=v0.0.0
 
 # MAKEFLAGS += -j
 CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++17 -g -Wsign-compare
-FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DHAVE_FFSLL
+FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS
 LDFLAGS = -lpthread
 
 CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cmdlineops.cpp \

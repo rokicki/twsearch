@@ -48,13 +48,7 @@ void dotwobitgod(puzdef &pd) {
         ull checkv = mem[bigi];
         checkv = (checkv & 0x5555555555555555LL) &
                  ((checkv >> 1) & 0x5555555555555555LL);
-#ifdef HAVE_FFSLL
         for (int smi = ffsll(checkv); checkv; smi = ffsll(checkv)) {
-#else
-        for (int smi = 1; checkv; smi++) {
-          if (0 == ((checkv >> (smi - 1)) & 1))
-            continue;
-#endif
           checkv -= 1LL << (smi - 1);
           denseunpack(pd, (bigi << 5) + (smi >> 1), p1);
           for (int i = 0; i < (int)pd.moves.size(); i++) {
@@ -80,13 +74,7 @@ void dotwobitgod(puzdef &pd) {
         ull checkv = mem[bigi] ^ xorv;
         checkv = (checkv & 0x5555555555555555LL) &
                  ((checkv >> 1) & 0x5555555555555555LL);
-#ifdef HAVE_FFSLL
         for (int smi = ffsll(checkv); checkv; smi = ffsll(checkv)) {
-#else
-        for (int smi = 1; checkv; smi++) {
-          if (0 == ((checkv >> (smi - 1)) & 1))
-            continue;
-#endif
           checkv -= 1LL << (smi - 1);
           denseunpack(pd, (bigi << 5) + (smi >> 1), p1);
           for (int i = 0; i < (int)pd.moves.size(); i++) {
