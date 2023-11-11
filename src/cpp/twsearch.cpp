@@ -581,7 +581,8 @@ int main_search(const char *def_file, const char *scramble_file) {
     processscrambles(&scrambles, pd, gs);
     scrambles.close();
   }
-  cout << "Twsearch finished." << endl;
+  if (verbose)
+    cout << "Twsearch finished." << endl;
   return 0;
 }
 
