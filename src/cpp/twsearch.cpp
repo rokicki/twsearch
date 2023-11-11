@@ -173,31 +173,31 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       maxdepth = atol(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "q") == 0) {
+    } else if (strcmp(argv[0], "-q") == 0) {
       quarter++;
-    } else if (strcmp(argv[0], "v") == 0) {
+    } else if (strcmp(argv[0], "-v") == 0) {
       verbose++;
       if (argv[0][2] != 0)
         verbose = argv[0][2] - '0';
-    } else if (strcmp(argv[0], "m") == 0 || strcmp(argv[0], "d") == 0) {
+    } else if (strcmp(argv[0], "-m") == 0 || strcmp(argv[0], "-d") == 0) {
       maxdepth = atol(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "R") == 0) {
+    } else if (strcmp(argv[0], "-R") == 0) {
       seed = atol(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "H") == 0) {
+    } else if (strcmp(argv[0], "-H") == 0) {
       usehashenc++;
-    } else if (strcmp(argv[0], "M") == 0) {
+    } else if (strcmp(argv[0], "-M") == 0) {
       maxmem = 1048576 * atoll(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "c") == 0) {
+    } else if (strcmp(argv[0], "-c") == 0) {
       solutionsneeded = atoll(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "t") == 0) {
+    } else if (strcmp(argv[0], "-t") == 0) {
       numthreads = atol(argv[1]);
       if (numthreads > MAXTHREADS)
         error("Numthreads cannot be more than ", to_string(MAXTHREADS));

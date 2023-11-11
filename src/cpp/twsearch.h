@@ -1,8 +1,8 @@
 #ifndef TWSEARCH_H
 #define TWSEARCH_H
-#include "puzdef.h"
-#include "prunetable.h"
 #include "generatingset.h"
+#include "prunetable.h"
+#include "puzdef.h"
 #include <iostream>
 using argvtype = const char **;
 extern void processargs(int &argc, argvtype &argv, int includecmds = 0);

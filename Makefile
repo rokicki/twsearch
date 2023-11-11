@@ -82,13 +82,24 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++17 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS
 LDFLAGS = -lpthread
 
-CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cmdlineops.cpp \
-   src/cpp/filtermoves.cpp src/cpp/findalgo.cpp src/cpp/generatingset.cpp src/cpp/god.cpp \
-   src/cpp/index.cpp src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
-   src/cpp/readksolve.cpp src/cpp/solve.cpp src/cpp/test.cpp src/cpp/threads.cpp \
-   src/cpp/twsearch.cpp src/cpp/util.cpp src/cpp/workchunks.cpp src/cpp/rotations.cpp \
-   src/cpp/orderedgs.cpp src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp src/cpp/cityhash/src/city.cc src/cpp/coset.cpp \
-   src/cpp/descsets.cpp src/cpp/ordertree.cpp src/cpp/unrotate.cpp src/cpp/shorten.cpp
+BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
+   src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
+   src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
+   src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
+   src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
+   src/cpp/workchunks.cpp
+
+FFISOURCE = src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp
+
+EXTRASOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp \
+   src/cpp/cmdlineops.cpp src/cpp/coset.cpp src/cpp/descsets.cpp \
+   src/cpp/findalgo.cpp src/cpp/god.cpp src/cpp/orderedgs.cpp \
+   src/cpp/ordertree.cpp src/cpp/shorten.cpp src/cpp/test.cpp \
+   src/cpp/unrotate.cpp
+
+CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
+
+WASMSOURCE = $(BASESOURCE) $(FFISOURCE)
 
 OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
@@ -150,14 +161,14 @@ emsdk-tip-of-tree:
 build/wasm-test/:
 	mkdir -p build/wasm-test/
 
-build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
+build/wasm-test/twsearch-test.wasm: $(WASMSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(WASMSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
 build/wasm-single-file/:
 	mkdir -p build/wasm-single-file/
 
-build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_ESM_BASE64_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+build/wasm-single-file/twsearch.mjs: $(WASMSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_ESM_BASE64_SINGLE_FILE_FLAGS) -o $@ $(WASMSOURCE) $(WASM_LDFLAGS)
 
 # JS
 
