@@ -9,7 +9,6 @@
 #include <array>
 #include <cstdlib>
 #include <iostream>
-#include <strings.h>
 /*
  *   God's algorithm using two bits per state.
  */
