@@ -102,7 +102,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
   }
   cout.precision(oldprec);
 }
-struct schreiersimscmd : cmd {
+static struct schreiersimscmd : cmd {
   schreiersimscmd() : cmd(0, "--schreiersims", 0) {}
   virtual void parse_args(int *, const char ***) {}
   virtual void docommand(puzdef &pd) { new generatingset(pd); }
