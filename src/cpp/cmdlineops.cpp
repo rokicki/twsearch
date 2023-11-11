@@ -329,7 +329,7 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
         cout << " " << (int)(a[i] + 1);
       cout << endl;
       if (sd.omod > 1) {
-        cout << "   ";
+        cout << "  ";
         if (fixmoves) {
           for (int i = 0; i < n; i++)
             if (a[i + n] >= sd.omod)
