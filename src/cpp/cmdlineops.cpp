@@ -22,123 +22,6 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
     domove(pd, p1, movelist[i]);
   solveit(pd, pt, noname, p1, gs);
 }
-void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
-  prunetable pt(pd, maxmem);
-  processscrambles(f, pd, pt, gs);
-}
-int getcompactval(int &at, const string &s) {
-  if (at < 0 || at >= (int)s.size())
-    error("! out of bounds while reading compact");
-  char c = s[at++];
-  if ('0' <= c && c <= '9')
-    return c - '0';
-  if ('A' <= c && c <= 'Z')
-    return c - 'A' + 10;
-  if ('a' <= c && c <= 'z')
-    return c - 'a' + 36;
-  error("! bad character in compact format");
-  return -1;
-}
-void readposition(puzdef &pd, setval &p1, string crep) {
-  int at = 0;
-  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
-    setdef &sd = pd.setdefs[i];
-    int n = sd.size;
-    int ss = n * sd.omod;
-    int off = sd.off;
-    for (int j = 0; j < n; j++) {
-      int v = 0;
-      if (ss <= 62) {
-        v = getcompactval(at, crep);
-      } else if (ss <= 62 * 62) {
-        v = getcompactval(at, crep);
-        v = v * 62 + getcompactval(at, crep);
-      } else {
-        error("! can't read compact format for this puzdef");
-      }
-      if (v < 0 || v >= ss)
-        error("! bad value in compact format");
-      p1.dat[off + j] = v / sd.omod;
-      p1.dat[off + j + n] = v % sd.omod;
-    }
-  }
-  if (at != (int)crep.size())
-    error("! extra input in compact format");
-}
-void processscrambles(istream *f, puzdef &pd, prunetable &pt,
-                      generatingset *gs) {
-  string scramblename;
-  ull checksum = 0;
-  stacksetval p1(pd);
-  while (1) {
-    vector<string> toks = getline(f, checksum);
-    if (toks.size() == 0)
-      break;
-    if (toks[0] == "Scramble" || toks[0] == "ScrambleState" ||
-        toks[0] == "StartState") {
-      expect(toks, 2);
-      scramblename = toks[1];
-      allocsetval p =
-          readposition(pd, 'S', f, checksum,
-                       toks[0] == "ScrambleState" || toks[0] == "StartState");
-      solveit(pd, pt, scramblename, p, gs);
-    } else if (toks[0] == "ScrambleAlg") {
-      expect(toks, 2);
-      scramblename = toks[1];
-      pd.assignpos(p1, pd.solved);
-      while (1) {
-        toks = getline(f, checksum);
-        if (toks.size() == 0)
-          error("! early end of line while reading ScrambleAlg");
-        if (toks[0] == "End")
-          break;
-        for (int i = 0; i < (int)toks.size(); i++)
-          domove(pd, p1, findmove_generously(pd, toks[i]));
-      }
-      solveit(pd, pt, scramblename, p1, gs);
-    } else if (toks[0] == "CPOS") {
-      expect(toks, 2);
-      scramblename = "noname";
-      readposition(pd, p1, toks[1]);
-      solveit(pd, pt, scramblename, p1, gs);
-    } else {
-      error("! unsupported command in scramble file");
-    }
-  }
-}
-void readfirstscramble(istream *f, puzdef &pd, setval sv) {
-  string scramblename;
-  ull checksum = 0;
-  while (1) {
-    vector<string> toks = getline(f, checksum);
-    if (toks.size() == 0)
-      break;
-    if (toks[0] == "Scramble" || toks[0] == "StartState") {
-      expect(toks, 2);
-      scramblename = toks[1];
-      allocsetval p =
-          readposition(pd, 'S', f, checksum, toks[0] == "StartState");
-      pd.assignpos(sv, p);
-      return;
-    } else if (toks[0] == "ScrambleAlg") {
-      expect(toks, 2);
-      scramblename = toks[1];
-      pd.assignpos(sv, pd.solved);
-      while (1) {
-        toks = getline(f, checksum);
-        if (toks.size() == 0)
-          error("! early end of line while reading ScrambleAlg");
-        if (toks[0] == "End")
-          break;
-        for (int i = 0; i < (int)toks.size(); i++)
-          domove(pd, sv, findmove_generously(pd, toks[i]));
-      }
-      return;
-    } else {
-      error("! unsupported command in scramble file");
-    }
-  }
-}
 vector<loosetype> uniqwork;
 set<vector<loosetype>> uniqseen;
 void uniqit(const puzdef &pd, setval p, const char *s) {
@@ -375,7 +258,6 @@ void showrandompos(const puzdef &pd) {
   emitposition(pd, p1, 0);
 }
 // basic infrastructure for walking a set of sequences
-int globalinputmovecount = 0;
 void processlines(const puzdef &pd,
                   function<void(const puzdef &, setval, const char *)> f) {
   string s;

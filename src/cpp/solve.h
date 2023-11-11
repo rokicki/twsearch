@@ -16,6 +16,7 @@ extern int optmindepth;
 extern int onlyimprovements;
 extern int randomstart;
 extern string lastsolution;
+extern int globalinputmovecount;
 struct solvestate {
   int st, mi;
   ull mask, skipbase;

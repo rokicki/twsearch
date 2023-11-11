@@ -1,6 +1,7 @@
 #include "index.h"
 #include "city.h"
 #include <iostream>
+int looseper, looseiper, basebits;
 vector<pair<ull, int>> parts;
 ull permtoindex(const uchar *perm, int n) {
   int i, j;

@@ -103,7 +103,7 @@ HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineo
    src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/ffi/ffi_api.h src/cpp/ffi/wasm_api.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
-   src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h
+   src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h
 
 build/cpp/ffi/:
 	mkdir -p build/cpp/ffi/

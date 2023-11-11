@@ -9,6 +9,7 @@ int phase2;
 int optmindepth;
 int randomstart;
 string lastsolution;
+int globalinputmovecount;
 int didprepass;
 int requesteduthreading = 4;
 int workinguthreading = 0;
