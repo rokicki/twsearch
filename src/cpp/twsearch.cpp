@@ -205,9 +205,9 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       argv++;
     } else {
       int found = 0;
-      for (auto p = cmdhead; includecmds && p; p = p->next)
+      for (auto p = cmdhead; includecmds && p; p = p->next) {
         if ((p->shortoption && strcmp(argv[0], p->shortoption) == 0) ||
-            (p->longoption && strcmp(argv[1], p->longoption) == 0)) {
+            (p->longoption && strcmp(argv[0], p->longoption) == 0)) {
           p->parse_args(&argc, &argv);
           if (p->ismaincmd()) {
             if (requestedcmd != 0)
@@ -217,6 +217,7 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
           found = 1;
           break;
         }
+      }
       if (!found)
         error("! Argument not understood ", argv[0]);
     }
