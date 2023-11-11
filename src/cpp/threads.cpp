@@ -1,5 +1,7 @@
 #include "threads.h"
+#ifdef USE_PTHREADS
 #include <pthread.h>
+#endif
 
 int numthreads;
 #ifdef USE_PTHREADS
