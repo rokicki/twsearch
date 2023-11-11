@@ -1,7 +1,6 @@
 #ifndef PUZDEF_H
 #include "util.h"
 #include <math.h>
-#include <strings.h>
 #include <vector>
 using namespace std;
 /*
