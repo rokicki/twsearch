@@ -103,7 +103,7 @@ ull mpermtoindex(const uchar *perm, int n) {
   ull x = 1;
   for (int i = 0; i < n; i++) {
     int pi = perm[i];
-    r = r * (n - i) + __builtin_popcountll(seen & ((1ULL << obit[pi]) - 1)) * x;
+    r = r * (n - i) + popcountll(seen & ((1ULL << obit[pi]) - 1)) * x;
     x = x * cnt[pi]--;
     if (r >= (1ULL << 58)) {
       ull g = gcd(r, x);
