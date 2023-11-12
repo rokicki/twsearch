@@ -1,5 +1,6 @@
 #include "cmdlineops.h"
 #include "canon.h"
+#include "cmds.h"
 #include "index.h"
 #include "parsemoves.h"
 #include "prunetable.h"

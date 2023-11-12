@@ -1,7 +1,8 @@
 #include "antipode.h"
+#include "cmds.h"
 #include "index.h"
 #include <iostream>
-ll antipodecount;
+ll antipodecount = 20;
 ll antipodeshave;
 int resetonnewantipode = 0;
 loosetype *antipodesloose;
@@ -61,3 +62,8 @@ void stashantipodedense(ull val) {
     antipodesdense[antipodeshave++] = val;
   }
 }
+static struct antipodecountopt : llopt {
+  antipodecountopt()
+      : llopt("-a", 0, "The count of antipodes to print.  The default is 20.",
+              &antipodecount) {}
+} registermea;
