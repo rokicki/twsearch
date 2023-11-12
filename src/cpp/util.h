@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <string>
+
 #ifdef _WIN64
 #include <intrin.h>
 // Note:  this only works because twsearch never calls ffsll on a zero value
@@ -10,8 +11,10 @@ inline int ffsll(unsigned long long v) {
   _BitScanForward64(&r, v);
   return 1 + r;
 }
+inline void prefetch(void *p) { _mm_prefetch((const char *)p, _MM_HINT_T1); }
 #else
 #include <strings.h> // for ffsll
+inline void prefetch(void *p) { __builtin_prefetch(p); }
 #endif
 using namespace std;
 /*
