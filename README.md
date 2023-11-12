@@ -16,6 +16,15 @@ make build
 ./build/bin/twsearch samples/main/3x3x3.tws samples/main/tperm.scr
 ```
 
+On Windows, you can use the GCC toolchain with glibc to build it.  We don't
+support MSVC as a standard build platform, but the following command with
+the 64-bit MSVC compiler will give an executable that works in single-threaded
+mode:
+
+```shell
+cl /o twsearch.exe /EHsc src\cpp\*.cpp src\cpp\cityhash\src\city.cc
+```
+
 ### Usage
 
 Important options (you likely want to specify these):
