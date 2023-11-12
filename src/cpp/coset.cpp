@@ -1,3 +1,4 @@
+#ifdef HIGHLYEXPERIMENTAL
 #include "coset.h"
 #include "antipode.h"   // just for antipode count
 #include "cmdlineops.h" // for emitposition
@@ -559,3 +560,4 @@ void runcoset(puzdef &pd) {
   for (int d = maxdepth + 1; solcnt < cosetsize; d++)
     prepass(d + 1);
 }
+#endif
