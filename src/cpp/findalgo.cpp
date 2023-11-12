@@ -1,12 +1,13 @@
 #include "findalgo.h"
 #include "canon.h"
+#include "cmds.h"
 #include "solve.h"
 #include "threads.h"
 #include <iostream>
 #include <map>
 map<ll, ll> bestsofar;
 const int HIWR = 4;
-int algostrict;
+static int algostrict;
 ll extendkey(ll k, int nwr, int npwr) {
   return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1);
 }
@@ -285,3 +286,36 @@ void findalgos(const puzdef &pd, int which) {
   }
 #endif
 }
+static struct doalgocmd : cmd {
+  doalgocmd()
+      : cmd("-A", 0,
+            "Try to find useful algorithms for a given puzzle.  We look for\n"
+            "algorithms that affect few pieces.  The -A option can be "
+            "immediately\n"
+            "followed by s to mean strict (only print one solution of a given "
+            "length\n"
+            "with a given signature), 1 to mean basic algo search, 2 to mean\n"
+            "find algos by repeated executions, and 3 to mean find "
+            "commutators.") {}
+  virtual void parse_args(int *, const char ***argv) {
+    algoopts = -1;
+    algostrict = 0;
+    const char *p = **argv + 2;
+    while (*p) {
+      switch (*p++) {
+      case 's':
+        algostrict = 1;
+        break;
+      case '1':
+      case '2':
+      case '3':
+        algoopts = *(p - 1) - '0';
+        break;
+      default:
+        error("! bad suboption to -A");
+      }
+    }
+  }
+  virtual void docommand(puzdef &pd) { findalgos(pd, algoopts); }
+  int algoopts;
+} registerdoalgo;

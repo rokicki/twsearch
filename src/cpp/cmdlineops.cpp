@@ -12,6 +12,13 @@
 #include <iostream>
 ll proclim = 1'000'000'000'000'000'000LL;
 int compact;
+static struct compactopt : boolopt {
+  compactopt()
+      : boolopt(0, "--compact",
+                "Print and parse positions on standard input and output\n"
+                " in a one-line compact format.",
+                &compact) {}
+} registercompactopt;
 int maxwrong;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   stacksetval p1(pd);
@@ -258,6 +265,15 @@ void showrandompos(const puzdef &pd) {
   }
   emitposition(pd, p1, 0);
 }
+static struct showrandompositioncmd : llcmd {
+  showrandompositioncmd()
+      : llcmd("-r", 0, "Show a given count of random positions", &rcnt) {}
+  ll rcnt;
+  virtual void docommand(puzdef &pd) {
+    for (ll i = 0; i < rcnt; i++)
+      showrandompos(pd);
+  }
+} registerrandpositioncmd;
 // basic infrastructure for walking a set of sequences
 void processlines(const puzdef &pd,
                   function<void(const puzdef &, setval, const char *)> f) {

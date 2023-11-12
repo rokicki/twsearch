@@ -37,5 +37,10 @@ struct llopt : cmd {
   virtual int ismaincmd() { return 0; }
   ll *var;
 };
+struct llcmd : llopt {
+  llcmd(const char *shorto, const char *longo, const char *docs, ll *v)
+      : llopt(shorto, longo, docs, v) {}
+  virtual int ismaincmd() { return 1; }
+};
 #define CMDS_H
 #endif

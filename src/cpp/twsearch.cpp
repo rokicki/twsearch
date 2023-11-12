@@ -206,7 +206,7 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
     } else {
       int found = 0;
       for (auto p = cmdhead; includecmds && p; p = p->next) {
-        if ((p->shortoption && strcmp(argv[0], p->shortoption) == 0) ||
+        if ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
             (p->longoption && strcmp(argv[0], p->longoption) == 0)) {
           p->parse_args(&argc, &argv);
           if (p->ismaincmd()) {
