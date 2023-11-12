@@ -9,7 +9,7 @@ struct cmd {
   }
   const char *shortoption, *longoption;
   const char *userdocs;
-  virtual void parse_args(int *argc, const char ***argv) = 0;
+  virtual void parse_args(int *, const char ***) {}
   virtual void docommand(puzdef &pd) = 0;
   virtual int ismaincmd() { return 1; }
   cmd *next;

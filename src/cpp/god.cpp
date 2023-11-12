@@ -952,7 +952,6 @@ static struct godcmd : cmd {
             "Calculate the number of positions at each depth, as far as "
             "memory\n"
             "allows.  Print antipodal positions.") {}
-  virtual void parse_args(int *, const char ***) {}
   virtual void docommand(puzdef &pd) {
     int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem;
     int statesfitsa =
