@@ -158,7 +158,11 @@ void doinit() {
     if (seed)
       mysrand(seed);
     else
+#ifdef _WIN64
+      mysrand(GetTickCount());
+#else
       mysrand(time(0));
+#endif
     initialized = 1;
   }
 }
