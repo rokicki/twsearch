@@ -496,7 +496,7 @@ void prunetable::packblock(ull *mem, ull longcnt, uchar *buf, ull bytecnt) {
 static ull getull_swap_unaligned(unsigned char *p) {
   ull v;
   memcpy(&v, p, sizeof(v));
-  return __builtin_bswap64(v);
+  return bswap64(v);
 }
 static void setull_unaligned(unsigned char *p, ull v) {
   memcpy(p, &v, sizeof(v));
