@@ -47,8 +47,8 @@ void mysrand(int n) {
 }
 double myrand(int n) {
   // the following double is exact
-  static double mul = 1.0 / (rng->max() - rng->min() + 1.0);
-  return (int)(((*rng)() - rng->min()) * mul * n);
+  static double mul = 1.0 / ((rng->max)() - (rng->min)() + 1.0);
+  return (int)(((*rng)() - (rng->min)()) * mul * n);
 }
 ull gcd(ull a, ull b) {
   if (a > b)
