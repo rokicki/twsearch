@@ -5,6 +5,7 @@
 
 #ifdef _WIN64
 #include <intrin.h>
+#include <windows.h> // GetTickCount
 // Note:  this only works because twsearch never calls ffsll on a zero value
 inline int ffsll(unsigned long long v) {
   unsigned long r;
