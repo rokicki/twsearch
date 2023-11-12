@@ -12,7 +12,7 @@ inline int ffsll(unsigned long long v) {
   return 1 + r;
 }
 inline void prefetch(void *p) { _mm_prefetch((const char *)p, _MM_HINT_T1); }
-inline int popcountll(long long v) { return __popcount64(v); }
+inline int popcountll(long long v) { return __popcnt64(v); }
 #else
 #include <strings.h> // for ffsll
 inline void prefetch(void *p) { __builtin_prefetch(p); }
