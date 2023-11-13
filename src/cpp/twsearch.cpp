@@ -29,6 +29,7 @@ int checkbeforesolve;
 generatingset *gs;
 int optmaxdepth = 0;
 int usehashenc;
+int verbosecanon;
 cmd *cmdhead, *requestedcmd;
 const char *legalmovelist = 0;
 static int initialized = 0;
@@ -55,6 +56,7 @@ void reseteverything() {
   nocorners = 0;
   nocenters = 0;
   noedges = 0;
+  verbosecanon = 0;
   ignoreori = 0;
   distinguishall = 0;
   omitsets.clear();
@@ -206,7 +208,7 @@ puzdef makepuzdef(istream *f) {
     makecanonstates2(pd);
   if (quiet == 0)
     cout << "Calculated canonical states in " << duration() << endl << flush;
-  showcanon(pd, 0);
+  showcanon(pd, verbosecanon);
   //   gensymm(pd) ;
   return pd;
 }
@@ -333,6 +335,19 @@ int main_search(const char *def_file, const char *scramble_file) {
   cout << "Twsearch finished." << endl;
   return 0;
 }
+
+static struct cmdcanoncmd : cmd {
+  cmdcanoncmd() : cmd("-C", 0, "Show canonical sequences counts.") {}
+  virtual void parse_args(int *, const char ***argv) {
+    const char *p = **argv + 2 ;
+    if (*p)
+      canonlim = atol(p) ;
+    else
+      canonlim = 100;
+    verbosecanon = 1;
+  }
+  void docommand(puzdef &) {}
+} registercanoncmd;
 
 static struct cmdlinescramblecmd : cmd {
   cmdlinescramblecmd()
