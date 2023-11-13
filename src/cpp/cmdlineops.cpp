@@ -40,6 +40,24 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
     domove(pd, p1, movelist[i]);
   solveit(pd, pt, noname, p1, gs);
 }
+static struct solvecmd : cmd {
+  solvecmd()
+      : cmd("-s", 0,
+            "Read a set of move sequences on standard input and perform an\n"
+            "optimal solve on each.  If the option is given as -si, only look "
+            "for\n"
+            "improvements in total solution length.") {}
+  virtual void parse_args(int *, const char ***argv) {
+    onlyimprovements = (argv[0][0][2] == 'i');
+  }
+  virtual void docommand(puzdef &pd) {
+    prunetable pt(pd, maxmem);
+    string emptys;
+    processlines(pd, [&](const puzdef &pd, setval p, const char *) {
+      solveit(pd, pt, emptys, p, gs);
+    });
+  };
+} registersolve;
 vector<loosetype> uniqwork;
 set<vector<loosetype>> uniqseen;
 void uniqit(const puzdef &pd, setval p, const char *s) {

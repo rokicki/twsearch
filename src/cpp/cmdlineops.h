@@ -2,6 +2,7 @@
 #include "generatingset.h"
 #include "prunetable.h"
 #include "puzdef.h"
+#include "twsearch.h"
 #include <cstdio>
 #include <functional>
 #include <set>
