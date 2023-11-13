@@ -393,13 +393,11 @@ static struct cmdlinescramblecmd : cmd {
       : cmd(0, "--scramblealg",
             "Give a scramble as a sequence of moves on the command line.") {}
   virtual void parse_args(int *argc, const char ***argv) {
-    (*argc)++ ;
-    (*argv)++ ;
-    scramblealgo = **argv ;
+    (*argc)++;
+    (*argv)++;
+    scramblealgo = **argv;
   }
-  virtual void docommand(puzdef &pd) { 
-    solvecmdline(pd, scramblealgo, gs);
-  }
+  virtual void docommand(puzdef &pd) { solvecmdline(pd, scramblealgo, gs); }
   const char *scramblealgo = 0;
 } registercmdlinescramble;
 

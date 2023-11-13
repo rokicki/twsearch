@@ -11,6 +11,16 @@
 #include "unrotate.h"
 #include <iostream>
 ll proclim = 1'000'000'000'000'000'000LL;
+struct proclimcmd : cmd {
+  proclimcmd(const char *shortopt, const char *longopt, const char *docs)
+      : cmd(shortopt, longopt, docs) {}
+  virtual void parse_args(int *, const char ***argv) {
+    const char *p = **argv + 2;
+    if (*p) {
+      proclim = atoll(p);
+    }
+  }
+};
 int compact;
 static struct compactopt : boolopt {
   compactopt()
@@ -19,7 +29,7 @@ static struct compactopt : boolopt {
                 " in a one-line compact format.",
                 &compact) {}
 } registercompactopt;
-int maxwrong;
+ll maxwrong;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   stacksetval p1(pd);
   pd.assignpos(p1, pd.solved);
@@ -43,6 +53,16 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
       exit(0);
   }
 }
+static struct uniqcmd : proclimcmd {
+  uniqcmd()
+      : proclimcmd(
+            "-u", 0,
+            "Read a set of move sequences on standard input and only echo\n"
+            "those that are unique.  If an integer is attacheck to the -u "
+            "option,\n"
+            "exit after that many unique sequences have been seen.") {}
+  virtual void docommand(puzdef &pd) { processlines(pd, uniqit); };
+} registeruniq;
 void wrongit(const puzdef &pd, setval p, const char *s) {
   int t = pd.numwrong(p, pd.solved);
   if (t <= maxwrong) {
@@ -52,6 +72,23 @@ void wrongit(const puzdef &pd, setval p, const char *s) {
       exit(0);
   }
 }
+static struct wrongcmd : cmd {
+  wrongcmd()
+      : cmd(0, "--maxwrong",
+            "Takes an integer argument giving the a limit on the number of "
+            "wrong\n"
+            "pieces.  Read a set of move sequences on standard input and for "
+            "each,\n"
+            "if the number of wrong pieces is less than or equal to the "
+            "integer\n"
+            "given, echo the number of wrong pieces and the input sequence.") {}
+  virtual void docommand(puzdef &pd) { processlines(pd, wrongit); };
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)++;
+    (*argv)++;
+    maxwrong = atoll(**argv);
+  }
+} registerwrong;
 void uniqitsymm(const puzdef &pd, setval p, const char *s) {
   stacksetval pw(pd);
   slowmodmip(pd, p, pw);
@@ -65,6 +102,18 @@ void uniqitsymm(const puzdef &pd, setval p, const char *s) {
       exit(0);
   }
 }
+static struct symmuniqcmd : proclimcmd {
+  symmuniqcmd()
+      : proclimcmd(
+            "-U", 0,
+            "Read a set of move sequences on standard input and only echo\n"
+            "those that are unique with respect to symmetry.  If an integer "
+            "is\n"
+            "attached to the -U option, exit after that many unique sequences "
+            "have\n"
+            "been seen.") {}
+  virtual void docommand(puzdef &pd) { processlines(pd, uniqitsymm); };
+} registersymmuniq;
 void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";

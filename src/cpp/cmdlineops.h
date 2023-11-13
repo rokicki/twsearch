@@ -36,8 +36,6 @@ void processlines3(
 void processlines4(
     const puzdef &pd,
     function<void(const puzdef &, vector<int> &v, const char *)> f);
-extern ll proclim;
 extern int compact;
-extern int maxwrong;
 #define CMDLINEOPS_H
 #endif
