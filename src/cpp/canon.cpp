@@ -341,7 +341,7 @@ vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) {
   for (int i = mvseq.size() - 1; i >= 0; i--) {
     int best = -1;
     for (int j = mvseq.size() - 1; j >= 0; j--)
-      if (fwdcnt[j] == 0 && (best < 0 || mvseq[j] < mvseq[best]))
+      if (fwdcnt[j] == 0 && (best < 0 || mvseq[j] > mvseq[best]))
         best = j;
     for (int j = 0; j < best; j++)
       if (((pd.commutes[pd.moves[mvseq[j]].cs] >> pd.moves[mvseq[best]].cs) &
