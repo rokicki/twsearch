@@ -9,7 +9,7 @@
  *   position (and the required code to distribute the work across
  *   multiple threads).
  */
-extern ull solutionsfound, solutionsneeded;
+extern ll solutionsfound, solutionsneeded;
 extern int noearlysolutions;
 extern int phase2;
 extern int optmindepth;

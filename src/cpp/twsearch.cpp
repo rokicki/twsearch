@@ -142,6 +142,17 @@ static intopt orientgroupopt(0, "--orientationgroup",
                              "Treat adjacent piece groups of this size as\n"
                              "orientations.",
                              &origroup, 1, 255);
+static intopt prunestartopt(0, "--startprunedepth",
+                            "Initial depth for pruning tables (default is 3).",
+                            &startprunedepth, 0, 100);
+static intopt mindepthopt(0, "--mindepth", "Minimum depth for searches.",
+                          &optmindepth, 0, 1000);
+static intopt maxdepthopt(0, "--maxdepth", "Maximum depth for searches.",
+                          &optmindepth, 0, 1000);
+static intopt seedopt("-R", 0, "Seed for random number generator.", &seed,
+                      -2000000000, 2000000000);
+static llopt solcountopt("-c", 0, "Number of solutions to generate.",
+                         &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
  */
@@ -153,12 +164,6 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       omitsets.insert(argv[1]);
       argc--;
       argv++;
-    } else if (strcmp(argv[0], "--distinguishall") == 0) {
-      distinguishall = 1;
-    } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
-      noearlysolutions = 1;
-    } else if (strcmp(argv[0], "--checkbeforesolve") == 0) {
-      checkbeforesolve = 1;
     } else if (strcmp(argv[0], "--orientationgroup") == 0) {
       origroup = atol(argv[1]);
       argc--;
@@ -184,42 +189,12 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
     } else if (strcmp(argv[0], "--quiet") == 0) {
       quiet++;
       verbose = 0;
-    } else if (strcmp(argv[0], "--randomstart") == 0) {
-      randomstart++;
-    } else if (strcmp(argv[0], "--startprunedepth") == 0) {
-      startprunedepth = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--mindepth") == 0) {
-      optmindepth = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--maxdepth") == 0) {
-      maxdepth = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "-q") == 0) {
-      quarter++;
     } else if (strcmp(argv[0], "-v") == 0) {
       verbose++;
       if (argv[0][2] != 0)
         verbose = argv[0][2] - '0';
-    } else if (strcmp(argv[0], "-m") == 0 || strcmp(argv[0], "-d") == 0) {
-      maxdepth = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "-R") == 0) {
-      seed = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "-H") == 0) {
-      usehashenc++;
     } else if (strcmp(argv[0], "-M") == 0) {
       maxmem = 1048576 * atoll(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "-c") == 0) {
-      solutionsneeded = atoll(argv[1]);
       argc--;
       argv++;
     } else {
