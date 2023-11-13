@@ -151,6 +151,13 @@ void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
   }
   cout << endl;
 }
+static struct invertcmd : cmd {
+  invertcmd()
+      : cmd("-i", 0,
+            "Read a set of move sequences on standard input and echo the\n"
+            "inverted sequences.") {}
+  virtual void docommand(puzdef &pd) { processlines4(pd, invertit); };
+} registerinvert;
 void cancelit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";
@@ -161,6 +168,14 @@ void cancelit(const puzdef &pd, vector<int> &movelist, const char *) {
   }
   cout << endl;
 }
+static struct cancelcmd : cmd {
+  cancelcmd()
+      : cmd(0, "--cancelseqs",
+            "Read a set of move sequences on standard input and merge any\n"
+            "nearly adjacent moves according to canonical sequences.") {}
+  virtual void docommand(puzdef &pd) { processlines3(pd, cancelit); };
+} registercancel;
+// TODO:  this fails on U D U (for instance)
 void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";
@@ -171,6 +186,13 @@ void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
   }
   cout << endl;
 }
+static struct mergecmd : cmd {
+  mergecmd()
+      : cmd(0, "--mergeseqs",
+            "Read a set of move sequences on standard input and merge any\n"
+            "nearly adjacent moves according to canonical sequences.") {}
+  virtual void docommand(puzdef &pd) { processlines3(pd, mergeit); };
+} registermerge;
 void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";
@@ -184,6 +206,14 @@ void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
   }
   cout << endl;
 }
+static struct shortencmd : cmd {
+  shortencmd()
+      : cmd(0, "--shortenseqs",
+            "Read a set of move sequences on standard input and attempt\n"
+            "to shorten each by optimally solving increasingly longer "
+            "subsequences.") {}
+  virtual void docommand(puzdef &pd) { processlines3(pd, shortenit); };
+} registershorten;
 void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";
@@ -197,6 +227,13 @@ void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
   }
   cout << endl;
 }
+static struct unrotatecmd : cmd {
+  unrotatecmd()
+      : cmd(0, "--unrotateseqs",
+            "Read a set of move sequences on standard input and attempt\n"
+            "to move all rotations to the end of the sequence.") {}
+  virtual void docommand(puzdef &pd) { processlines4(pd, unrotateit); };
+} registerunrotate;
 void symsit(const puzdef &pd, setval p, const char *s) {
   stacksetval p2(pd);
   int symval = slowmodm(pd, p, p2);
