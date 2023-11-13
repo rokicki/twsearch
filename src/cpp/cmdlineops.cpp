@@ -172,10 +172,12 @@ static struct cancelcmd : cmd {
   cancelcmd()
       : cmd(0, "--cancelseqs",
             "Read a set of move sequences on standard input and merge any\n"
-            "nearly adjacent moves according to canonical sequences.") {}
+            "nearly adjacent moves according to canonical sequences.  This "
+            "does not\n"
+            "reorder moves so the result is canonical; it just cancels "
+            "moves.") {}
   virtual void docommand(puzdef &pd) { processlines3(pd, cancelit); };
 } registercancel;
-// TODO:  this fails on U D U (for instance)
 void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
   if (movelist.size() == 0) {
     cout << " ";
@@ -190,7 +192,9 @@ static struct mergecmd : cmd {
   mergecmd()
       : cmd(0, "--mergeseqs",
             "Read a set of move sequences on standard input and merge any\n"
-            "nearly adjacent moves according to canonical sequences.") {}
+            "nearly adjacent moves according to canonical sequences.  This "
+            "also\n"
+            "reorders moves so the end result is a canonical sequence.") {}
   virtual void docommand(puzdef &pd) { processlines3(pd, mergeit); };
 } registermerge;
 void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
