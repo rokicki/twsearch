@@ -95,62 +95,46 @@ void doinit() {
 static stringopt movelistopt(0, "--moves",
                              "Restrict search to the given moves.",
                              &legalmovelist);
-static intopt
-    newcanonopt(0, "--newcanon",
-                "Use search-based canonical sequences to the given depth.",
-                &ccount, 0, 100);
-static boolopt
-    nocornersopt(0, "--nocorners",
-                 "Omit any puzzle sets with recognizable corner names.",
-                 &nocorners);
-static boolopt
-    nocentersopt(0, "--nocenters",
-                 "Omit any puzzle sets with recognizable center names.",
-                 &nocenters);
-static boolopt noedgesopt(0, "--noedges",
-                          "Omit any puzzle sets with recognizable edge names.",
-                          &noedges);
-static boolopt nooriopt(0, "--noorientation",
-                        "Ignore orientations for all sets.", &ignoreori);
-static boolopt
-    distinguishopt(0, "--distinguishall",
-                   "Override distinguishable pieces (use the superpuzzle).",
-                   &distinguishall);
-static boolopt noearlyopt(0, "--noearlysolutions",
-                          "Emit any solutions whose prefix is also a solution.",
-                          &noearlysolutions);
-static boolopt
-    checkbeforeopt(0, "--checkbeforesolve",
-                   "Check each position for solvability using generating\n"
-                   "set before attempting to solve.",
-                   &checkbeforesolve);
-static boolopt randomstartopt(0, "--randomstart",
-                              "Randomize move order when solving.",
-                              &randomstart);
-static boolopt quarteropt("-q", 0, "Use only minimal (quarter) turns.",
-                          &quarter);
-static boolopt
-    hashopt("-H", 0,
-            "Use 128-bit hash instead of full state for God's number searches.",
-            &usehashenc);
-static intopt threadopt("-t", 0, "Use this many threads.", &numthreads, 1,
-                        MAXTHREADS);
-static intopt uthreadopt(0, "--microthreads",
-                         "Use this many microthreads on each thread.",
-                         &requesteduthreading, 1, MAXMICROTHREADING);
-static intopt orientgroupopt(0, "--orientationgroup",
-                             "Treat adjacent piece groups of this size as\n"
-                             "orientations.",
-                             &origroup, 1, 255);
-static intopt prunestartopt(0, "--startprunedepth",
-                            "Initial depth for pruning tables (default is 3).",
-                            &startprunedepth, 0, 100);
-static intopt mindepthopt(0, "--mindepth", "Minimum depth for searches.",
-                          &optmindepth, 0, 1000);
-static intopt maxdepthopt(0, "--maxdepth", "Maximum depth for searches.",
-                          &optmindepth, 0, 1000);
-static intopt seedopt("-R", 0, "Seed for random number generator.", &seed,
-                      -2000000000, 2000000000);
+static boolopt boolopts[] = {
+    {0, "--nocorners", "Omit any puzzle sets with recognizable corner names.",
+     &nocorners},
+    {0, "--nocenters", "Omit any puzzle sets with recognizable center names.",
+     &nocenters},
+    {0, "--noedges", "Omit any puzzle sets with recognizable edge names.",
+     &noedges},
+    {0, "--noorientation", "Ignore orientations for all sets.", &ignoreori},
+    {0, "--distinguishall",
+     "Override distinguishable pieces (use the superpuzzle).", &distinguishall},
+    {0, "--noearlysolutions",
+     "Emit any solutions whose prefix is also a solution.", &noearlysolutions},
+    {0, "--checkbeforesolve",
+     "Check each position for solvability using generating\n"
+     "set before attempting to solve.",
+     &checkbeforesolve},
+    {0, "--randomstart", "Randomize move order when solving.", &randomstart},
+    {"-q", 0, "Use only minimal (quarter) turns.", &quarter},
+    {"-H", 0,
+     "Use 128-bit hash instead of full state for God's number searches.",
+     &usehashenc},
+};
+static intopt intopts[] = {
+    {0, "--newcanon",
+     "Use search-based canonical sequences to the given depth.", &ccount, 0,
+     100},
+    {"-t", 0, "Use this many threads.", &numthreads, 1, MAXTHREADS},
+    {0, "--microthreads", "Use this many microthreads on each thread.",
+     &requesteduthreading, 1, MAXMICROTHREADING},
+    {0, "--orientationgroup",
+     "Treat adjacent piece groups of this size as\n"
+     "orientations.",
+     &origroup, 1, 255},
+    {0, "--startprunedepth", "Initial depth for pruning tables (default is 3).",
+     &startprunedepth, 0, 100},
+    {0, "--mindepth", "Minimum depth for searches.", &optmindepth, 0, 1000},
+    {0, "--maxdepth", "Maximum depth for searches.", &optmindepth, 0, 1000},
+    {"-R", 0, "Seed for random number generator.", &seed, -2000000000,
+     2000000000},
+};
 static llopt solcountopt("-c", 0, "Number of solutions to generate.",
                          &solutionsneeded);
 /*
