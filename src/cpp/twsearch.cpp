@@ -1,6 +1,7 @@
 #include "twsearch.h"
 #include "canon.h"
 #include "city.h"
+#include "cmdlineops.h"
 #include "cmds.h"
 #include "filtermoves.h"
 #include "generatingset.h"
@@ -29,7 +30,6 @@ generatingset *gs;
 int optmaxdepth = 0;
 int usehashenc;
 cmd *cmdhead, *requestedcmd;
-const char *scramblealgo = 0;
 const char *legalmovelist = 0;
 static int initialized = 0;
 int seed = 0;
@@ -37,7 +37,6 @@ void reseteverything() {
   checkbeforesolve = 0;
   optmaxdepth = 0;
   usehashenc = 0;
-  scramblealgo = 0;
   legalmovelist = 0;
   seed = 0;
 // for now, WASM limit is 1GB; normal C++ limit is 8GB
@@ -130,10 +129,6 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       argv++;
     } else if (strcmp(argv[0], "--noedges") == 0) {
       noedges++;
-    } else if (strcmp(argv[0], "--scramblealg") == 0) {
-      scramblealgo = argv[1];
-      argc--;
-      argv++;
     } else if (strcmp(argv[0], "--microthreads") == 0) {
       requesteduthreading = atol(argv[1]);
       argc--;
@@ -205,9 +200,10 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       argv++;
     } else {
       int found = 0;
-      for (auto p = cmdhead; includecmds && p; p = p->next) {
-        if ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
-            (p->longoption && strcmp(argv[0], p->longoption) == 0)) {
+      for (auto p = cmdhead; p; p = p->next) {
+        if ((includecmds || !p->ismaincmd()) &&
+            ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
+             (p->longoption && strcmp(argv[0], p->longoption) == 0))) {
           p->parse_args(&argc, &argv);
           if (p->ismaincmd()) {
             if (requestedcmd != 0)
@@ -391,6 +387,21 @@ int main_search(const char *def_file, const char *scramble_file) {
   cout << "Twsearch finished." << endl;
   return 0;
 }
+
+static struct cmdlinescramblecmd : cmd {
+  cmdlinescramblecmd()
+      : cmd(0, "--scramblealg",
+            "Give a scramble as a sequence of moves on the command line.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)++ ;
+    (*argv)++ ;
+    scramblealgo = **argv ;
+  }
+  virtual void docommand(puzdef &pd) { 
+    solvecmdline(pd, scramblealgo, gs);
+  }
+  const char *scramblealgo = 0;
+} registercmdlinescramble;
 
 #ifndef ASLIBRARY
 #define STR2(x) #x
