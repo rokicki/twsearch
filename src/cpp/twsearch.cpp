@@ -339,9 +339,9 @@ int main_search(const char *def_file, const char *scramble_file) {
 static struct cmdcanoncmd : cmd {
   cmdcanoncmd() : cmd("-C", 0, "Show canonical sequences counts.") {}
   virtual void parse_args(int *, const char ***argv) {
-    const char *p = **argv + 2 ;
+    const char *p = **argv + 2;
     if (*p)
-      canonlim = atol(p) ;
+      canonlim = atol(p);
     else
       canonlim = 100;
     verbosecanon = 1;
