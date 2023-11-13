@@ -70,7 +70,7 @@ struct stringopt : cmd {
             const char **v)
       : cmd(shorto, longo, docs), var(v) {}
   virtual void parse_args(int *argc, const char ***argv) {
-    (*argc)++;
+    (*argc)--;
     (*argv)++;
     *var = **argv;
   }
