@@ -243,6 +243,13 @@ void symsit(const puzdef &pd, setval p, const char *s) {
   int symval = slowmodm(pd, p, p2);
   cout << s << ": " << symval << endl;
 }
+static struct symscmd : cmd {
+  symscmd()
+      : cmd(0, "--showsymmetry",
+            "Read a set of move sequences on standard input and show the\n"
+            "symmetry order of each.") {}
+  virtual void docommand(puzdef &pd) { processlines(pd, symsit); };
+} registersyms;
 void orderit(const puzdef &pd, setval p, const char *s) {
   stacksetval p2(pd), p3(pd);
   pd.assignpos(p2, pd.solved);
@@ -263,6 +270,13 @@ void orderit(const puzdef &pd, setval p, const char *s) {
     m++;
   }
 }
+static struct ordercmd : cmd {
+  ordercmd()
+      : cmd("-o", 0,
+            "Read a set of move sequences on standard input and show the\n"
+            "order of each.") {}
+  virtual void docommand(puzdef &pd) { processlines2(pd, orderit); };
+} registerorder;
 void emitcompact(int v) {
   if (v < 10)
     cout << v;
@@ -341,9 +355,23 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
 void emitmove(const puzdef &pd, setval p, const char *s) {
   emitmp(pd, p, s, 1);
 }
+static struct emitmovecmd : cmd {
+  emitmovecmd()
+      : cmd(0, "--showmoves",
+            "Read a set of move sequences on standard input and show the\n"
+            "equivalent move definition on standard output.") {}
+  virtual void docommand(puzdef &pd) { processlines2(pd, emitmove); };
+} registeremitmove;
 void emitposition(const puzdef &pd, setval p, const char *s) {
   emitmp(pd, p, s, 0);
 }
+static struct emitposcmd : cmd {
+  emitposcmd()
+      : cmd(0, "--showpositions",
+            "Read a set of move sequences on standard input and show the\n"
+            "resulting position on standard output.") {}
+  virtual void docommand(puzdef &pd) { processlines(pd, emitposition); };
+} registeremitposition;
 void showrandompos(const puzdef &pd) {
   stacksetval p1(pd), p2(pd);
   pd.assignpos(p1, pd.solved);
