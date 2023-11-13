@@ -938,14 +938,11 @@ void doarraygodsymm(const puzdef &pd) {
   }
 }
 static int forcearray;
-static struct force : boolopt {
-  force()
-      : boolopt(
-            "-F", 0,
-            "When running God's number searches, force the use of arrays and\n"
-            "sorting rather than canonical sequences or bit arrays.",
-            &forcearray) {}
-} registermef;
+static boolopt
+    force("-F", 0,
+          "When running God's number searches, force the use of arrays and\n"
+          "sorting rather than canonical sequences or bit arrays.",
+          &forcearray);
 static struct godcmd : cmd {
   godcmd()
       : cmd("-g", 0,

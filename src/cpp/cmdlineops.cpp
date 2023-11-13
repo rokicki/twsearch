@@ -22,13 +22,11 @@ struct proclimcmd : cmd {
   }
 };
 int compact;
-static struct compactopt : boolopt {
-  compactopt()
-      : boolopt(0, "--compact",
-                "Print and parse positions on standard input and output\n"
-                " in a one-line compact format.",
-                &compact) {}
-} registercompactopt;
+static boolopt
+    compactopt(0, "--compact",
+               "Print and parse positions on standard input and output\n"
+               " in a one-line compact format.",
+               &compact);
 ll maxwrong;
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   stacksetval p1(pd);

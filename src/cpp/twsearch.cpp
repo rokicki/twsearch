@@ -92,6 +92,56 @@ void doinit() {
     initialized = 1;
   }
 }
+static stringopt movelistopt(0, "--moves",
+                             "Restrict search to the given moves.",
+                             &legalmovelist);
+static intopt
+    newcanonopt(0, "--newcanon",
+                "Use search-based canonical sequences to the given depth.",
+                &ccount, 0, 100);
+static boolopt
+    nocornersopt(0, "--nocorners",
+                 "Omit any puzzle sets with recognizable corner names.",
+                 &nocorners);
+static boolopt
+    nocentersopt(0, "--nocenters",
+                 "Omit any puzzle sets with recognizable center names.",
+                 &nocenters);
+static boolopt noedgesopt(0, "--noedges",
+                          "Omit any puzzle sets with recognizable edge names.",
+                          &noedges);
+static boolopt nooriopt(0, "--noorientation",
+                        "Ignore orientations for all sets.", &ignoreori);
+static boolopt
+    distinguishopt(0, "--distinguishall",
+                   "Override distinguishable pieces (use the superpuzzle).",
+                   &distinguishall);
+static boolopt noearlyopt(0, "--noearlysolutions",
+                          "Emit any solutions whose prefix is also a solution.",
+                          &noearlysolutions);
+static boolopt
+    checkbeforeopt(0, "--checkbeforesolve",
+                   "Check each position for solvability using generating\n"
+                   "set before attempting to solve.",
+                   &checkbeforesolve);
+static boolopt randomstartopt(0, "--randomstart",
+                              "Randomize move order when solving.",
+                              &randomstart);
+static boolopt quarteropt("-q", 0, "Use only minimal (quarter) turns.",
+                          &quarter);
+static boolopt
+    hashopt("-H", 0,
+            "Use 128-bit hash instead of full state for God's number searches.",
+            &usehashenc);
+static intopt threadopt("-t", 0, "Use this many threads.", &numthreads, 1,
+                        MAXTHREADS);
+static intopt uthreadopt(0, "--microthreads",
+                         "Use this many microthreads on each thread.",
+                         &requesteduthreading, 1, MAXMICROTHREADING);
+static intopt orientgroupopt(0, "--orientationgroup",
+                             "Treat adjacent piece groups of this size as\n"
+                             "orientations.",
+                             &origroup, 1, 255);
 /*
  *   Can be called multiple times at the start.
  */
@@ -99,21 +149,7 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
   while (argc > 1 && argv[1][0] == '-') {
     argc--;
     argv++;
-    if (strcmp(argv[0], "--moves") == 0) {
-      legalmovelist = argv[1];
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--newcanon") == 0) {
-      ccount = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--nocorners") == 0) {
-      nocorners++;
-    } else if (strcmp(argv[0], "--nocenters") == 0) {
-      nocenters++;
-    } else if (strcmp(argv[0], "--noorientation") == 0) {
-      ignoreori = 1;
-    } else if (strcmp(argv[0], "--omit") == 0) {
+    if (strcmp(argv[0], "--omit") == 0) {
       omitsets.insert(argv[1]);
       argc--;
       argv++;
@@ -125,12 +161,6 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       checkbeforesolve = 1;
     } else if (strcmp(argv[0], "--orientationgroup") == 0) {
       origroup = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--noedges") == 0) {
-      noedges++;
-    } else if (strcmp(argv[0], "--microthreads") == 0) {
-      requesteduthreading = atol(argv[1]);
       argc--;
       argv++;
     } else if (strcmp(argv[0], "--nowrite") == 0) {
@@ -190,12 +220,6 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
       argv++;
     } else if (strcmp(argv[0], "-c") == 0) {
       solutionsneeded = atoll(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "-t") == 0) {
-      numthreads = atol(argv[1]);
-      if (numthreads > MAXTHREADS)
-        error("Numthreads cannot be more than ", to_string(MAXTHREADS));
       argc--;
       argv++;
     } else {
