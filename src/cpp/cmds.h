@@ -17,6 +17,13 @@ struct cmd {
   virtual int ismaincmd() { return 1; }
   cmd *next;
 };
+struct specialopt : cmd {
+  specialopt(const char *shorto, const char *longo, const char *docs)
+      : cmd(shorto, longo, docs) {}
+  virtual void parse_args(int *, const char ***) = 0;
+  virtual void docommand(puzdef &) { error("! bad docommand"); }
+  virtual int ismaincmd() { return 0; }
+};
 struct boolopt : cmd {
   boolopt(const char *shorto, const char *longo, const char *docs, int *v)
       : cmd(shorto, longo, docs), var(v) {}

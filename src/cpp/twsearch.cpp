@@ -92,9 +92,11 @@ void doinit() {
     initialized = 1;
   }
 }
-static stringopt movelistopt(0, "--moves",
-                             "Restrict search to the given moves.",
-                             &legalmovelist);
+static stringopt stringopts[] = {
+    {0, "--moves", "Restrict search to the given moves.", &legalmovelist},
+    {0, "--cachedir", "Use the specified directory to cache pruning tables.",
+     &user_option_cache_dir},
+};
 static boolopt boolopts[] = {
     {0, "--nocorners", "Omit any puzzle sets with recognizable corner names.",
      &nocorners},
@@ -131,7 +133,7 @@ static intopt intopts[] = {
     {0, "--startprunedepth", "Initial depth for pruning tables (default is 3).",
      &startprunedepth, 0, 100},
     {0, "--mindepth", "Minimum depth for searches.", &optmindepth, 0, 1000},
-    {0, "--maxdepth", "Maximum depth for searches.", &optmindepth, 0, 1000},
+    {0, "--maxdepth", "Maximum depth for searches.", &maxdepth, 0, 1000},
     {"-R", 0, "Seed for random number generator.", &seed, -2000000000,
      2000000000},
 };
@@ -144,62 +146,23 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
   while (argc > 1 && argv[1][0] == '-') {
     argc--;
     argv++;
-    if (strcmp(argv[0], "--omit") == 0) {
-      omitsets.insert(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--orientationgroup") == 0) {
-      origroup = atol(argv[1]);
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--nowrite") == 0) {
-      writeprunetables = 0; // never
-    } else if (strcmp(argv[0], "--writeprunetables") == 0) {
-      const char *arg = argv[1];
-      argc--;
-      argv++;
-      if (strcmp(arg, "never") == 0)
-        writeprunetables = 0;
-      else if (strcmp(arg, "auto") == 0)
-        writeprunetables = 1;
-      else if (strcmp(arg, "always") == 0)
-        writeprunetables = 2;
-      else
-        error("! the --writeprunetables option expects always, auto, or never");
-    } else if (strcmp(argv[0], "--cachedir") == 0) {
-      user_option_cache_dir = argv[1];
-      argc--;
-      argv++;
-    } else if (strcmp(argv[0], "--quiet") == 0) {
-      quiet++;
-      verbose = 0;
-    } else if (strcmp(argv[0], "-v") == 0) {
-      verbose++;
-      if (argv[0][2] != 0)
-        verbose = argv[0][2] - '0';
-    } else if (strcmp(argv[0], "-M") == 0) {
-      maxmem = 1048576 * atoll(argv[1]);
-      argc--;
-      argv++;
-    } else {
-      int found = 0;
-      for (auto p = cmdhead; p; p = p->next) {
-        if ((includecmds || !p->ismaincmd()) &&
-            ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
-             (p->longoption && strcmp(argv[0], p->longoption) == 0))) {
-          p->parse_args(&argc, &argv);
-          if (p->ismaincmd()) {
-            if (requestedcmd != 0)
-              error("! can only do one thing at a time");
-            requestedcmd = p;
-          }
-          found = 1;
-          break;
+    int found = 0;
+    for (auto p = cmdhead; p; p = p->next) {
+      if ((includecmds || !p->ismaincmd()) &&
+          ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
+           (p->longoption && strcmp(argv[0], p->longoption) == 0))) {
+        p->parse_args(&argc, &argv);
+        if (p->ismaincmd()) {
+          if (requestedcmd != 0)
+            error("! can only do one thing at a time");
+          requestedcmd = p;
         }
+        found = 1;
+        break;
       }
-      if (!found)
-        error("! Argument not understood ", argv[0]);
     }
+    if (!found)
+      error("! Argument not understood ", argv[0]);
   }
 }
 puzdef makepuzdef(istream *f) {
@@ -383,6 +346,85 @@ static struct cmdlinescramblecmd : cmd {
   virtual void docommand(puzdef &pd) { solvecmdline(pd, scramblealgo, gs); }
   const char *scramblealgo = 0;
 } registercmdlinescramble;
+
+static struct omitopt : specialopt {
+  omitopt()
+      : specialopt(
+            0, "--omit",
+            "Omit the following set name from the puzzle.  You can provide\n"
+            "as many separate omit options, each with a separate set name, as "
+            "you want.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    omitsets.insert(**argv);
+  }
+} registeromitopt;
+
+static struct nowriteopt : specialopt {
+  nowriteopt() : specialopt(0, "--nowrite", "Do not write pruning tables.") {}
+  virtual void parse_args(int *, const char ***) { writeprunetables = 0; }
+} registernowriteopt;
+
+static struct writepruneopt : specialopt {
+  writepruneopt()
+      : specialopt(0, "--writeprunetables",
+                   "Specify when or if pruning tables should be written.\n"
+                   "This option must be followed by one of never, auto, or "
+                   "always; the default\n"
+                   "is auto, which writes only when the program thinks the "
+                   "pruning table will\n"
+                   "be faster to read than to regenerate.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    const char *p = **argv;
+    if (strcmp(p, "never") == 0)
+      writeprunetables = 0;
+    else if (strcmp(p, "auto") == 0)
+      writeprunetables = 1;
+    else if (strcmp(p, "always") == 0)
+      writeprunetables = 2;
+    else
+      error("! the --writeprunetables option should be followed by never, "
+            "auto, or always.");
+  }
+} registerwritepruneopt;
+
+static struct quietopt : specialopt {
+  quietopt() : specialopt(0, "--quiet", "Eliminate extraneous output.") {}
+  virtual void parse_args(int *, const char ***) {
+    quiet++;
+    verbose = 0;
+  }
+} registerquietopt;
+
+static struct verboseopt : specialopt {
+  verboseopt()
+      : specialopt("-v", 0,
+                   "Increase verbosity level.  If followed immediately by a "
+                   "digit, set\n"
+                   "that verbosity level.") {}
+  virtual void parse_args(int *, const char ***argv) {
+    verbose++;
+    const char *p = **argv + 2;
+    if (*p) {
+      if ('0' <= *p && *p <= '9')
+        verbose = *p - '0';
+      else
+        error("The -v option should be followed by nothing or a single digit.");
+    }
+  }
+} registerverboseopt;
+
+static struct memopt : specialopt {
+  memopt() : specialopt("-M", 0, "Set maximum memory use in megabytes.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    maxmem = 1048576LL * atol(**argv);
+  }
+} registermemopt;
 
 #ifndef ASLIBRARY
 #define STR2(x) #x
