@@ -5,6 +5,8 @@
 #include "puzdef.h"
 #include <iostream>
 using argvtype = const char **;
+extern int checkbeforesolve;
+extern generatingset *gs;
 extern void processargs(int &argc, argvtype &argv, int includecmds = 0);
 extern puzdef makepuzdef(istream *f);
 extern puzdef makepuzdef(string s);

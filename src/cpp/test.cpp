@@ -1,8 +1,10 @@
 #include "test.h"
+#include "cmds.h"
+#include "generatingset.h"
 #include "prunetable.h"
 #include "solve.h"
+#include "twsearch.h" // for checkbeforesolve
 #include <iostream>
-int scramblemoves = 1;
 void timingtest(puzdef &pd) {
   stacksetval p1(pd), p2(pd);
   pd.assignpos(p1, pd.solved);
@@ -114,7 +116,7 @@ void timingtest(puzdef &pd) {
          << flush;
   }
 }
-void solvetest(puzdef &pd, generatingset *gs) {
+void solvetest(puzdef &pd, int scramblemoves, generatingset *gs) {
   stacksetval p1(pd), p2(pd);
   pd.assignpos(p1, pd.solved);
   prunetable pt(pd, maxmem);
@@ -132,3 +134,25 @@ void solvetest(puzdef &pd, generatingset *gs) {
     }
   }
 }
+static struct testcmd : cmd {
+  testcmd() : cmd("-T", 0, "Run microbenchmark tests.") {}
+  virtual void docommand(puzdef &pd) { timingtest(pd); }
+} registertest;
+static struct solvetestcmd : cmd {
+  solvetestcmd()
+      : cmd("-S", 0,
+            "Test solves by doing increasingly long random sequences.\n"
+            "An integer argument can be provided appended to the S (as in -S5) "
+            "to\n"
+            "indicate the number of random moves to apply at each step.") {}
+  virtual void docommand(puzdef &pd) { solvetest(pd, scramblemoves, gs); }
+  void parse_args(int *, const char ***argv) {
+    const char *p = **argv + 2;
+    if (*p) {
+      scramblemoves = atoll(p);
+    } else {
+      scramblemoves = 1;
+    }
+  }
+  int scramblemoves;
+} registersolvetest;

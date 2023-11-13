@@ -1,6 +1,7 @@
 #ifndef CMDS_H
 #include "util.h"
 extern struct cmd *cmdhead;
+struct puzdef;
 struct cmd {
   cmd(const char *shorto, const char *longo, const char *docs)
       : shortoption(shorto), longoption(longo), userdocs(docs) {
