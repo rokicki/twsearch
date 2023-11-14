@@ -30,7 +30,7 @@ generatingset *gs;
 int optmaxdepth = 0;
 int usehashenc;
 int verbosecanon;
-cmd *cmdhead, *requestedcmd;
+cmd *requestedcmd;
 const char *legalmovelist = 0;
 static int initialized = 0;
 int seed = 0;
@@ -337,7 +337,7 @@ int main_search(const char *def_file, const char *scramble_file) {
 }
 
 static struct cmdcanoncmd : cmd {
-  cmdcanoncmd() : cmd("-C", 0, "Show canonical sequences counts.") {}
+  cmdcanoncmd() : cmd("-C", 0, "Show canonical sequences counts.  The option can be followed\n" "immediately by an integer number of levels to print.") {}
   virtual void parse_args(int *, const char ***argv) {
     const char *p = **argv + 2;
     if (*p)
@@ -458,8 +458,10 @@ int main(int argc, const char **argv) {
     cout << endl << flush;
   }
 
-  if (argc <= 1)
+  if (argc <= 1) {
+    printhelp() ;
     error("! please provide a twsearch file name on the command line");
+  }
 
   const char *def_file = argv[1];
   const char *scramble_file = NULL;

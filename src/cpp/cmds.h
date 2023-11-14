@@ -83,5 +83,6 @@ struct llcmd : llopt {
       : llopt(shorto, longo, docs, v) {}
   virtual int ismaincmd() { return 1; }
 };
+void printhelp();
 #define CMDS_H
 #endif
