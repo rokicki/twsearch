@@ -337,7 +337,10 @@ int main_search(const char *def_file, const char *scramble_file) {
 }
 
 static struct cmdcanoncmd : cmd {
-  cmdcanoncmd() : cmd("-C", 0, "Show canonical sequences counts.  The option can be followed\n" "immediately by an integer number of levels to print.") {}
+  cmdcanoncmd()
+      : cmd("-C", 0,
+            "Show canonical sequences counts.  The option can be followed\n"
+            "immediately by an integer number of levels to print.") {}
   virtual void parse_args(int *, const char ***argv) {
     const char *p = **argv + 2;
     if (*p)
@@ -459,7 +462,7 @@ int main(int argc, const char **argv) {
   }
 
   if (argc <= 1) {
-    printhelp() ;
+    printhelp();
     error("! please provide a twsearch file name on the command line");
   }
 
