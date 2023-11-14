@@ -2,8 +2,8 @@
 #include "util.h"
 #include <inttypes.h>
 #include <limits.h>
-extern struct cmd *cmdhead;
 struct puzdef;
+extern struct cmd *cmdhead;
 struct cmd {
   cmd(const char *opt, const char *docs) : option(opt), userdocs(docs) {
     next = cmdhead;

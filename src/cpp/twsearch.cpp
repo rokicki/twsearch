@@ -30,7 +30,7 @@ generatingset *gs;
 int optmaxdepth = 0;
 int usehashenc;
 int verbosecanon;
-cmd *requestedcmd;
+cmd *requestedcmd, *cmdhead;
 const char *legalmovelist = 0;
 static int initialized = 0;
 int seed = 0;
@@ -149,8 +149,8 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
     for (auto p = cmdhead; p; p = p->next) {
       // we permit additional suffixes on two-letter options, like -v0
       if ((includecmds || !p->ismaincmd()) &&
-          (p->option[2] ? strcmp(argv[0], p->option)
-                        : strncmp(argv[0], p->option, 2))) {
+          0 == (p->option[2] ? strcmp(argv[0], p->option)
+                             : strncmp(argv[0], p->option, 2))) {
         p->parse_args(&argc, &argv);
         if (p->ismaincmd()) {
           if (requestedcmd != 0)
@@ -307,7 +307,7 @@ int main_search(const char *def_file, const char *scramble_file) {
   ifstream f;
   f.open(def_file, ifstream::in);
   if (f.fail())
-    error("! could not open file ", def_file);
+    error("! could not open definition file ", def_file);
   int sawdot = 0;
   inputbasename.clear();
   for (int i = 0; def_file[i]; i++) {

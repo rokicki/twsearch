@@ -3,7 +3,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-cmd *cmdhead;
 void printhelp() {
   map<string, cmd *> sortme;
   for (auto p = cmdhead; p; p = p->next) {
