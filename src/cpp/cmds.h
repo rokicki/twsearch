@@ -5,12 +5,11 @@
 extern struct cmd *cmdhead;
 struct puzdef;
 struct cmd {
-  cmd(const char *shorto, const char *longo, const char *docs)
-      : shortoption(shorto), longoption(longo), userdocs(docs) {
+  cmd(const char *opt, const char *docs) : option(opt), userdocs(docs) {
     next = cmdhead;
     cmdhead = this;
   }
-  const char *shortoption, *longoption;
+  const char *option;
   const char *userdocs;
   virtual void parse_args(int *, const char ***) {}
   virtual void docommand(puzdef &pd) = 0;
@@ -18,24 +17,21 @@ struct cmd {
   cmd *next;
 };
 struct specialopt : cmd {
-  specialopt(const char *shorto, const char *longo, const char *docs)
-      : cmd(shorto, longo, docs) {}
+  specialopt(const char *opt, const char *docs) : cmd(opt, docs) {}
   virtual void parse_args(int *, const char ***) = 0;
   virtual void docommand(puzdef &) { error("! bad docommand"); }
   virtual int ismaincmd() { return 0; }
 };
 struct boolopt : cmd {
-  boolopt(const char *shorto, const char *longo, const char *docs, int *v)
-      : cmd(shorto, longo, docs), var(v) {}
+  boolopt(const char *opt, const char *docs, int *v) : cmd(opt, docs), var(v) {}
   virtual void parse_args(int *, const char ***) { *var = 1; }
   virtual void docommand(puzdef &) { error("! bad docommand"); }
   virtual int ismaincmd() { return 0; }
   int *var;
 };
 struct intopt : cmd {
-  intopt(const char *shorto, const char *longo, const char *docs, int *v,
-         int lo, int hi)
-      : cmd(shorto, longo, docs), var(v), lolim(lo), hilim(hi) {}
+  intopt(const char *opt, const char *docs, int *v, int lo, int hi)
+      : cmd(opt, docs), var(v), lolim(lo), hilim(hi) {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -51,8 +47,7 @@ struct intopt : cmd {
   int *var, lolim, hilim;
 };
 struct llopt : cmd {
-  llopt(const char *shorto, const char *longo, const char *docs, ll *v)
-      : cmd(shorto, longo, docs), var(v) {}
+  llopt(const char *opt, const char *docs, ll *v) : cmd(opt, docs), var(v) {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -66,9 +61,8 @@ struct llopt : cmd {
   ll *var;
 };
 struct stringopt : cmd {
-  stringopt(const char *shorto, const char *longo, const char *docs,
-            const char **v)
-      : cmd(shorto, longo, docs), var(v) {}
+  stringopt(const char *opt, const char *docs, const char **v)
+      : cmd(opt, docs), var(v) {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -79,8 +73,7 @@ struct stringopt : cmd {
   const char **var;
 };
 struct llcmd : llopt {
-  llcmd(const char *shorto, const char *longo, const char *docs, ll *v)
-      : llopt(shorto, longo, docs, v) {}
+  llcmd(const char *opt, const char *docs, ll *v) : llopt(opt, docs, v) {}
   virtual int ismaincmd() { return 1; }
 };
 void printhelp();

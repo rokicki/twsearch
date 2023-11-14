@@ -45,7 +45,7 @@ void ordertree(const puzdef &pd) {
 }
 static struct ordertreecmd : cmd {
   ordertreecmd()
-      : cmd(0, "--ordertree",
+      : cmd("--ordertree",
             "Print shortest sequences of a particular order of the "
             "superpuzzle.") {}
   virtual void docommand(puzdef &pd) { ordertree(pd); }

@@ -95,51 +95,48 @@ void doinit() {
   }
 }
 static stringopt stringopts[] = {
-    {0, "--moves", "Restrict search to the given moves.", &legalmovelist},
-    {0, "--cachedir", "Use the specified directory to cache pruning tables.",
+    {"--moves", "Restrict search to the given moves.", &legalmovelist},
+    {"--cachedir", "Use the specified directory to cache pruning tables.",
      &user_option_cache_dir},
 };
 static boolopt boolopts[] = {
-    {0, "--nocorners", "Omit any puzzle sets with recognizable corner names.",
+    {"--nocorners", "Omit any puzzle sets with recognizable corner names.",
      &nocorners},
-    {0, "--nocenters", "Omit any puzzle sets with recognizable center names.",
+    {"--nocenters", "Omit any puzzle sets with recognizable center names.",
      &nocenters},
-    {0, "--noedges", "Omit any puzzle sets with recognizable edge names.",
+    {"--noedges", "Omit any puzzle sets with recognizable edge names.",
      &noedges},
-    {0, "--noorientation", "Ignore orientations for all sets.", &ignoreori},
-    {0, "--distinguishall",
+    {"--noorientation", "Ignore orientations for all sets.", &ignoreori},
+    {"--distinguishall",
      "Override distinguishable pieces (use the superpuzzle).", &distinguishall},
-    {0, "--noearlysolutions",
+    {"--noearlysolutions",
      "Emit any solutions whose prefix is also a solution.", &noearlysolutions},
-    {0, "--checkbeforesolve",
+    {"--checkbeforesolve",
      "Check each position for solvability using generating\n"
      "set before attempting to solve.",
      &checkbeforesolve},
-    {0, "--randomstart", "Randomize move order when solving.", &randomstart},
-    {"-q", 0, "Use only minimal (quarter) turns.", &quarter},
-    {"-H", 0,
-     "Use 128-bit hash instead of full state for God's number searches.",
+    {"--randomstart", "Randomize move order when solving.", &randomstart},
+    {"-q", "Use only minimal (quarter) turns.", &quarter},
+    {"-H", "Use 128-bit hash instead of full state for God's number searches.",
      &usehashenc},
 };
 static intopt intopts[] = {
-    {0, "--newcanon",
-     "Use search-based canonical sequences to the given depth.", &ccount, 0,
-     100},
-    {"-t", 0, "Use this many threads.", &numthreads, 1, MAXTHREADS},
-    {0, "--microthreads", "Use this many microthreads on each thread.",
+    {"--newcanon", "Use search-based canonical sequences to the given depth.",
+     &ccount, 0, 100},
+    {"-t", "Use this many threads.", &numthreads, 1, MAXTHREADS},
+    {"--microthreads", "Use this many microthreads on each thread.",
      &requesteduthreading, 1, MAXMICROTHREADING},
-    {0, "--orientationgroup",
+    {"--orientationgroup",
      "Treat adjacent piece groups of this size as\n"
      "orientations.",
      &origroup, 1, 255},
-    {0, "--startprunedepth", "Initial depth for pruning tables (default is 3).",
+    {"--startprunedepth", "Initial depth for pruning tables (default is 3).",
      &startprunedepth, 0, 100},
-    {0, "--mindepth", "Minimum depth for searches.", &optmindepth, 0, 1000},
-    {0, "--maxdepth", "Maximum depth for searches.", &maxdepth, 0, 1000},
-    {"-R", 0, "Seed for random number generator.", &seed, -2000000000,
-     2000000000},
+    {"--mindepth", "Minimum depth for searches.", &optmindepth, 0, 1000},
+    {"--maxdepth", "Maximum depth for searches.", &maxdepth, 0, 1000},
+    {"-R", "Seed for random number generator.", &seed, -2000000000, 2000000000},
 };
-static llopt solcountopt("-c", 0, "Number of solutions to generate.",
+static llopt solcountopt("-c", "Number of solutions to generate.",
                          &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
@@ -150,9 +147,10 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
     argv++;
     int found = 0;
     for (auto p = cmdhead; p; p = p->next) {
+      // we permit additional suffixes on two-letter options, like -v0
       if ((includecmds || !p->ismaincmd()) &&
-          ((p->shortoption && strncmp(argv[0], p->shortoption, 2) == 0) ||
-           (p->longoption && strcmp(argv[0], p->longoption) == 0))) {
+          (p->option[2] ? strcmp(argv[0], p->option)
+                        : strncmp(argv[0], p->option, 2))) {
         p->parse_args(&argc, &argv);
         if (p->ismaincmd()) {
           if (requestedcmd != 0)
@@ -338,7 +336,7 @@ int main_search(const char *def_file, const char *scramble_file) {
 
 static struct cmdcanoncmd : cmd {
   cmdcanoncmd()
-      : cmd("-C", 0,
+      : cmd("-C",
             "Show canonical sequence counts.  The option can be followed\n"
             "immediately by an integer number of levels to print.") {}
   virtual void parse_args(int *, const char ***argv) {
@@ -354,7 +352,7 @@ static struct cmdcanoncmd : cmd {
 
 static struct cmdlinescramblecmd : cmd {
   cmdlinescramblecmd()
-      : cmd(0, "--scramblealg",
+      : cmd("--scramblealg",
             "Give a scramble as a sequence of moves on the command line.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
@@ -368,7 +366,7 @@ static struct cmdlinescramblecmd : cmd {
 static struct omitopt : specialopt {
   omitopt()
       : specialopt(
-            0, "--omit",
+            "--omit",
             "Omit the following set name from the puzzle.  You can provide\n"
             "as many separate omit options, each with a separate set name, as "
             "you want.") {}
@@ -380,13 +378,13 @@ static struct omitopt : specialopt {
 } registeromitopt;
 
 static struct nowriteopt : specialopt {
-  nowriteopt() : specialopt(0, "--nowrite", "Do not write pruning tables.") {}
+  nowriteopt() : specialopt("--nowrite", "Do not write pruning tables.") {}
   virtual void parse_args(int *, const char ***) { writeprunetables = 0; }
 } registernowriteopt;
 
 static struct writepruneopt : specialopt {
   writepruneopt()
-      : specialopt(0, "--writeprunetables",
+      : specialopt("--writeprunetables",
                    "Specify when or if pruning tables should be written.\n"
                    "This option must be followed by one of never, auto, or "
                    "always; the default\n"
@@ -410,7 +408,7 @@ static struct writepruneopt : specialopt {
 } registerwritepruneopt;
 
 static struct quietopt : specialopt {
-  quietopt() : specialopt(0, "--quiet", "Eliminate extraneous output.") {}
+  quietopt() : specialopt("--quiet", "Eliminate extraneous output.") {}
   virtual void parse_args(int *, const char ***) {
     quiet++;
     verbose = 0;
@@ -419,7 +417,7 @@ static struct quietopt : specialopt {
 
 static struct verboseopt : specialopt {
   verboseopt()
-      : specialopt("-v", 0,
+      : specialopt("-v",
                    "Increase verbosity level.  If followed immediately by a "
                    "digit, set\n"
                    "that verbosity level.") {}
@@ -436,7 +434,7 @@ static struct verboseopt : specialopt {
 } registerverboseopt;
 
 static struct memopt : specialopt {
-  memopt() : specialopt("-M", 0, "Set maximum memory use in megabytes.") {}
+  memopt() : specialopt("-M", "Set maximum memory use in megabytes.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;

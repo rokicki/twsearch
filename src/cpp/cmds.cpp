@@ -7,15 +7,7 @@ cmd *cmdhead;
 void printhelp() {
   map<string, cmd *> sortme;
   for (auto p = cmdhead; p; p = p->next) {
-    const char *q;
-    if (p->shortoption)
-      q = p->shortoption;
-    else if (p->longoption)
-      q = p->longoption;
-    else {
-      q = "??"; // keep compiler happy
-      error("! fail; option that cannot be specified?");
-    }
+    const char *q = p->option;
     while (*q == '-')
       q++;
     string k;
@@ -32,10 +24,7 @@ void printhelp() {
   }
   for (auto it : sortme) {
     auto p = it.second;
-    if (p->shortoption)
-      cout << p->shortoption << " ";
-    if (p->longoption)
-      cout << p->longoption << " ";
+    cout << p->option << " ";
     cout << " ";
     for (const char *c = p->userdocs; *c; c++)
       if (*c == '\n')

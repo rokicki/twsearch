@@ -104,7 +104,7 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
 }
 static struct schreiersimscmd : cmd {
   schreiersimscmd()
-      : cmd(0, "--schreiersims",
+      : cmd("--schreiersims",
             "Run the Schreier-Sims algorithm to calculate the state\n"
             "space size of the puzzle.") {}
   virtual void parse_args(int *, const char ***) {}

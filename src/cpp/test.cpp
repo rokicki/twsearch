@@ -135,12 +135,12 @@ void solvetest(puzdef &pd, int scramblemoves, generatingset *gs) {
   }
 }
 static struct testcmd : cmd {
-  testcmd() : cmd("-T", 0, "Run microbenchmark tests.") {}
+  testcmd() : cmd("-T", "Run microbenchmark tests.") {}
   virtual void docommand(puzdef &pd) { timingtest(pd); }
 } registertest;
 static struct solvetestcmd : cmd {
   solvetestcmd()
-      : cmd("-S", 0,
+      : cmd("-S",
             "Test solves by doing increasingly long random sequences.\n"
             "An integer argument can be provided appended to the S (as in -S5) "
             "to\n"

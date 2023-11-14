@@ -18,7 +18,7 @@ void descsets(puzdef &pd) {
 }
 static struct descsetscmd : cmd {
   descsetscmd()
-      : cmd(0, "--describesets",
+      : cmd("--describesets",
             "Print a table of what moves affect what pieces.") {}
   virtual void docommand(puzdef &pd) { descsets(pd); }
 } registermeds;

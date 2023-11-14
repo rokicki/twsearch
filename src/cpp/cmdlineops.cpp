@@ -12,8 +12,7 @@
 #include <iostream>
 ll proclim = 1'000'000'000'000'000'000LL;
 struct proclimcmd : cmd {
-  proclimcmd(const char *shortopt, const char *longopt, const char *docs)
-      : cmd(shortopt, longopt, docs) {}
+  proclimcmd(const char *opt, const char *docs) : cmd(opt, docs) {}
   virtual void parse_args(int *, const char ***argv) {
     const char *p = **argv + 2;
     if (*p) {
@@ -23,7 +22,7 @@ struct proclimcmd : cmd {
 };
 int compact;
 static boolopt
-    compactopt(0, "--compact",
+    compactopt("--compact",
                "Print and parse positions on standard input and output\n"
                " in a one-line compact format.",
                &compact);
@@ -40,7 +39,7 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
 }
 static struct solvecmd : cmd {
   solvecmd()
-      : cmd("-s", 0,
+      : cmd("-s",
             "Read a set of move sequences on standard input and perform an\n"
             "optimal solve on each.  If the option is given as -si, only look "
             "for\n"
@@ -72,7 +71,7 @@ void uniqit(const puzdef &pd, setval p, const char *s) {
 static struct uniqcmd : proclimcmd {
   uniqcmd()
       : proclimcmd(
-            "-u", 0,
+            "-u",
             "Read a set of move sequences on standard input and only echo\n"
             "those that are unique.  If an integer is attacheck to the -u "
             "option,\n"
@@ -90,7 +89,7 @@ void wrongit(const puzdef &pd, setval p, const char *s) {
 }
 static struct wrongcmd : cmd {
   wrongcmd()
-      : cmd(0, "--maxwrong",
+      : cmd("--maxwrong",
             "Takes an integer argument giving the a limit on the number of "
             "wrong\n"
             "pieces.  Read a set of move sequences on standard input and for "
@@ -121,7 +120,7 @@ void uniqitsymm(const puzdef &pd, setval p, const char *s) {
 static struct symmuniqcmd : proclimcmd {
   symmuniqcmd()
       : proclimcmd(
-            "-U", 0,
+            "-U",
             "Read a set of move sequences on standard input and only echo\n"
             "those that are unique with respect to symmetry.  If an integer "
             "is\n"
@@ -169,7 +168,7 @@ void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
 }
 static struct invertcmd : cmd {
   invertcmd()
-      : cmd("-i", 0,
+      : cmd("-i",
             "Read a set of move sequences on standard input and echo the\n"
             "inverted sequences.") {}
   virtual void docommand(puzdef &pd) { processlines4(pd, invertit); };
@@ -186,7 +185,7 @@ void cancelit(const puzdef &pd, vector<int> &movelist, const char *) {
 }
 static struct cancelcmd : cmd {
   cancelcmd()
-      : cmd(0, "--cancelseqs",
+      : cmd("--cancelseqs",
             "Read a set of move sequences on standard input and merge any\n"
             "nearly adjacent moves according to canonical sequences.  This "
             "does not\n"
@@ -206,7 +205,7 @@ void mergeit(const puzdef &pd, vector<int> &movelist, const char *) {
 }
 static struct mergecmd : cmd {
   mergecmd()
-      : cmd(0, "--mergeseqs",
+      : cmd("--mergeseqs",
             "Read a set of move sequences on standard input and merge any\n"
             "nearly adjacent moves according to canonical sequences.  This "
             "also\n"
@@ -228,7 +227,7 @@ void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
 }
 static struct shortencmd : cmd {
   shortencmd()
-      : cmd(0, "--shortenseqs",
+      : cmd("--shortenseqs",
             "Read a set of move sequences on standard input and attempt\n"
             "to shorten each by optimally solving increasingly longer "
             "subsequences.") {}
@@ -249,7 +248,7 @@ void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
 }
 static struct unrotatecmd : cmd {
   unrotatecmd()
-      : cmd(0, "--unrotateseqs",
+      : cmd("--unrotateseqs",
             "Read a set of move sequences on standard input and attempt\n"
             "to move all rotations to the end of the sequence.") {}
   virtual void docommand(puzdef &pd) { processlines4(pd, unrotateit); };
@@ -261,7 +260,7 @@ void symsit(const puzdef &pd, setval p, const char *s) {
 }
 static struct symscmd : cmd {
   symscmd()
-      : cmd(0, "--showsymmetry",
+      : cmd("--showsymmetry",
             "Read a set of move sequences on standard input and show the\n"
             "symmetry order of each.") {}
   virtual void docommand(puzdef &pd) { processlines(pd, symsit); };
@@ -288,7 +287,7 @@ void orderit(const puzdef &pd, setval p, const char *s) {
 }
 static struct ordercmd : cmd {
   ordercmd()
-      : cmd("-o", 0,
+      : cmd("-o",
             "Read a set of move sequences on standard input and show the\n"
             "order of each.") {}
   virtual void docommand(puzdef &pd) { processlines2(pd, orderit); };
@@ -373,7 +372,7 @@ void emitmove(const puzdef &pd, setval p, const char *s) {
 }
 static struct emitmovecmd : cmd {
   emitmovecmd()
-      : cmd(0, "--showmoves",
+      : cmd("--showmoves",
             "Read a set of move sequences on standard input and show the\n"
             "equivalent move definition on standard output.") {}
   virtual void docommand(puzdef &pd) { processlines2(pd, emitmove); };
@@ -383,7 +382,7 @@ void emitposition(const puzdef &pd, setval p, const char *s) {
 }
 static struct emitposcmd : cmd {
   emitposcmd()
-      : cmd(0, "--showpositions",
+      : cmd("--showpositions",
             "Read a set of move sequences on standard input and show the\n"
             "resulting position on standard output.") {}
   virtual void docommand(puzdef &pd) { processlines(pd, emitposition); };
@@ -401,7 +400,7 @@ void showrandompos(const puzdef &pd) {
 }
 static struct showrandompositioncmd : llcmd {
   showrandompositioncmd()
-      : llcmd("-r", 0,
+      : llcmd("-r",
               "Show a given number of random positions.  The positions are\n"
               "generated by doing 500 random moves, so for big puzzles they "
               "might not be\n"

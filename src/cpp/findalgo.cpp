@@ -288,7 +288,7 @@ void findalgos(const puzdef &pd, int which) {
 }
 static struct doalgocmd : cmd {
   doalgocmd()
-      : cmd("-A", 0,
+      : cmd("-A",
             "Try to find useful algorithms for a given puzzle.  We look for\n"
             "algorithms that affect few pieces.  The -A option can be "
             "immediately\n"

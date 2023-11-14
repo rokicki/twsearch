@@ -939,16 +939,15 @@ void doarraygodsymm(const puzdef &pd) {
 }
 static int forcearray;
 static boolopt
-    force("-F", 0,
+    force("-F",
           "When running God's number searches, force the use of arrays and\n"
           "sorting rather than canonical sequences or bit arrays.",
           &forcearray);
 static struct godcmd : cmd {
   godcmd()
-      : cmd("-g", 0,
-            "Calculate the number of positions at each depth, as far as "
-            "memory\n"
-            "allows.  Print antipodal positions.") {}
+      : cmd("-g", "Calculate the number of positions at each depth, as far as "
+                  "memory\n"
+                  "allows.  Print antipodal positions.") {}
   virtual void docommand(puzdef &pd) {
     int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem;
     int statesfitsa =
