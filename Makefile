@@ -87,7 +87,7 @@ BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
    src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
    src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
    src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
-   src/cpp/workchunks.cpp
+   src/cpp/workchunks.cpp src/cpp/cmds.cpp
 
 FFISOURCE = src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp
 
@@ -107,7 +107,7 @@ OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdl
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/ffi/ffi_api.o build/cpp/ffi/wasm_api.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
-   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o
+   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o build/cpp/cmds.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
