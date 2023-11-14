@@ -1,14 +1,15 @@
 #include "solve.h"
 #include "cmdlineops.h"
 #include <iostream>
-ull solutionsfound = 0;
-ull solutionsneeded = 1;
+ll solutionsfound = 0;
+ll solutionsneeded = 1;
 int noearlysolutions;
 int onlyimprovements;
 int phase2;
 int optmindepth;
 int randomstart;
 string lastsolution;
+int globalinputmovecount;
 int didprepass;
 int requesteduthreading = 4;
 int workinguthreading = 0;

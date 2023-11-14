@@ -1,3 +1,4 @@
+#ifdef HIGHLYEXPERIMENTAL
 #include "orderedgs.h"
 #include <algorithm>
 #include <iostream>
@@ -195,3 +196,4 @@ orderedgs::orderedgs(const puzdef &pd_, const vector<int> &norder)
   */
   cout.precision(oldprec);
 }
+#endif

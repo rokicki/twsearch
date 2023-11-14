@@ -1,6 +1,7 @@
 #include "god.h"
 #include "antipode.h"
 #include "canon.h"
+#include "cmds.h"
 #include "index.h"
 #include "readksolve.h"
 #include "rotations.h"
@@ -935,3 +936,37 @@ void doarraygodsymm(const puzdef &pd) {
     showantipodes(pd, s_1, writer);
   }
 }
+static int forcearray;
+static boolopt
+    force("-F",
+          "When running God's number searches, force the use of arrays and\n"
+          "sorting rather than canonical sequences or bit arrays.",
+          &forcearray);
+static struct godcmd : cmd {
+  godcmd()
+      : cmd("-g", "Calculate the number of positions at each depth, as far as "
+                  "memory\n"
+                  "allows.  Print antipodal positions.") {}
+  virtual void docommand(puzdef &pd) {
+    int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem;
+    int statesfitsa =
+        forcearray ||
+        (pd.logstates <= 50 &&
+         ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
+    if (!forcearray && statesfit2 && pd.canpackdense()) {
+      cout << "Using twobit arrays." << endl;
+      dotwobitgod2(pd);
+    } else if (statesfitsa) {
+      if (pd.rotgroup.size()) {
+        cout << "Using sorting bfs symm and arrays." << endl;
+        doarraygodsymm(pd);
+      } else {
+        cout << "Using sorting bfs and arrays." << endl;
+        doarraygod(pd);
+      }
+    } else {
+      cout << "Using canonical sequences and arrays." << endl;
+      doarraygod2(pd);
+    }
+  }
+} registermeg;

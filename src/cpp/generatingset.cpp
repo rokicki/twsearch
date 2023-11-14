@@ -1,4 +1,5 @@
 #include "generatingset.h"
+#include "cmds.h"
 #include <iostream>
 bool generatingset::resolve(const setval p_) {
   stacksetval p(pd), t(pd);
@@ -101,3 +102,11 @@ generatingset::generatingset(const puzdef &pd_) : pd(pd_), e(pd.id) {
   }
   cout.precision(oldprec);
 }
+static struct schreiersimscmd : cmd {
+  schreiersimscmd()
+      : cmd("--schreiersims",
+            "Run the Schreier-Sims algorithm to calculate the state\n"
+            "space size of the puzzle.") {}
+  virtual void parse_args(int *, const char ***) {}
+  virtual void docommand(puzdef &pd) { new generatingset(pd); }
+} registerme;

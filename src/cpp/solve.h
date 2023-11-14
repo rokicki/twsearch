@@ -9,13 +9,14 @@
  *   position (and the required code to distribute the work across
  *   multiple threads).
  */
-extern ull solutionsfound, solutionsneeded;
+extern ll solutionsfound, solutionsneeded;
 extern int noearlysolutions;
 extern int phase2;
 extern int optmindepth;
 extern int onlyimprovements;
 extern int randomstart;
 extern string lastsolution;
+extern int globalinputmovecount;
 struct solvestate {
   int st, mi;
   ull mask, skipbase;

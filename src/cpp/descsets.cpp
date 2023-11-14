@@ -1,4 +1,5 @@
 #include "descsets.h"
+#include "cmds.h"
 #include <iostream>
 void descsets(puzdef &pd) {
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
@@ -15,3 +16,9 @@ void descsets(puzdef &pd) {
     }
   }
 }
+static struct descsetscmd : cmd {
+  descsetscmd()
+      : cmd("--describesets",
+            "Print a table of what moves affect what pieces.") {}
+  virtual void docommand(puzdef &pd) { descsets(pd); }
+} registermeds;

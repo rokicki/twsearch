@@ -1,24 +1,17 @@
 #include "twsearch.h"
-#include "antipode.h"
 #include "canon.h"
 #include "city.h"
 #include "cmdlineops.h"
-#include "coset.h"
-#include "descsets.h"
+#include "cmds.h"
 #include "filtermoves.h"
-#include "findalgo.h"
 #include "generatingset.h"
-#include "god.h"
 #include "index.h"
-#include "orderedgs.h"
-#include "ordertree.h"
 #include "parsemoves.h"
 #include "prunetable.h"
 #include "puzdef.h"
 #include "readksolve.h"
 #include "rotations.h"
 #include "solve.h"
-#include "test.h"
 #include "threads.h"
 #include "util.h"
 #include "workchunks.h"
@@ -34,53 +27,19 @@
 using namespace std;
 int checkbeforesolve;
 generatingset *gs;
-int bestsolve = 1000000;
 int optmaxdepth = 0;
 int usehashenc;
-int dogod, docanon, doalgo, dosolvetest, dotimingtest, douniq, doinv,
-    dosolvelines, doorder, doshowmoves, doshowpositions, dogenrand,
-    checksolvable, doss, doorderedgs, dosyms, docancelseqs, domergeseqs,
-    dounrotateseqs, doshortenseqs, docoset, douniqsymm, dodescsets, doordertree,
-    dowrong;
-const char *scramblealgo = 0;
+int verbosecanon;
+cmd *requestedcmd, *cmdhead;
 const char *legalmovelist = 0;
 static int initialized = 0;
 int seed = 0;
-int forcearray = 0;
 void reseteverything() {
   checkbeforesolve = 0;
   optmaxdepth = 0;
   usehashenc = 0;
-  scramblealgo = 0;
   legalmovelist = 0;
   seed = 0;
-  bestsolve = 1000000;
-  forcearray = 0;
-  dogod = 0;
-  docanon = 0;
-  doalgo = 0;
-  dosolvetest = 0;
-  dotimingtest = 0;
-  douniq = 0;
-  doinv = 0;
-  dosolvelines = 0;
-  doorder = 0;
-  doshowmoves = 0;
-  doshowpositions = 0;
-  dogenrand = 0;
-  checksolvable = 0;
-  doss = 0;
-  doorderedgs = 0;
-  dosyms = 0;
-  docancelseqs = 0;
-  domergeseqs = 0;
-  dounrotateseqs = 0;
-  doshortenseqs = 0;
-  docoset = 0;
-  douniqsymm = 0;
-  dodescsets = 0;
-  doordertree = 0;
-  dowrong = 0;
 // for now, WASM limit is 1GB; normal C++ limit is 8GB
 #ifdef WASM
   maxmem = 1LL * 1024LL * 1024LL * 1024LL;
@@ -89,38 +48,26 @@ void reseteverything() {
   maxmem = 8LL * 1024LL * 1024LL * 1024LL;
   writeprunetables = 1; // auto
 #endif
-  antipodecount = 20;
   ccount = 0;
   canonlim = 0;
-  globalinputmovecount = 0;
-  proclim = 1'000'000'000'000'000'000LL;
-  compact = 0;
-  maxwrong = 0;
-  cosetmovelist = 0;
-  cosetmoveseq = 0;
-  listcosets = 0;
-  relaxcosets = 0;
-  algostrict = 0;
-  symcoordgoal = 20000;
   inputbasename = UNKNOWNPUZZLE;
   startprunedepth = 3;
   origroup = 0;
   nocorners = 0;
   nocenters = 0;
   noedges = 0;
+  verbosecanon = 0;
   ignoreori = 0;
   distinguishall = 0;
   omitsets.clear();
   solutionsfound = 0;
   solutionsneeded = 1;
   noearlysolutions = 0;
-  phase2 = 0;
   optmindepth = 0;
   onlyimprovements = 0;
   randomstart = 0;
   maxdepth = 1000000000;
   didprepass = 0;
-  scramblemoves = 1;
 #ifdef USE_PTHREADS
   numthreads = min((unsigned int)MAXTHREADS, thread::hardware_concurrency());
 #else
@@ -131,21 +78,6 @@ void reseteverything() {
   start = walltime();
   quarter = 0;
   quiet = 0;
-}
-void dophase2(const puzdef &pd, setval scr, setval p1sol, prunetable &pt,
-              const char *p1str) {
-  stacksetval p2(pd);
-  if (optmaxdepth == 0)
-    optmaxdepth = maxdepth;
-  pd.mul(scr, p1sol, p2);
-  maxdepth = min(optmaxdepth - globalinputmovecount,
-                 bestsolve - globalinputmovecount - 1);
-  int r = solve(pd, pt, p2, gs);
-  if (r >= 0) {
-    cout << "Phase one was " << p1str << endl;
-    bestsolve = r + globalinputmovecount;
-    cout << "Found a solution totaling " << bestsolve << " moves." << endl;
-  }
 }
 void doinit() {
   if (!initialized) {
@@ -166,248 +98,79 @@ void doinit() {
     initialized = 1;
   }
 }
+static stringopt stringopts[] = {
+    {"--moves", "moves  Restrict search to the given moves.", &legalmovelist},
+    {"--cachedir",
+     "dirname  Use the specified directory to cache pruning tables.",
+     &user_option_cache_dir},
+};
+static boolopt boolopts[] = {
+    {"--nocorners", "Omit any puzzle sets with recognizable corner names.",
+     &nocorners},
+    {"--nocenters", "Omit any puzzle sets with recognizable center names.",
+     &nocenters},
+    {"--noedges", "Omit any puzzle sets with recognizable edge names.",
+     &noedges},
+    {"--noorientation", "Ignore orientations for all sets.", &ignoreori},
+    {"--distinguishall",
+     "Override distinguishable pieces (use the superpuzzle).", &distinguishall},
+    {"--noearlysolutions",
+     "Emit any solutions whose prefix is also a solution.", &noearlysolutions},
+    {"--checkbeforesolve",
+     "Check each position for solvability using generating\n"
+     "set before attempting to solve.",
+     &checkbeforesolve},
+    {"--randomstart", "Randomize move order when solving.", &randomstart},
+    {"-q", "Use only minimal (quarter) turns.", &quarter},
+    {"-H", "Use 128-bit hash instead of full state for God's number searches.",
+     &usehashenc},
+};
+static intopt intopts[] = {
+    {"--newcanon",
+     "num  Use search-based canonical sequences to the given depth.", &ccount,
+     0, 100},
+    {"-t", "num  Use this many threads.", &numthreads, 1, MAXTHREADS},
+    {"--microthreads", "num  Use this many microthreads on each thread.",
+     &requesteduthreading, 1, MAXMICROTHREADING},
+    {"--orientationgroup",
+     "num  Treat adjacent piece groups of this size as\n"
+     "orientations.",
+     &origroup, 1, 255},
+    {"--startprunedepth",
+     "num  Initial depth for pruning tables (default is 3).", &startprunedepth,
+     0, 100},
+    {"--mindepth", "num  Minimum depth for searches.", &optmindepth, 0, 1000},
+    {"--maxdepth", "num  Maximum depth for searches.", &maxdepth, 0, 1000},
+    {"-R", "num  Seed for random number generator.", &seed, -2000000000,
+     2000000000},
+};
+static llopt solcountopt("-c", "num  Number of solutions to generate.",
+                         &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
  */
-void processargs(int &argc, argvtype &argv) {
+void processargs(int &argc, argvtype &argv, int includecmds) {
   while (argc > 1 && argv[1][0] == '-') {
     argc--;
     argv++;
-    if (argv[0][1] == '-') {
-      if (strcmp(argv[0], "--moves") == 0) {
-        legalmovelist = argv[1];
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--showmoves") == 0) {
-        doshowmoves++;
-      } else if (strcmp(argv[0], "--showpositions") == 0) {
-        doshowpositions++;
-      } else if (strcmp(argv[0], "--newcanon") == 0) {
-        ccount = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--nocorners") == 0) {
-        nocorners++;
-      } else if (strcmp(argv[0], "--nocenters") == 0) {
-        nocenters++;
-      } else if (strcmp(argv[0], "--noorientation") == 0) {
-        ignoreori = 1;
-      } else if (strcmp(argv[0], "--omit") == 0) {
-        omitsets.insert(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--distinguishall") == 0) {
-        distinguishall = 1;
-      } else if (strcmp(argv[0], "--noearlysolutions") == 0) {
-        noearlysolutions = 1;
-      } else if (strcmp(argv[0], "--checkbeforesolve") == 0) {
-        checkbeforesolve = 1;
-      } else if (strcmp(argv[0], "--orientationgroup") == 0) {
-        origroup = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--noedges") == 0) {
-        noedges++;
-      } else if (strcmp(argv[0], "--scramblealg") == 0) {
-        scramblealgo = argv[1];
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--schreiersims") == 0) {
-        doss = 1;
-      } else if (strcmp(argv[0], "--orderedgs") == 0) {
-        doorderedgs = 1;
-      } else if (strcmp(argv[0], "--showsymmetry") == 0) {
-        dosyms = 1;
-      } else if (strcmp(argv[0], "--microthreads") == 0) {
-        requesteduthreading = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--nowrite") == 0) {
-        writeprunetables = 0; // never
-      } else if (strcmp(argv[0], "--writeprunetables") == 0) {
-        const char *arg = argv[1];
-        argc--;
-        argv++;
-        if (strcmp(arg, "never") == 0)
-          writeprunetables = 0;
-        else if (strcmp(arg, "auto") == 0)
-          writeprunetables = 1;
-        else if (strcmp(arg, "always") == 0)
-          writeprunetables = 2;
-        else
-          error(
-              "! the --writeprunetables option expects always, auto, or never");
-      } else if (strcmp(argv[0], "--cachedir") == 0) {
-        user_option_cache_dir = argv[1];
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--quiet") == 0) {
-        quiet++;
-        verbose = 0;
-      } else if (strcmp(argv[0], "--mergeseqs") == 0) {
-        domergeseqs++;
-      } else if (strcmp(argv[0], "--unrotateseqs") == 0) {
-        dounrotateseqs++;
-      } else if (strcmp(argv[0], "--shortenseqs") == 0) {
-        doshortenseqs++;
-      } else if (strcmp(argv[0], "--cancelseqs") == 0) {
-        docancelseqs++;
-      } else if (strcmp(argv[0], "--randomstart") == 0) {
-        randomstart++;
-      } else if (strcmp(argv[0], "--startprunedepth") == 0) {
-        startprunedepth = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--mindepth") == 0) {
-        optmindepth = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--maxdepth") == 0) {
-        maxdepth = atol(argv[1]);
-        argc--;
-        argv++;
-      } else if (strcmp(argv[0], "--coset") == 0) {
-        cosetmovelist = argv[1];
-        cosetmoveseq = argv[2];
-        docoset++;
-        argc -= 2;
-        argv += 2;
-      } else if (strcmp(argv[0], "--listcosets") == 0) {
-        listcosets++;
-      } else if (strcmp(argv[0], "--relaxcosets") == 0) {
-        relaxcosets++;
-      } else if (strcmp(argv[0], "--compact") == 0) {
-        compact++;
-      } else if (strcmp(argv[0], "--describesets") == 0) {
-        dodescsets++;
-      } else if (strcmp(argv[0], "--ordertree") == 0) {
-        doordertree++;
-      } else if (strcmp(argv[0], "--maxwrong") == 0) {
-        dowrong++;
-        maxwrong = atol(argv[1]);
-        argc--;
-        argv++;
-      } else {
-        error("! Argument not understood ", argv[0]);
-      }
-    } else {
-      switch (argv[0][1]) {
-      case 'q':
-        quarter++;
-        break;
-      case 'v':
-        verbose++;
-        if (argv[0][2] != 0)
-          verbose = argv[0][2] - '0';
-        break;
-      case 'm':
-      case 'd':
-        maxdepth = atol(argv[1]);
-        argc--;
-        argv++;
-        break;
-      case 'r':
-        dogenrand = 1;
-        if (argv[0][2] != 0)
-          dogenrand = atol(argv[0] + 2);
-        break;
-      case 'R':
-        seed = atol(argv[1]);
-        argc--;
-        argv++;
-        break;
-      case 'H':
-        usehashenc++;
-        break;
-      case 'M':
-        maxmem = 1048576 * atoll(argv[1]);
-        argc--;
-        argv++;
-        break;
-      case 'y':
-        symcoordgoal = atoll(argv[1]);
-        if (symcoordgoal <= 0)
-          symcoordgoal = 1;
-        argc--;
-        argv++;
-        break;
-      case 'c':
-        solutionsneeded = atoll(argv[1]);
-        argc--;
-        argv++;
-        break;
-      case 'g':
-        dogod++;
-        break;
-      case 'o':
-        doorder++;
-        break;
-      case 'U':
-        douniqsymm++;
-        if (argv[0][2] >= '0')
-          proclim = atoll(argv[0] + 2);
-        break;
-      case 'u':
-        douniq++;
-        if (argv[0][2] >= '0')
-          proclim = atoll(argv[0] + 2);
-        break;
-      case 'i':
-        doinv++;
-        break;
-      case 's':
-        dosolvelines++;
-        if (argv[0][2] == 'i')
-          onlyimprovements = 1;
-        break;
-      case 'C':
-        docanon++;
-        if (argv[0][2] >= '0') {
-          canonlim = atoll(argv[0] + 2);
+    int found = 0;
+    for (auto p = cmdhead; p; p = p->next) {
+      // we permit additional suffixes on two-letter options, like -v0
+      if ((includecmds || !p->ismaincmd()) &&
+          0 == (p->option[2] ? strcmp(argv[0], p->option)
+                             : strncmp(argv[0], p->option, 2))) {
+        p->parse_args(&argc, &argv);
+        if (p->ismaincmd()) {
+          if (requestedcmd != 0)
+            error("! can only do one thing at a time");
+          requestedcmd = p;
         }
+        found = 1;
         break;
-      case 'F':
-        forcearray++;
-        break;
-      case 'a':
-        antipodecount = atoll(argv[1]);
-        argc--;
-        argv++;
-        break;
-      case 'A':
-        doalgo = -1;
-        for (int pp = 2; argv[0][pp]; pp++)
-          if (argv[0][pp] == '1')
-            doalgo = 1;
-          else if (argv[0][pp] == '2')
-            doalgo = 2;
-          else if (argv[0][pp] == '3')
-            doalgo = 3;
-          else if (argv[0][pp] == 's')
-            algostrict = 1;
-        break;
-      case 'T':
-        dotimingtest++;
-        break;
-      case 'S':
-        dosolvetest++;
-        if (argv[0][2])
-          scramblemoves = atol(argv[0] + 2);
-        break;
-      case 't':
-        numthreads = atol(argv[1]);
-        if (numthreads > MAXTHREADS)
-          error("Numthreads cannot be more than ", to_string(MAXTHREADS));
-        argc--;
-        argv++;
-        break;
-      case '2':
-        phase2 = 1;
-        break;
-      default:
-        error("! did not argument ", argv[0]);
       }
     }
+    if (!found)
+      error("! Argument not understood ", argv[0]);
   }
 }
 puzdef makepuzdef(istream *f) {
@@ -431,12 +194,12 @@ puzdef makepuzdef(istream *f) {
   }
   if (distinguishall)
     pd.addoptionssum("distinguishall");
-  if (doss || checkbeforesolve) {
-    if (!doss && !pd.uniq)
+  if (checkbeforesolve) {
+    if (!pd.uniq)
       warn("Ignoring --checkbeforesolve due to identical pieces");
-    else if (!doss && pd.wildo)
+    else if (pd.wildo)
       warn("Ignoring --checkbeforesolve due to orientation wildcards");
-    else if (!doss && pd.haveillegal)
+    else if (pd.haveillegal)
       warn("Ignoring --checkbeforesolve due to illegal positions");
     else
       gs = new generatingset(pd);
@@ -451,7 +214,7 @@ puzdef makepuzdef(istream *f) {
     makecanonstates2(pd);
   if (quiet == 0)
     cout << "Calculated canonical states in " << duration() << endl << flush;
-  showcanon(pd, docanon);
+  showcanon(pd, verbosecanon);
   //   gensymm(pd) ;
   return pd;
 }
@@ -459,14 +222,100 @@ puzdef makepuzdef(string s) {
   stringstream is(s);
   return makepuzdef(&is);
 }
+
+int getcompactval(int &at, const string &s) {
+  if (at < 0 || at >= (int)s.size())
+    error("! out of bounds while reading compact");
+  char c = s[at++];
+  if ('0' <= c && c <= '9')
+    return c - '0';
+  if ('A' <= c && c <= 'Z')
+    return c - 'A' + 10;
+  if ('a' <= c && c <= 'z')
+    return c - 'a' + 36;
+  error("! bad character in compact format");
+  return -1;
+}
+
+void readposition(puzdef &pd, setval &p1, string crep) {
+  int at = 0;
+  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
+    setdef &sd = pd.setdefs[i];
+    int n = sd.size;
+    int ss = n * sd.omod;
+    int off = sd.off;
+    for (int j = 0; j < n; j++) {
+      int v = 0;
+      if (ss <= 62) {
+        v = getcompactval(at, crep);
+      } else if (ss <= 62 * 62) {
+        v = getcompactval(at, crep);
+        v = v * 62 + getcompactval(at, crep);
+      } else {
+        error("! can't read compact format for this puzdef");
+      }
+      if (v < 0 || v >= ss)
+        error("! bad value in compact format");
+      p1.dat[off + j] = v / sd.omod;
+      p1.dat[off + j + n] = v % sd.omod;
+    }
+  }
+  if (at != (int)crep.size())
+    error("! extra input in compact format");
+}
+
+void processscrambles(istream *f, puzdef &pd, prunetable &pt,
+                      generatingset *gs) {
+  string scramblename;
+  ull checksum = 0;
+  stacksetval p1(pd);
+  while (1) {
+    vector<string> toks = getline(f, checksum);
+    if (toks.size() == 0)
+      break;
+    if (toks[0] == "Scramble" || toks[0] == "ScrambleState" ||
+        toks[0] == "StartState") {
+      expect(toks, 2);
+      scramblename = toks[1];
+      allocsetval p =
+          readposition(pd, 'S', f, checksum,
+                       toks[0] == "ScrambleState" || toks[0] == "StartState");
+      solveit(pd, pt, scramblename, p, gs);
+    } else if (toks[0] == "ScrambleAlg") {
+      expect(toks, 2);
+      scramblename = toks[1];
+      pd.assignpos(p1, pd.solved);
+      while (1) {
+        toks = getline(f, checksum);
+        if (toks.size() == 0)
+          error("! early end of line while reading ScrambleAlg");
+        if (toks[0] == "End")
+          break;
+        for (int i = 0; i < (int)toks.size(); i++)
+          domove(pd, p1, findmove_generously(pd, toks[i]));
+      }
+      solveit(pd, pt, scramblename, p1, gs);
+    } else if (toks[0] == "CPOS") {
+      expect(toks, 2);
+      scramblename = "noname";
+      readposition(pd, p1, toks[1]);
+      solveit(pd, pt, scramblename, p1, gs);
+    } else {
+      error("! unsupported command in scramble file");
+    }
+  }
+}
+
+void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
+  prunetable pt(pd, maxmem);
+  processscrambles(f, pd, pt, gs);
+}
+
 int main_search(const char *def_file, const char *scramble_file) {
-  if (scramblealgo && doshortenseqs)
-    error("! --shortenseqs takes input from stdin, not from a command line "
-          "algorithm.");
   ifstream f;
   f.open(def_file, ifstream::in);
   if (f.fail())
-    error("! could not open file ", def_file);
+    error("! could not open definition file ", def_file);
   int sawdot = 0;
   inputbasename.clear();
   for (int i = 0; def_file[i]; i++) {
@@ -479,104 +328,8 @@ int main_search(const char *def_file, const char *scramble_file) {
       inputbasename.push_back(def_file[i]);
   }
   puzdef pd = makepuzdef(&f);
-  if (doorderedgs)
-    runorderedgs(pd);
-  if (dodescsets) {
-    descsets(pd);
-  }
-  if (doordertree) {
-    ordertree(pd);
-  }
-  if (dogenrand) {
-    for (int i = 0; i < dogenrand; i++)
-      showrandompos(pd);
-    return 0;
-  }
-  if (dogod) {
-    int statesfit2 = pd.logstates <= 50 && ((ll)(pd.llstates >> 2)) <= maxmem;
-    int statesfitsa =
-        forcearray ||
-        (pd.logstates <= 50 &&
-         ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
-    if (!forcearray && statesfit2 && pd.canpackdense()) {
-      cout << "Using twobit arrays." << endl;
-      dotwobitgod2(pd);
-    } else if (statesfitsa) {
-      if (pd.rotgroup.size()) {
-        cout << "Using sorting bfs symm and arrays." << endl;
-        doarraygodsymm(pd);
-      } else {
-        cout << "Using sorting bfs and arrays." << endl;
-        doarraygod(pd);
-      }
-    } else {
-      cout << "Using canonical sequences and arrays." << endl;
-      doarraygod2(pd);
-    }
-  }
-  if (doalgo)
-    findalgos(pd, doalgo);
-  if (dosolvetest)
-    solvetest(pd, gs);
-  if (dotimingtest)
-    timingtest(pd);
-  if (!phase2 && scramblealgo)
-    solvecmdline(pd, scramblealgo, gs);
-  if (douniq)
-    processlines(pd, uniqit);
-  if (dowrong)
-    processlines(pd, wrongit);
-  if (douniqsymm)
-    processlines2(pd, uniqitsymm);
-  if (doinv)
-    processlines3(pd, invertit);
-  if (domergeseqs)
-    processlines3(pd, mergeit);
-  if (dounrotateseqs)
-    processlines4(pd, unrotateit);
-  if (doshortenseqs)
-    processlines3(pd, shortenit);
-  if (docancelseqs)
-    processlines3(pd, cancelit);
-  if (dosyms)
-    processlines(pd, symsit);
-  if (doorder)
-    processlines2(pd, orderit);
-  if (doshowmoves)
-    processlines2(pd, emitmove);
-  if (doshowpositions)
-    processlines(pd, emitposition);
-  if (dosolvelines) {
-    prunetable pt(pd, maxmem);
-    string emptys;
-    processlines(pd, [&](const puzdef &pd, setval p, const char *) {
-      solveit(pd, pt, emptys, p, gs);
-    });
-  }
-  if (docoset) {
-    runcoset(pd);
-  }
-  if (phase2) {
-    if (scramble_file == NULL && !scramblealgo)
-      error("! need a scramble file for phase 2");
-    stacksetval scr(pd);
-    if (scramblealgo) {
-      pd.assignpos(scr, pd.solved);
-      vector<allocsetval> movelist = parsemovelist_generously(pd, scramblealgo);
-      for (int i = 0; i < (int)movelist.size(); i++)
-        domove(pd, scr, movelist[i]);
-    } else {
-      ifstream scrambles;
-      scrambles.open(scramble_file, ifstream::in);
-      if (scrambles.fail())
-        error("! could not open scramble file ", scramble_file);
-      readfirstscramble(&scrambles, pd, scr);
-      scrambles.close();
-    }
-    prunetable pt(pd, maxmem);
-    processlines2(pd, [&](const puzdef &pd, setval p1sol, const char *p1str) {
-      dophase2(pd, scr, p1sol, pt, p1str);
-    });
+  if (requestedcmd) {
+    requestedcmd->docommand(pd);
   } else if (scramble_file != NULL) {
     ifstream scrambles;
     scrambles.open(scramble_file, ifstream::in);
@@ -590,6 +343,115 @@ int main_search(const char *def_file, const char *scramble_file) {
   return 0;
 }
 
+static struct cmdcanoncmd : cmd {
+  cmdcanoncmd()
+      : cmd("-C",
+            "Show canonical sequence counts.  The option can be followed\n"
+            "immediately by a number of levels (e.g., -C20).") {}
+  virtual void parse_args(int *, const char ***argv) {
+    const char *p = **argv + 2;
+    if (*p)
+      canonlim = atol(p);
+    else
+      canonlim = 100;
+    verbosecanon = 1;
+  }
+  void docommand(puzdef &) {}
+} registercanoncmd;
+
+static struct cmdlinescramblecmd : cmd {
+  cmdlinescramblecmd()
+      : cmd("--scramblealg", "moveseq  Give a scramble as a sequence of moves "
+                             "on the\n"
+                             "command line.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    scramblealgo = **argv;
+  }
+  virtual void docommand(puzdef &pd) { solvecmdline(pd, scramblealgo, gs); }
+  const char *scramblealgo = 0;
+} registercmdlinescramble;
+
+static struct omitopt : specialopt {
+  omitopt()
+      : specialopt(
+            "--omit",
+            "setname  Omit the following set name from the puzzle.  You can "
+            "provide\n"
+            "as many separate omit options, each with a separate set name, as "
+            "you want.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    omitsets.insert(**argv);
+  }
+} registeromitopt;
+
+static struct nowriteopt : specialopt {
+  nowriteopt() : specialopt("--nowrite", "Do not write pruning tables.") {}
+  virtual void parse_args(int *, const char ***) { writeprunetables = 0; }
+} registernowriteopt;
+
+static struct writepruneopt : specialopt {
+  writepruneopt()
+      : specialopt("--writeprunetables",
+                   "never|auto|always  Specify when or if pruning tables\n"
+                   "should be written  The default is auto, which writes only "
+                   "when the program\n"
+                   "thinks the pruning table will be faster to read than to "
+                   "regenerate.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    const char *p = **argv;
+    if (strcmp(p, "never") == 0)
+      writeprunetables = 0;
+    else if (strcmp(p, "auto") == 0)
+      writeprunetables = 1;
+    else if (strcmp(p, "always") == 0)
+      writeprunetables = 2;
+    else
+      error("! the --writeprunetables option should be followed by never, "
+            "auto, or always.");
+  }
+} registerwritepruneopt;
+
+static struct quietopt : specialopt {
+  quietopt() : specialopt("--quiet", "Eliminate extraneous output.") {}
+  virtual void parse_args(int *, const char ***) {
+    quiet++;
+    verbose = 0;
+  }
+} registerquietopt;
+
+static struct verboseopt : specialopt {
+  verboseopt()
+      : specialopt("-v",
+                   "Increase verbosity level.  If followed immediately by a "
+                   "digit, set\n"
+                   "that verbosity level.") {}
+  virtual void parse_args(int *, const char ***argv) {
+    verbose++;
+    const char *p = **argv + 2;
+    if (*p) {
+      if ('0' <= *p && *p <= '9')
+        verbose = *p - '0';
+      else
+        error("The -v option should be followed by nothing or a single digit.");
+    }
+  }
+} registerverboseopt;
+
+static struct memopt : specialopt {
+  memopt() : specialopt("-M", "num  Set maximum memory use in megabytes.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    maxmem = 1048576LL * atol(**argv);
+  }
+} registermemopt;
+
 #ifndef ASLIBRARY
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
@@ -597,7 +459,7 @@ int main(int argc, const char **argv) {
   reseteverything();
   int orig_argc = argc;
   const char **orig_argv = argv;
-  processargs(argc, argv);
+  processargs(argc, argv, 1);
   if (quiet == 0) {
     cout << "# This is twsearch "
          << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl;
@@ -607,8 +469,10 @@ int main(int argc, const char **argv) {
     cout << endl << flush;
   }
 
-  if (argc <= 1)
+  if (argc <= 1) {
+    printhelp();
     error("! please provide a twsearch file name on the command line");
+  }
 
   const char *def_file = argv[1];
   const char *scramble_file = NULL;

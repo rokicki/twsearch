@@ -82,13 +82,24 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++17 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS
 LDFLAGS = -lpthread
 
-CSOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp src/cpp/canon.cpp src/cpp/cmdlineops.cpp \
-   src/cpp/filtermoves.cpp src/cpp/findalgo.cpp src/cpp/generatingset.cpp src/cpp/god.cpp \
-   src/cpp/index.cpp src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
-   src/cpp/readksolve.cpp src/cpp/solve.cpp src/cpp/test.cpp src/cpp/threads.cpp \
-   src/cpp/twsearch.cpp src/cpp/util.cpp src/cpp/workchunks.cpp src/cpp/rotations.cpp \
-   src/cpp/orderedgs.cpp src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp src/cpp/cityhash/src/city.cc src/cpp/coset.cpp \
-   src/cpp/descsets.cpp src/cpp/ordertree.cpp src/cpp/unrotate.cpp src/cpp/shorten.cpp
+BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
+   src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
+   src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
+   src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
+   src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
+   src/cpp/workchunks.cpp src/cpp/cmds.cpp
+
+FFISOURCE = src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp
+
+EXTRASOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp \
+   src/cpp/cmdlineops.cpp src/cpp/coset.cpp src/cpp/descsets.cpp \
+   src/cpp/findalgo.cpp src/cpp/god.cpp src/cpp/orderedgs.cpp \
+   src/cpp/ordertree.cpp src/cpp/shorten.cpp src/cpp/test.cpp \
+   src/cpp/unrotate.cpp
+
+CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
+
+WASMSOURCE = $(BASESOURCE) $(FFISOURCE)
 
 OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
@@ -96,14 +107,14 @@ OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdl
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/ffi/ffi_api.o build/cpp/ffi/wasm_api.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
-   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o
+   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o build/cpp/cmds.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
    src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/ffi/ffi_api.h src/cpp/ffi/wasm_api.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
-   src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h
+   src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h
 
 build/cpp/ffi/:
 	mkdir -p build/cpp/ffi/
@@ -150,14 +161,14 @@ emsdk-tip-of-tree:
 build/wasm-test/:
 	mkdir -p build/wasm-test/
 
-build/wasm-test/twsearch-test.wasm: $(CSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS) -DWASMTEST
+build/wasm-test/twsearch-test.wasm: $(WASMSOURCE) $(HSOURCE) build/wasm-test/ ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_TEST_FLAGS) -o $@ $(WASMSOURCE) $(WASM_LDFLAGS) -DWASMTEST
 
 build/wasm-single-file/:
 	mkdir -p build/wasm-single-file/
 
-build/wasm-single-file/twsearch.mjs: $(CSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
-	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_ESM_BASE64_SINGLE_FILE_FLAGS) -o $@ $(CSOURCE) $(WASM_LDFLAGS)
+build/wasm-single-file/twsearch.mjs: $(WASMSOURCE) $(HSOURCE) build/wasm-single-file/ ${WASM_CXX}
+	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_COMMON_FLAGS) $(WASM_ESM_BASE64_SINGLE_FILE_FLAGS) -o $@ $(WASMSOURCE) $(WASM_LDFLAGS)
 
 # JS
 
