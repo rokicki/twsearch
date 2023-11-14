@@ -339,7 +339,7 @@ int main_search(const char *def_file, const char *scramble_file) {
 static struct cmdcanoncmd : cmd {
   cmdcanoncmd()
       : cmd("-C", 0,
-            "Show canonical sequences counts.  The option can be followed\n"
+            "Show canonical sequence counts.  The option can be followed\n"
             "immediately by an integer number of levels to print.") {}
   virtual void parse_args(int *, const char ***argv) {
     const char *p = **argv + 2;
