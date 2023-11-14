@@ -95,8 +95,9 @@ void doinit() {
   }
 }
 static stringopt stringopts[] = {
-    {"--moves", "Restrict search to the given moves.", &legalmovelist},
-    {"--cachedir", "Use the specified directory to cache pruning tables.",
+    {"--moves", "moves  Restrict search to the given moves.", &legalmovelist},
+    {"--cachedir",
+     "dirname  Use the specified directory to cache pruning tables.",
      &user_option_cache_dir},
 };
 static boolopt boolopts[] = {
@@ -121,22 +122,25 @@ static boolopt boolopts[] = {
      &usehashenc},
 };
 static intopt intopts[] = {
-    {"--newcanon", "Use search-based canonical sequences to the given depth.",
-     &ccount, 0, 100},
-    {"-t", "Use this many threads.", &numthreads, 1, MAXTHREADS},
-    {"--microthreads", "Use this many microthreads on each thread.",
+    {"--newcanon",
+     "num  Use search-based canonical sequences to the given depth.", &ccount,
+     0, 100},
+    {"-t", "num  Use this many threads.", &numthreads, 1, MAXTHREADS},
+    {"--microthreads", "num  Use this many microthreads on each thread.",
      &requesteduthreading, 1, MAXMICROTHREADING},
     {"--orientationgroup",
-     "Treat adjacent piece groups of this size as\n"
+     "num  Treat adjacent piece groups of this size as\n"
      "orientations.",
      &origroup, 1, 255},
-    {"--startprunedepth", "Initial depth for pruning tables (default is 3).",
-     &startprunedepth, 0, 100},
-    {"--mindepth", "Minimum depth for searches.", &optmindepth, 0, 1000},
-    {"--maxdepth", "Maximum depth for searches.", &maxdepth, 0, 1000},
-    {"-R", "Seed for random number generator.", &seed, -2000000000, 2000000000},
+    {"--startprunedepth",
+     "num  Initial depth for pruning tables (default is 3).", &startprunedepth,
+     0, 100},
+    {"--mindepth", "num  Minimum depth for searches.", &optmindepth, 0, 1000},
+    {"--maxdepth", "num  Maximum depth for searches.", &maxdepth, 0, 1000},
+    {"-R", "num  Seed for random number generator.", &seed, -2000000000,
+     2000000000},
 };
-static llopt solcountopt("-c", "Number of solutions to generate.",
+static llopt solcountopt("-c", "num  Number of solutions to generate.",
                          &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
@@ -338,7 +342,7 @@ static struct cmdcanoncmd : cmd {
   cmdcanoncmd()
       : cmd("-C",
             "Show canonical sequence counts.  The option can be followed\n"
-            "immediately by an integer number of levels to print.") {}
+            "immediately by a number of levels (e.g., -C20).") {}
   virtual void parse_args(int *, const char ***argv) {
     const char *p = **argv + 2;
     if (*p)
@@ -352,8 +356,9 @@ static struct cmdcanoncmd : cmd {
 
 static struct cmdlinescramblecmd : cmd {
   cmdlinescramblecmd()
-      : cmd("--scramblealg",
-            "Give a scramble as a sequence of moves on the command line.") {}
+      : cmd("--scramblealg", "moveseq  Give a scramble as a sequence of moves "
+                             "on the\n"
+                             "command line.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -367,7 +372,8 @@ static struct omitopt : specialopt {
   omitopt()
       : specialopt(
             "--omit",
-            "Omit the following set name from the puzzle.  You can provide\n"
+            "setname  Omit the following set name from the puzzle.  You can "
+            "provide\n"
             "as many separate omit options, each with a separate set name, as "
             "you want.") {}
   virtual void parse_args(int *argc, const char ***argv) {
@@ -385,12 +391,11 @@ static struct nowriteopt : specialopt {
 static struct writepruneopt : specialopt {
   writepruneopt()
       : specialopt("--writeprunetables",
-                   "Specify when or if pruning tables should be written.\n"
-                   "This option must be followed by one of never, auto, or "
-                   "always; the default\n"
-                   "is auto, which writes only when the program thinks the "
-                   "pruning table will\n"
-                   "be faster to read than to regenerate.") {}
+                   "never|auto|always  Specify when or if pruning tables\n"
+                   "should be written  The default is auto, which writes only "
+                   "when the program\n"
+                   "thinks the pruning table will be faster to read than to "
+                   "regenerate.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -434,7 +439,7 @@ static struct verboseopt : specialopt {
 } registerverboseopt;
 
 static struct memopt : specialopt {
-  memopt() : specialopt("-M", "Set maximum memory use in megabytes.") {}
+  memopt() : specialopt("-M", "num  Set maximum memory use in megabytes.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;

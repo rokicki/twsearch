@@ -23,8 +23,12 @@ void printhelp() {
   }
   for (auto it : sortme) {
     auto p = it.second;
-    cout << p->option << " ";
-    cout << " ";
+    cout << p->option;
+    if (p->userdocs[0] > 'Z') { // parameter specified; one space
+      cout << " ";
+    } else {
+      cout << "  ";
+    }
     for (const char *c = p->userdocs; *c; c++)
       if (*c == '\n')
         cout << endl << "   ";

@@ -64,6 +64,7 @@ void stashantipodedense(ull val) {
 }
 static struct antipodecountopt : llopt {
   antipodecountopt()
-      : llopt("-a", "The count of antipodes to print.  The default is 20.",
+      : llopt("-a",
+              "num  Set the number of antipodes to print.  The default is 20.",
               &antipodecount) {}
 } registermea;
