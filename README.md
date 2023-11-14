@@ -51,131 +51,155 @@ table takes to generate, the worse the compression.  All pruning tables
 are written with extensions of .dat, so you might want to clean them
 up occasionally if you start to run out of disk space.
 
+For a full list of options, just execute `build/bin/twsearch` with no
+arguments.  These are the options as of this writing:
+
 Options:
 
-`-a`    Set the maximum number of antipodes to print; the default is 20.
+`-A`  Try to find useful algorithms for a given puzzle.  We look for
+   algorithms that affect few pieces.  The -A option can be immediately
+   followed by s to mean strict (only print one solution of a given length
+   with a given signature), 1 to mean basic algo search, 2 to mean
+   find algos by repeated executions, and 3 to mean find commutators.
 
-`-A`    Search for algorithms that hold most pieces in place.  You can
-      give a digit immediately after the option to specify the type
-      of search; 1 is normal iterated depth-first search; 2 is repeated
-      sequences; 3 is conjugates.  By default all three are done in
-      parallel.
+`-a` *num*  Set the number of antipodes to print.  The default is 20.
 
-`-c` *#*  Set the number of solutions to print (you might get more than this).
+`-C`  Show canonical sequence counts.  The option can be followed
+   immediately by a number of levels (e.g., -C20).
 
-`-C`    Calculate and print information about canonical sequences.
+`-c` *num*  Number of solutions to generate.
 
-`--cancelseqs`  Read sequences on standard in and perform move cancellations
-                to minimize the length of the sequences.
+`--cachedir` *dirname*  Use the specified directory to cache pruning tables.
 
-`--checkbeforesolve`  Check that a position is legal before attempting to
-                    solve it.  This may take extra time or memory for
-                    large puzzles.
+`--cancelseqs`  Read a set of move sequences on standard input and merge any
+   nearly adjacent moves according to canonical sequences.  This does not
+   reorder moves so the result is canonical; it just cancels moves.
 
-`--cachedir`  Write pruning tables here.  Expands a leading tilde with the value
-              of the HOME environment variable.
+`--checkbeforesolve`  Check each position for solvability using generating
+   set before attempting to solve.
 
-`-d` *#*  Set the max depth to search.
+`--compact`  Print and parse positions on standard input and output
+    in a one-line compact format.
 
-`--distinguishall`  Distinguish all pieces, despite any identical
-        piece definitions in the tws file.
+`--describesets`  Print a table of what moves affect what pieces.
 
-`-F`    Force the use of arrays rather than bitmaps in God calculations.
+`--distinguishall`  Override distinguishable pieces (use the superpuzzle).
 
-`-g`    Calculate God's algorithm.
+`-F`  When running God's number searches, force the use of arrays and
+   sorting rather than canonical sequences or bit arrays.
 
-`-H`    When doing God's algorithm calculations, use 128-bit hash to
-        encode states rather than actual packed state representation.
+`-g`  Calculate the number of positions at each depth, as far as memory
+   allows.  Print antipodal positions.
 
-`-i`    Read sequences from stdin and write inverted sequences to stdout.
+`-H`  Use 128-bit hash instead of full state for God's number searches.
 
-`-m` *#*  Set the max depth to search.
+`-i`  Read a set of move sequences on standard input and echo the
+   inverted sequences.
 
-`-M` *#*  Set the maximum memory size as an integer number of megabytes.
+`-M` *num*  Set maximum memory use in megabytes.
 
-`--mergeseqs`  Read move sequences on standard input and merge the sequences
-               into canonical sequences.
+`--maxdepth` *num*  Maximum depth for searches.
 
-`--mindepth`   Start solving at this depth.
+`--maxwrong` *num*  Read a set of move sequences on standard input and for each,
+   if the number of wrong pieces is less than or equal to the integer
+   given, echo the number of wrong pieces and the input sequence.
 
-`--moves` *moves*  Gives a comma-separated list of moves to use.
-               All multiples of these moves are considered.  For instance,
-               --moves U,F,R2 only permits half-turns on R, and all
-               possible turns on U and F.
+`--mergeseqs`  Read a set of move sequences on standard input and merge any
+   nearly adjacent moves according to canonical sequences.  This also
+   reorders moves so the end result is a canonical sequence.
 
-`--newcanon` *#*  Instead of using standard canonical sequences based on
-              commuting moves, use canonical sequences based on unique
-              positions seen through depth n.  This can help prune the
-              search space for certain puzzles if n is tuned properly.
+`--microthreads` *num*  Use this many microthreads on each thread.
 
-`--nocenters`   Ignore centers in the input .tws file.  Centers are sets
-              whose name starts with 'ce' (ignoring case).
+`--mindepth` *num*  Minimum depth for searches.
 
-`--nocorners`   Ignore corners in the input .tws file.  Corners are sets
-              whose name starts with 'c' and whose third letter is 'r'
-              (ignoring case).
+`--moves` *moves*  Restrict search to the given moves.
 
-`--noearlysolutions`  Don't print trivial solutions (those of length zero).
+`--newcanon` *num*  Use search-based canonical sequences to the given depth.
 
-`--noedges`     Ignore edges in the input .tws file.  Edges are sets
-              whose name starts with 'ed' (ignoring case).
+`--nocenters`  Omit any puzzle sets with recognizable center names.
 
-`--noorientation`  Ignore all orientation information in the tws file.
+`--nocorners`  Omit any puzzle sets with recognizable corner names.
 
-`--nowrite`     Don't write pruning tables to disk; regenerate them every time.
+`--noearlysolutions`  Emit any solutions whose prefix is also a solution.
 
-`--writeprunetables` `[always|auto|never]'  Write pruning tables always (after
-                 level 5), never (same as `nowrite` above), or automatically
-                 depending on table occupancy.  Default is auto.
+`--noedges`  Omit any puzzle sets with recognizable edge names.
 
-`-o`    Print the order of every scramble from standard input.
+`--noorientation`  Ignore orientations for all sets.
 
-`--orientationgroup` *#* For puzzles using adjacent element permutations rather
-                     than explicit orientations for orientation (as is needed
-                     when the orientation is not cyclic, as for the 2x2x2x2),
-                     this sets the number of adjacent elements that comprise
-                     a single cubie.
+`--nowrite`  Do not write pruning tables.
 
-`-q`   Use quarter-turn metric.
+`-o`  Read a set of move sequences on standard input and show the
+   order of each.
 
-`-r`   Generate and show a random position.
+`--omit` *setname*  Omit the following set name from the puzzle.  You can provide
+   as many separate omit options, each with a separate set name, as you want.
 
-`-R` *#*  Set the seed for the random number generator.
+`--ordertree`  Print shortest sequences of a particular order of the superpuzzle.
 
-`-s`    Given a set of scrambles on standard in, solve each and write
-      a solution to standard out.
+`--orientationgroup` *num*  Treat adjacent piece groups of this size as
+   orientations.
 
-`-S`    Do a solve test; for the given tws file, solve sequences of
-      increasing length.  The number of moves to add each time can
-      be provided immediately after the argument (as in -S20).
+`-q`  Use only minimal (quarter) turns.
 
-`--schreiersims`    Run the Schreier-Sims algorithm to calculate the supergroup
-                  size.  Does not account for identical pieces.
+`--quiet`  Eliminate extraneous output.
 
-`--scramblealg` *scr*  Give a scramble to solve directly on the command line.
+`-R` *num*  Seed for random number generator.
 
-`--showmoves`    Given a set of scrambles on standard input (one per line),
-               writes to standard output the move-format for those
-               scrambles.  This way you can build composite moves; for
-               instance, to make a move specification for the antislice
-               move "U D" (a clockwise turn of both the up and down faces)
-               on the 3x3x3, use the command
+`-r` *num*  Show num random positions.  The positions are generated by
+   doing 500 random moves, so for big puzzles they might not be very random.
 
-                  echo "U D" | ./build/bin/twsearch --showmoves samples/main/3x3x3.tws
+`--randomstart`  Randomize move order when solving.
 
-`--showpositions`  Given a set of scrambles on standard input (one per line),
-                 writes to standard output the scramble-format for those
-                 scrambles.
+`-S`  Test solves by doing increasingly long random sequences.
+   An integer argument can be provided appended to the S (as in -S5) to
+   indicate the number of random moves to apply at each step.
 
-`-t` *#*  Specify the number of threads to use.
+`-s`  Read a set of move sequences on standard input and perform an
+   optimal solve on each.  If the option is given as -si, only look for
+   improvements in total solution length.
 
-`-T`    Do a timing test.
+`--schreiersims`  Run the Schreier-Sims algorithm to calculate the state
+   space size of the puzzle.
 
-`-u`    Read scrambles on standard input and only output unique ones (by
-      the position they reach) on standard output.
+`--scramblealg` *moveseq*  Give a scramble as a sequence of moves on the
+   command line.
 
-`-v`   Increase verbosity.  If followed immediately by a digit, that digit
-     sets the verbosity.
+`--shortenseqs`  Read a set of move sequences on standard input and attempt
+   to shorten each by optimally solving increasingly longer subsequences.
+
+`--showmoves`  Read a set of move sequences on standard input and show the
+   equivalent move definition on standard output.
+
+`--showpositions`  Read a set of move sequences on standard input and show the
+   resulting position on standard output.
+
+`--showsymmetry`  Read a set of move sequences on standard input and show the
+   symmetry order of each.
+
+`--startprunedepth` *num*  Initial depth for pruning tables (default is 3).
+
+`-T`  Run microbenchmark tests.
+
+`-t` *num*  Use this many threads.
+
+`-U`  Read a set of move sequences on standard input and only echo
+   those that are unique with respect to symmetry.  If an integer is
+   attached to the -U option, exit after that many unique sequences have
+   been seen.
+
+`-u`  Read a set of move sequences on standard input and only echo
+   those that are unique.  If an integer is attacheck to the -u option,
+   exit after that many unique sequences have been seen.
+
+`--unrotateseqs`  Read a set of move sequences on standard input and attempt
+   to move all rotations to the end of the sequence.
+
+`-v`  Increase verbosity level.  If followed immediately by a digit, set
+   that verbosity level.
+
+`--writeprunetables` *never|auto|always*  Specify when or if pruning tables
+   should be written  The default is auto, which writes only when the program
+   thinks the pruning table will be faster to read than to regenerate.
 
 ## Pruning Tables
 
