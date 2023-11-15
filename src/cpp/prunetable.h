@@ -165,6 +165,8 @@ struct prunetable {
   ull codevals[544];
   decompinfo *dtabs[7];
   char justread;
+  vector<ull> workchunks;
+  int workat;
 };
 #define PRUNETABLE_H
 #endif

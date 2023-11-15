@@ -27,7 +27,7 @@ void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
   }
 }
 int setupthreads(const puzdef &pd, prunetable &pt) {
-  int wthreads = min(numthreads, (int)workchunks.size());
+  int wthreads = min(numthreads, (int)pt.workchunks.size());
   setupparams(pd, pt, wthreads);
   return wthreads;
 }
@@ -61,7 +61,7 @@ void fillworker::init(const puzdef &pd, int d_) {
     fillbufs[i].nchunks = 0;
 }
 ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
-  ull initmoves = workchunks[w];
+  ull initmoves = pt.workchunks[w];
   int nmoves = pd.moves.size();
   int sp = 0;
   int st = 0;
@@ -109,8 +109,8 @@ void fillworker::dowork(const puzdef &pd, prunetable &pt) {
   while (1) {
     int w = -1;
     get_global_lock();
-    if (workat < (int)workchunks.size())
-      w = workat++;
+    if (pt.workat < (int)pt.workchunks.size())
+      w = pt.workat++;
     release_global_lock();
     if (w < 0)
       return;
@@ -309,7 +309,8 @@ void prunetable::filltable(const puzdef &pd, int d) {
   ll ofillcnt = fillcnt;
   if (quiet == 0)
     cout << "Filling depth " << d << " val " << wval << flush;
-  makeworkchunks(pd, d, pd.solved);
+  workchunks = makeworkchunks(pd, d, pd.solved);
+  workat = 0;
   int wthreads = setupthreads(pd, *this);
   for (int t = 0; t < wthreads; t++)
     fillworkers[t].init(pd, d);

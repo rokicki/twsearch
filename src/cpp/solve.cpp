@@ -16,6 +16,11 @@ solveworker solveworkers[MAXTHREADS];
 int (*callback)(setval &pos, const vector<int> &moves, int d, int id);
 int (*flushback)(int d);
 static vector<vector<int>> randomized;
+// TODO: these next two need to be put into a solve-specific object if we
+// ever want to support multiple concurrent solves (such as in a
+// multi-phase solver).
+static vector<ull> workchunks;
+static int workat;
 void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
                                int id),
                       int (*g)(int)) {
@@ -263,9 +268,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       continue;
     hid = d;
     if (d - initd > 3)
-      makeworkchunks(pd, d, p, requesteduthreading);
+      workchunks = makeworkchunks(pd, d, p, requesteduthreading);
     else
-      makeworkchunks(pd, 0, p, requesteduthreading);
+      workchunks = makeworkchunks(pd, 0, p, requesteduthreading);
+    workat = 0;
     int wthreads = setupthreads(pd, pt);
     workinguthreading =
         min(requesteduthreading,
