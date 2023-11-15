@@ -168,8 +168,10 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
         break;
       }
     }
-    if (!found)
+    if (!found) {
+      printhelp();
       error("! Argument not understood ", argv[0]);
+    }
   }
 }
 puzdef makepuzdef(istream *f) {
