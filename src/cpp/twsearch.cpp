@@ -28,7 +28,6 @@ using namespace std;
 int checkbeforesolve;
 generatingset *gs;
 int optmaxdepth = 0;
-int usehashenc;
 int verbosecanon;
 cmd *requestedcmd, *cmdhead;
 const char *legalmovelist = 0;

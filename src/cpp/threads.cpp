@@ -3,7 +3,7 @@
 #include <pthread.h>
 #endif
 
-int numthreads;
+int numthreads = 1;
 #ifdef USE_PTHREADS
 pthread_mutex_t mmutex;
 pthread_t p_thread[MAXTHREADS];

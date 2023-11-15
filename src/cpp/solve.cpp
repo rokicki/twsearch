@@ -7,7 +7,6 @@ int noearlysolutions;
 int onlyimprovements;
 int phase2;
 int optmindepth;
-int randomstart;
 string lastsolution;
 int globalinputmovecount;
 int didprepass;

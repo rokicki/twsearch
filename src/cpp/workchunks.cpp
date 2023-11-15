@@ -7,6 +7,7 @@
 vector<ull> workchunks;
 vector<int> workstates;
 int workat;
+int randomstart;
 static vector<allocsetval> seen;
 static int lastsize;
 void makeworkchunks(const puzdef &pd, int d, setval symmreduce,
