@@ -53,5 +53,7 @@ void setsolvecallback(int (*)(setval &, const vector<int> &, int, int),
                       int (*)(int));
 int solve(const puzdef &pd, prunetable &pt, const setval p,
           generatingset *gs = 0);
+void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
+             generatingset *gs = 0);
 #define SOLVE_H
 #endif

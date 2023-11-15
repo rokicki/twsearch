@@ -31,16 +31,6 @@ int findmoveorrotation(const puzdef &pd, const string &mvstring) {
   error("! bad move or rotation name ", mvstring);
   return -1;
 }
-void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
-             generatingset *gs) {
-  if (quiet == 0) {
-    if (scramblename.size())
-      cout << "Solving " << scramblename << endl << flush;
-    else
-      cout << "Solving" << endl << flush;
-  }
-  solve(pd, pt, p, gs);
-}
 vector<int> parsemovelist(const puzdef &pd, const string &scr) {
   vector<int> movelist;
   string move;

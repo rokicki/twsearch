@@ -315,3 +315,13 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     cout << "No solution found in " << hid << endl << flush;
   return -1;
 }
+void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
+             generatingset *gs) {
+  if (quiet == 0) {
+    if (scramblename.size())
+      cout << "Solving " << scramblename << endl << flush;
+    else
+      cout << "Solving" << endl << flush;
+  }
+  solve(pd, pt, p, gs);
+}
