@@ -12,8 +12,7 @@ static vector<allocsetval> seen;
 static int lastsize;
 void makeworkchunks(const puzdef &pd, int d, setval symmreduce,
                     int microthreadcount) {
-  workchunks.clear();
-  workstates.clear();
+  vector<int> workstates;
   workchunks.push_back(1);
   workstates.push_back(0);
   workat = 0;

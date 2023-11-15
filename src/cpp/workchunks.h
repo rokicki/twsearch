@@ -6,7 +6,6 @@
  *   needed.
  */
 extern vector<ull> workchunks;
-extern vector<int> workstates;
 extern int workat;
 extern int randomstart;
 void makeworkchunks(const puzdef &pd, int d, const setval symmreduce,
