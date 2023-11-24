@@ -7,7 +7,7 @@
 using argvtype = const char **;
 extern int checkbeforesolve;
 extern generatingset *gs;
-extern void processargs(int &argc, argvtype &argv, int includecmds = 0);
+extern void processargs(int &argc, argvtype &argv, int includecmds);
 extern puzdef makepuzdef(istream *f);
 extern puzdef makepuzdef(string s);
 extern void reseteverything();
