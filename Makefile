@@ -87,15 +87,16 @@ BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
    src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
    src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
    src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
-   src/cpp/workchunks.cpp src/cpp/cmds.cpp
+   src/cpp/workchunks.cpp src/cpp/cmds.cpp \
+	 \
+	 src/cpp/cmdlineops.cpp src/cpp/shorten.cpp src/cpp/unrotate.cpp
 
 FFISOURCE = src/cpp/ffi/ffi_api.cpp src/cpp/ffi/wasm_api.cpp
 
 EXTRASOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp \
-   src/cpp/cmdlineops.cpp src/cpp/coset.cpp src/cpp/descsets.cpp \
+   src/cpp/coset.cpp src/cpp/descsets.cpp \
    src/cpp/findalgo.cpp src/cpp/god.cpp src/cpp/orderedgs.cpp \
-   src/cpp/ordertree.cpp src/cpp/shorten.cpp src/cpp/test.cpp \
-   src/cpp/unrotate.cpp
+   src/cpp/ordertree.cpp src/cpp/test.cpp
 
 CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
