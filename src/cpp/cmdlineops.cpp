@@ -6,9 +6,7 @@
 #include "prunetable.h"
 #include "readksolve.h"
 #include "rotations.h"
-#include "shorten.h"
 #include "solve.h"
-#include "unrotate.h"
 #include <iostream>
 ll proclim = 1'000'000'000'000'000'000LL;
 struct proclimcmd : cmd {
@@ -210,47 +208,6 @@ static struct mergecmd : cmd {
             "reorders moves so the end result is a canonical sequence.") {}
   virtual void docommand(puzdef &pd) { processlines3(pd, mergeit); };
 } registermerge;
-void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
-  if (movelist.size() == 0) {
-    cout << " ";
-  } else {
-    auto res = shorten(pd, movelist);
-    for (auto mvind : res)
-      if (mvind < (int)pd.moves.size())
-        cout << " " << pd.moves[mvind].name;
-      else
-        cout << " " << pd.rotations[mvind - pd.moves.size()].name;
-  }
-  cout << endl;
-}
-static struct shortencmd : cmd {
-  shortencmd()
-      : cmd("--shortenseqs",
-            "Read a set of move sequences on standard input and attempt\n"
-            "to shorten each by optimally solving increasingly longer "
-            "subsequences.") {}
-  virtual void docommand(puzdef &pd) { processlines3(pd, shortenit); };
-} registershorten;
-void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
-  if (movelist.size() == 0) {
-    cout << " ";
-  } else {
-    auto res = unrotate(pd, movelist);
-    for (auto mvind : res)
-      if (mvind < (int)pd.moves.size())
-        cout << " " << pd.moves[mvind].name;
-      else
-        cout << " " << pd.rotations[mvind - pd.moves.size()].name;
-  }
-  cout << endl;
-}
-static struct unrotatecmd : cmd {
-  unrotatecmd()
-      : cmd("--unrotateseqs",
-            "Read a set of move sequences on standard input and attempt\n"
-            "to move all rotations to the end of the sequence.") {}
-  virtual void docommand(puzdef &pd) { processlines4(pd, unrotateit); };
-} registerunrotate;
 void symsit(const puzdef &pd, setval p, const char *s) {
   stacksetval p2(pd);
   int symval = slowmodm(pd, p, p2);
