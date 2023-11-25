@@ -18,17 +18,18 @@ int startprunedepth = 3;
 ull fasthash(int n, const setval sv) {
   return CityHash64((const char *)sv.dat, n);
 }
-vector<workerparam> workerparams;
-void setupparams(const puzdef &pd, prunetable &pt, int numthreads) {
+void setupparams(const puzdef &pd, prunetable &pt, int numthreads,
+                 vector<workerparam> &workerparams) {
   workerparams.clear();
   while ((int)workerparams.size() < numthreads) {
     int i = workerparams.size();
     workerparams.push_back(workerparam(pd, pt, i));
   }
 }
-int setupthreads(const puzdef &pd, prunetable &pt) {
-  int wthreads = min(numthreads, (int)pt.workchunks.size());
-  setupparams(pd, pt, wthreads);
+int setupthreads(const puzdef &pd, prunetable &pt, vector<ull> &workchunks,
+                 vector<workerparam> &workerparams) {
+  int wthreads = min(numthreads, (int)workchunks.size());
+  setupparams(pd, pt, wthreads, workerparams);
   return wthreads;
 }
 void *fillthreadworker(void *o) {
@@ -311,7 +312,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
     cout << "Filling depth " << d << " val " << wval << flush;
   workchunks = makeworkchunks(pd, d, pd.solved);
   workat = 0;
-  int wthreads = setupthreads(pd, *this);
+  int wthreads = setupthreads(pd, *this, workchunks, workerparams);
   for (int t = 0; t < wthreads; t++)
     fillworkers[t].init(pd, d);
 #ifdef USE_PTHREADS

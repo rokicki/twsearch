@@ -33,8 +33,8 @@ struct workerparam {
   prunetable &pt;
   int tid;
 };
-extern vector<workerparam> workerparams;
-int setupthreads(const puzdef &pd, prunetable &pt);
+int setupthreads(const puzdef &pd, prunetable &pt, vector<ull> &workchunks,
+                 vector<workerparam> &workerparams);
 const int BLOCKSIZE = 32768; // in long longs
 const int FILLCHUNKS = 256;  // long longs
 struct fillbuf {
@@ -166,6 +166,7 @@ struct prunetable {
   decompinfo *dtabs[7];
   char justread;
   vector<ull> workchunks;
+  vector<workerparam> workerparams;
   int workat;
 };
 #define PRUNETABLE_H

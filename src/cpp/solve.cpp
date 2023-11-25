@@ -20,6 +20,7 @@ static vector<vector<int>> randomized;
 // ever want to support multiple concurrent solves (such as in a
 // multi-phase solver).
 static vector<ull> workchunks;
+vector<workerparam> workerparams;
 static int workat;
 void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
                                int id),
@@ -272,7 +273,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     else
       workchunks = makeworkchunks(pd, 0, p, requesteduthreading);
     workat = 0;
-    int wthreads = setupthreads(pd, pt);
+    int wthreads = setupthreads(pd, pt, workchunks, workerparams);
     workinguthreading =
         min(requesteduthreading,
             (int)(workchunks.size() + numthreads - 1) / numthreads);
