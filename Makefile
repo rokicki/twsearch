@@ -27,8 +27,12 @@ test-cpp-cli: build/bin/twsearch
 	cargo run --package twsearch-cpp-wrapper \
 		--example test-cpp-cli
 
+.PHONY: twsearch-cpp-wrapper-cli
+twsearch-cpp-wrapper-cli:
+	cargo build --release --package twsearch-cpp-wrapper
+
 .PHONY: test-twsearch-cpp-wrapper-cli
-test-twsearch-cpp-wrapper-cli:
+test-twsearch-cpp-wrapper-cli: twsearch-cpp-wrapper-cli
 	cargo run --package twsearch-cpp-wrapper \
 		--example test-twsearch-cpp-wrapper-cli
 
