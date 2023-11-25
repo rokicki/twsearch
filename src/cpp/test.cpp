@@ -156,3 +156,4 @@ static struct solvetestcmd : cmd {
   }
   int scramblemoves;
 } registersolvetest;
+void ensure_test_is_linked() {}

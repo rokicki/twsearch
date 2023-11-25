@@ -12,6 +12,7 @@
 #include "readksolve.h"
 #include "rotations.h"
 #include "solve.h"
+#include "test.h"
 #include "threads.h"
 #include "util.h"
 #include "workchunks.h"
@@ -149,6 +150,9 @@ static llopt solcountopt("-c", "num  Number of solutions to generate.",
  *   Can be called multiple times at the start.
  */
 void processargs(int &argc, argvtype &argv, int includecmds) {
+#ifdef ASLIBRARY
+  ensure_test_is_linked();
+#endif
   while (argc > 1 && argv[1][0] == '-') {
     argc--;
     argv++;
