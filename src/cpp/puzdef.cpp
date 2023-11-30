@@ -109,6 +109,32 @@ vector<int> puzdef::cyccnts(const setval a, ull sets) const {
   }
   return r;
 }
+vector<pair<int, int>> puzdef::cyccnts2(const setval a, ull sets) const {
+  const uchar *ap = a.dat;
+  vector<pair<int, int>> r;
+  for (int i = 0; i < (int)setdefs.size(); i++) {
+    const setdef &sd = setdefs[i];
+    int n = sd.size;
+    if ((sets >> i) & 1) {
+      ull done = 0;
+      for (int j = 0; j < n; j++) {
+        if (0 == ((done >> j) & 1)) {
+          int cnt = 0;
+          int ori = 0;
+          for (int k = j; 0 == ((done >> k) & 1); k = ap[k]) {
+            cnt++;
+            ori += ap[k + n];
+            done |= 1LL << k;
+          }
+          ori %= sd.omod;
+          r.push_back({cnt, ori});
+        }
+      }
+    }
+    ap += 2 * n;
+  }
+  return r;
+}
 ll puzdef::order(const vector<int> cc) {
   ll r = 1;
   for (int i = 2; i < (int)cc.size(); i++)

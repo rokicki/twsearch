@@ -143,6 +143,7 @@ struct puzdef {
   int numwrong(const setval a, const setval b, ull mask = -1) const;
   int permwrong(const setval a, const setval b, ull mask = -1) const;
   vector<int> cyccnts(const setval a, ull sets = -1) const;
+  vector<pair<int, int>> cyccnts2(const setval a, ull sets = -1) const;
   static ll order(const vector<int> cc);
   vector<allocsetval> stacksetvals;
   void mul(const setval a, const setval b, setval c) const {
