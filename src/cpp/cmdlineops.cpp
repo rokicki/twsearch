@@ -247,6 +247,38 @@ static struct ordercmd : cmd {
             "order of each.") {}
   virtual void docommand(puzdef &pd) { processlines2(pd, orderit); };
 } registerorder;
+void conjugit(const puzdef &pd, setval p, const char *s) {
+  stacksetval p2(pd), p3(pd);
+  pd.assignpos(p2, pd.id);
+  pd.mul(p2, p, p3);
+  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
+    vector<pair<int, int>> cc = pd.cyccnts2(p3, 1LL << i);
+    sort(cc.begin(), cc.end());
+    if (i != 0)
+      cout << ",";
+    cout << "[";
+    const char *sep = "";
+    for (int j = 0; j < (int)cc.size(); j++) {
+      if (cc[j].first == 1 && cc[j].second == 0)
+        continue;
+      cout << sep;
+      sep = ",";
+      if (cc[j].second == 0)
+        cout << cc[j].first;
+      else
+        cout << cc[j].first << ":" << cc[j].second;
+    }
+    cout << "]";
+  }
+  cout << " " << s << endl;
+}
+static struct conjugcmd : cmd {
+  conjugcmd()
+      : cmd("--showconjugacy",
+            "Read a set of move sequences on standard input and show the\n"
+            "conjugacy class of each.") {}
+  virtual void docommand(puzdef &pd) { processlines2(pd, conjugit); };
+} registerconjug;
 void emitcompact(int v) {
   if (v < 10)
     cout << v;
