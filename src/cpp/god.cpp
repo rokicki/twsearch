@@ -542,19 +542,31 @@ static int doarraygodsymchunk(const puzdef *pd, loosetype *reader,
                               loosetype *writer, int cnt) {
   int r = 0;
   const loosetype *levend = reader + cnt * looseper;
-  stacksetval p1(*pd), p2(*pd), p3(*pd);
+  stacksetval p1(*pd), p2(*pd), p3(*pd), p4(*pd);
   for (loosetype *pr = reader; pr < levend; pr += looseper) {
     looseunpack(*pd, p1, pr);
-    for (int i = 0; i < (int)pd->moves.size(); i++) {
-      if (quarter && pd->moves[i].cost > 1)
-        continue;
-      pd->mul(p1, pd->moves[i].pos, p2);
-      if (!pd->legalstate(p2))
-        continue;
-      int sym = slowmodm2(*pd, p2, p3);
-      loosepack(*pd, p3, writer, 0, 1 + (sym > 1));
-      writer += looseper;
-      r++;
+    for (int doinv = 0; doinv < 2; doinv++) {
+      for (int i = 0; i < (int)pd->moves.size(); i++) {
+        if (quarter && pd->moves[i].cost > 1)
+          continue;
+        pd->mul(p1, pd->moves[i].pos, p2);
+        if (!pd->legalstate(p2))
+          continue;
+        int sym;
+        if (pd->invertible())
+          sym = slowmodm2inv(*pd, p2, p3, p4);
+        else
+          sym = slowmodm2(*pd, p2, p3);
+        loosepack(*pd, p3, writer, 0, 1 + (sym > 1));
+        writer += looseper;
+        r++;
+      }
+      if (!pd->invertible())
+        break;
+      if (doinv == 0) {
+        pd->inv(p1, p2);
+        pd->assignpos(p1, p2);
+      }
     }
   }
   return r;
@@ -562,7 +574,10 @@ static int doarraygodsymchunk(const puzdef *pd, loosetype *reader,
 const size_t BUFSIZE = 1 << 18;
 static ll maxcnt, wavail;
 void setupgwork(const puzdef &pd) {
-  maxcnt = BUFSIZE / (sizeof(loosetype) * looseper * pd.moves.size());
+  if (pd.invertible())
+    maxcnt = BUFSIZE / (sizeof(loosetype) * looseper * 2 * pd.moves.size());
+  else
+    maxcnt = BUFSIZE / (sizeof(loosetype) * looseper * pd.moves.size());
   maxcnt = min(maxcnt, (ll)(1 + (levend - reader) / (looseper * numthreads)));
   wavail = (lim - writer) / looseper;
 }
@@ -577,10 +592,15 @@ static struct gworker {
     cnt = maxcnt;
     ll rlim = (levend - reader) / looseper;
     ll wlim = wavail / pd->moves.size();
+    if (pd->invertible())
+      wlim = wavail / (2 * pd->moves.size());
     cnt = min(cnt, min(rlim, wlim));
     if (cnt <= 0)
       return 0;
-    wavail -= cnt * pd->moves.size();
+    if (pd->invertible())
+      wavail -= cnt * 2 * pd->moves.size();
+    else
+      wavail -= cnt * pd->moves.size();
     reader += cnt * looseper;
     return 1;
   }
@@ -599,7 +619,10 @@ static struct gworker {
       else
         ncnt = doarraygodchunk(pd, reader, buf, cnt);
       get_global_lock();
-      wavail += pd->moves.size() * cnt - ncnt;
+      if (pd->invertible())
+        wavail += pd->moves.size() * cnt - ncnt;
+      else
+        wavail += 2 * pd->moves.size() * cnt - ncnt;
       memcpy(writer, buf, sizeof(loosetype) * looseper * ncnt);
       writer += looseper * ncnt;
       release_global_lock();
@@ -770,14 +793,21 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
   int symoff = basebits / (sizeof(loosetype) * 8);
   loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1)));
   int rots = pd.rotgroup.size();
+  if (pd.invertible())
+    rots *= 2;
   ull r = cnt * rots;
-  stacksetval p1(pd), p2(pd);
+  stacksetval p1(pd), p2(pd), p3(pd);
   for (ull i = 0; i < cnt; i++, p += looseper) {
     if (p[symoff] & symbit) {
       looseunpack(pd, p1, p);
-      int sym = slowmodm2(pd, p1, p2);
-      if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots)
+      int sym;
+      if (pd.invertible())
+        sym = slowmodm2inv(pd, p1, p2, p3);
+      else
+        sym = slowmodm2(pd, p1, p2);
+      if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots) {
         error("! bad symmetry calculation");
+      }
       r += (*rotmul)[sym] - rots;
     }
   }
@@ -816,6 +846,8 @@ static void *docswork(void *o) {
  */
 ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
   int rots = pd.rotgroup.size();
+  if (pd.invertible())
+    rots *= 2;
   vector<int> rotmul(rots + 1);
   for (int i = 1; i * i <= rots; i++)
     if (rots % i == 0) {
@@ -853,7 +885,7 @@ void doarraygodsymm(const puzdef &pd) {
   loosetype *mem = (loosetype *)malloc(memneeded);
   if (mem == 0)
     error("! not enough memory");
-  stacksetval p1(pd), p2(pd), p3(pd);
+  stacksetval p1(pd), p2(pd), p3(pd), p4(pd);
   pd.assignpos(p2, pd.solved);
   int sym = slowmodm2(pd, p2, p1);
   loosepack(pd, p1, mem, 0, 1 + (sym > 1));
@@ -868,6 +900,9 @@ void doarraygodsymm(const puzdef &pd) {
   writer = mem + looseper;
   loosetype *s_1 = mem;
   loosetype *s_2 = mem;
+  int usesym = 1;
+  if (pd.invertible())
+    usesym++;
   for (int d = 0;; d++) {
     cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " scnt "
          << scnts[d] << " stot " << stot << " in " << duration() << endl
@@ -881,7 +916,7 @@ void doarraygodsymm(const puzdef &pd) {
       while (1) {
         setupgwork(pd);
         for (int i = 0; i < numthreads; i++)
-          gworkers[i].init(&pd, 1);
+          gworkers[i].init(&pd, usesym);
         for (int i = 0; i < numthreads; i++)
           spawn_thread(i, dogodwork, gworkers + i);
         for (int i = 0; i < numthreads; i++)
@@ -894,17 +929,28 @@ void doarraygodsymm(const puzdef &pd) {
 #endif
       for (loosetype *pr = reader; pr < levend; pr += looseper) {
         looseunpack(pd, p1, pr);
-        for (int i = 0; i < (int)pd.moves.size(); i++) {
-          if (quarter && pd.moves[i].cost > 1)
-            continue;
-          pd.mul(p1, pd.moves[i].pos, p2);
-          if (!pd.legalstate(p2))
-            continue;
-          sym = slowmodm2(pd, p2, p3);
-          loosepack(pd, p3, writer, 0, 1 + (sym > 1));
-          writer += looseper;
-          if (writer + looseper >= lim)
-            writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+        for (int doinv = 0; doinv < 2; doinv++) {
+          for (int i = 0; i < (int)pd.moves.size(); i++) {
+            if (quarter && pd.moves[i].cost > 1)
+              continue;
+            pd.mul(p1, pd.moves[i].pos, p2);
+            if (!pd.legalstate(p2))
+              continue;
+            if (pd.invertible())
+              sym = slowmodm2inv(pd, p2, p3, p4);
+            else
+              sym = slowmodm2(pd, p2, p3);
+            loosepack(pd, p3, writer, 0, 1 + (sym > 1));
+            writer += looseper;
+            if (writer + looseper >= lim)
+              writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+          }
+          if (!pd.invertible())
+            break;
+          if (doinv == 0) {
+            pd.inv(p1, p2);
+            pd.assignpos(p1, p2);
+          }
         }
       }
 #ifdef USE_PTHREADS
@@ -957,7 +1003,7 @@ static struct godcmd : cmd {
       cout << "Using twobit arrays." << endl;
       dotwobitgod2(pd);
     } else if (statesfitsa) {
-      if (pd.rotgroup.size()) {
+      if (pd.rotgroup.size() > 1) {
         cout << "Using sorting bfs symm and arrays." << endl;
         doarraygodsymm(pd);
       } else {

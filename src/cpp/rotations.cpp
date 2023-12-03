@@ -326,3 +326,62 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   }
   return cnt;
 }
+//  Reduction using both symmetry and inversions.  For this we need
+//  temporary storage.
+int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
+  if (pd.rotgroup.size() <= 1) {
+    pd.inv(p1, pt);
+    int delta = pd.comparepos(pt, p1);
+    if (delta < 0) {
+      pd.assignpos(p2, pt);
+      return 1;
+    } else if (delta > 0) {
+      pd.assignpos(p2, p1);
+      return 1;
+    } else {
+      return 2;
+    }
+  }
+  int cnt = slowmodm2(pd, p1, p2);
+  if (!pd.invertible())
+    error("! not an invertible puzzle");
+  pd.inv(p2, pt);
+  int delta = pd.comparepos(pt, p2);
+  if (delta == 0)
+    return 2 * cnt;
+  if (delta < 0) {
+    pd.assignpos(p2, pt);
+    cnt = 1;
+  }
+  if (pd.rotgroup.size() <= 64) {
+    ull lobits = pd.lowsymmbits(pt);
+    int g = 0;
+    lobits &= ~(1LL << g);
+    while (lobits) {
+      g = ffsll(lobits) - 1;
+      lobits &= ~(1LL << g);
+      int t = pd.mulcmp3(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
+      if (t <= 0) {
+        if (t < 0) {
+          cnt = 1;
+        } else {
+          cnt++;
+        }
+      }
+    }
+  } else {
+    int g = 0;
+    for (int m = g + 1; m < (int)pd.rotgroup.size(); m++) {
+      if (p2.dat[0] < pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
+        continue;
+      int t = pd.mulcmp3(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
+      if (t <= 0) {
+        if (t < 0) {
+          cnt = 1;
+        } else
+          cnt++;
+      }
+    }
+  }
+  return cnt;
+}
