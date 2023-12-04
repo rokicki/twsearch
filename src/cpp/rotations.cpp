@@ -328,18 +328,21 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
 }
 //  Reduction using both symmetry and inversions.  For this we need
 //  temporary storage.
+//
+//  The return value is not just sym, but also returns bit values saying
+//  whether the minimal value comes from the forward, the inverse, or both.
 int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
   if (pd.rotgroup.size() <= 1) {
     pd.inv(p1, pt);
     int delta = pd.comparepos(pt, p1);
     if (delta < 0) {
       pd.assignpos(p2, pt);
-      return 1;
+      return 1 | MODINV_FORWARD;
     } else if (delta > 0) {
       pd.assignpos(p2, p1);
-      return 1;
+      return 1 | MODINV_BACKWARD;
     } else {
-      return 2;
+      return 2 | MODINV_BOTH;
     }
   }
   int cnt = slowmodm2(pd, p1, p2);
@@ -348,11 +351,12 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
   pd.inv(p2, pt);
   int delta = pd.comparepos(pt, p2);
   if (delta == 0)
-    return 2 * cnt;
+    return (2 * cnt) | MODINV_BOTH;
   if (delta < 0) {
     pd.assignpos(p2, pt);
-    cnt = 1;
-  }
+    cnt = 1 | MODINV_BACKWARD;
+  } else
+    cnt |= MODINV_FORWARD;
   if (pd.rotgroup.size() <= 64) {
     ull lobits = pd.lowsymmbits(pt);
     int g = 0;
@@ -363,9 +367,9 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
       int t = pd.mulcmp3(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
       if (t <= 0) {
         if (t < 0) {
-          cnt = 1;
+          cnt = 1 | MODINV_BACKWARD;
         } else {
-          cnt++;
+          cnt = (cnt + 1) | MODINV_BACKWARD;
         }
       }
     }
@@ -377,9 +381,9 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
       int t = pd.mulcmp3(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
       if (t <= 0) {
         if (t < 0) {
-          cnt = 1;
+          cnt = 1 | MODINV_BACKWARD;
         } else
-          cnt++;
+          cnt = (cnt + 1) | MODINV_BACKWARD;
       }
     }
   }

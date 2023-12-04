@@ -553,9 +553,12 @@ static int doarraygodsymchunk(const puzdef *pd, loosetype *reader,
         if (!pd->legalstate(p2))
           continue;
         int sym;
-        if (pd->invertible())
+        if (pd->invertible()) {
           sym = slowmodm2inv(*pd, p2, p3, p4);
-        else
+          if ((sym & MODINV_FORWARD) == 0)
+            continue;
+          sym &= MODINV_CNTMASK;
+        } else
           sym = slowmodm2(*pd, p2, p3);
         loosepack(*pd, p3, writer, 0, 1 + (sym > 1));
         writer += looseper;
@@ -802,7 +805,7 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
       looseunpack(pd, p1, p);
       int sym;
       if (pd.invertible())
-        sym = slowmodm2inv(pd, p1, p2, p3);
+        sym = slowmodm2inv(pd, p1, p2, p3) & MODINV_CNTMASK;
       else
         sym = slowmodm2(pd, p1, p2);
       if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots) {
@@ -936,9 +939,12 @@ void doarraygodsymm(const puzdef &pd) {
             pd.mul(p1, pd.moves[i].pos, p2);
             if (!pd.legalstate(p2))
               continue;
-            if (pd.invertible())
+            if (pd.invertible()) {
               sym = slowmodm2inv(pd, p2, p3, p4);
-            else
+              if ((sym & MODINV_FORWARD) == 0)
+                continue;
+              sym &= MODINV_CNTMASK;
+            } else
               sym = slowmodm2(pd, p2, p3);
             loosepack(pd, p3, writer, 0, 1 + (sym > 1));
             writer += looseper;
