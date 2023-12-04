@@ -620,9 +620,9 @@ static struct gworker {
         ncnt = doarraygodchunk(pd, reader, buf, cnt);
       get_global_lock();
       if (pd->invertible())
-        wavail += pd->moves.size() * cnt - ncnt;
-      else
         wavail += 2 * pd->moves.size() * cnt - ncnt;
+      else
+        wavail += pd->moves.size() * cnt - ncnt;
       memcpy(writer, buf, sizeof(loosetype) * looseper * ncnt);
       writer += looseper * ncnt;
       release_global_lock();
