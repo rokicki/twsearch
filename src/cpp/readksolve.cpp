@@ -192,7 +192,7 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
     uchar *p = r.dat + pz.setdefs[i].off;
     int n = pz.setdefs[i].size;
     vector<int> cnts;
-    if (p[0] == 0) {
+    if (p[0] == 0 || (typ == 's' && distinguishall)) {
       if (typ == 'S') {
         for (int j = 0; j < n; j++)
           p[j] = pz.solved.dat[pz.setdefs[i].off + j];
@@ -229,8 +229,6 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
         if (typ != 's' && typ != 'S')
           inerror("! expected, but did not see, a proper permutation");
         else {
-          pz.setdefs[i].uniq = 0;
-          pz.uniq = 0;
           pz.setdefs[i].pbits = ceillog2(cnts.size());
           if (n > 64) {
             pz.setdefs[i].dense = 0;
