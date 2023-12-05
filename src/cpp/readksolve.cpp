@@ -229,6 +229,8 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
         if (typ != 's' && typ != 'S')
           inerror("! expected, but did not see, a proper permutation");
         else {
+          pz.setdefs[i].uniq = 0;
+          pz.uniq = 0;
           pz.setdefs[i].pbits = ceillog2(cnts.size());
           if (n > 64) {
             pz.setdefs[i].dense = 0;
@@ -432,6 +434,7 @@ puzdef readdef(istream *f) {
   if (distinguishall) {
     pz.solved = pz.id;
   }
+  pz.caninvert = pz.uniq && !pz.wildo;
   pz.checksum = checksum;
   curline.clear();
   return pz;

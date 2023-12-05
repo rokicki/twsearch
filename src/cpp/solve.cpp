@@ -111,10 +111,8 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     uthr[uid].finished = 0;
     if (uthr[uid].getwork(pd, pt)) {
       active++;
-      if (uthr[uid].invflag)
-        extraprobes++;
-      else
-        lookups++;
+      lookups++;
+      extraprobes += uthr[uid].invflag;
     }
   }
   while (active) {
@@ -126,10 +124,8 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     int v = uthr[uid].innerfetch(pd, pt);
     if (v == 0) {
       if (uthr[uid].getwork(pd, pt)) {
-        if (uthr[uid].invflag)
-          extraprobes++;
-        else
-          lookups++;
+        lookups++;
+        extraprobes += uthr[uid].invflag;
         v = 3;
       } else {
         active--;
@@ -149,10 +145,8 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
         return 0;
     }
     uthr[uid].innersetup(pt);
-    if (uthr[uid].invflag)
-      extraprobes++;
-    else
-      lookups++;
+    lookups++;
+    extraprobes += uthr[uid].invflag;
   }
   return 0;
 }
@@ -327,7 +321,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       } else {
         cout << "Found " << solutionsfound << " solution"
              << (solutionsfound != 1 ? "s" : "") << " max depth " << d
-             << " probes " << totlookups + totextra << " nodes " << totlookups
+             << " probes " << totlookups << " nodes " << totlookups - totextra
              << " in " << actualtime << " rate "
              << (totlookups / actualtime / 1e6) << endl
              << flush;
@@ -335,7 +329,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       return d;
     }
     double dur = duration();
-    double rate = totlookups / dur / 1e6;
+    double rate = (totlookups - totextra) / dur / 1e6;
     if (verbose) {
       if (verbose > 1 || dur > 1) {
         if (totextra == 0) {
@@ -343,9 +337,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
                << " rate " << rate << endl
                << flush;
         } else {
-          cout << "Depth " << d << " in " << dur << " probes "
-               << totlookups + totextra << " nodes " << totlookups << " rate "
-               << rate << endl
+          cout << "Depth " << d << " in " << dur << " probes " << totlookups
+               << " nodes " << totlookups - totextra << " rate " << rate << endl
                << flush;
         }
       }
