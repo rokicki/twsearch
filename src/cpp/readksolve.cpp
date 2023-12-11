@@ -10,9 +10,9 @@ void inerror(const string s, const string x = "") {
   error(s, x);
 }
 vector<string> getline(istream *f, ull &checksum) {
-  lineno++;
   string s;
   int c;
+  lineno++;
   while (1) {
     s.clear();
     while (1) {
@@ -22,8 +22,11 @@ vector<string> getline(istream *f, ull &checksum) {
       if (c == EOF || c == 10 || c == 13) {
         if (c == EOF || s.size() > 0)
           break;
-        else
+        else {
+          if (c == 10)
+            lineno++;
           continue;
+        }
       }
       s.push_back((char)c);
     }
@@ -34,8 +37,10 @@ vector<string> getline(istream *f, ull &checksum) {
     }
     if (verbose > 2)
       cout << ">> " << s << endl;
-    if (s[0] == '#')
+    if (s[0] == '#') {
+      lineno++;
       continue;
+    }
     string tok;
     for (int i = 0; i < (int)s.size(); i++) {
       if (s[i] <= ' ') {
@@ -49,8 +54,10 @@ vector<string> getline(istream *f, ull &checksum) {
     }
     if (tok.size() > 0)
       toks.push_back(tok);
-    if (toks.size() == 0)
+    if (toks.size() == 0) {
+      lineno++;
       continue;
+    }
     curline = s;
     return toks;
   }
