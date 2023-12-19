@@ -1,0 +1,126 @@
+#
+#   The 235 cuboid, only moves that don't change shape.  The
+#   moves are defined with 5 L/R, 3 F/B, and 2 U/D.
+#
+Name 2x3x5
+
+Set CORNER1 4 1
+Set EDGE1 4 1
+Set CORNER2 4 1
+Set EDGE2 4 1
+Set CENTER1 4 1
+Set EDGE3 4 1
+Set EDGE4 4 1
+
+Solved
+CENTER1
+1 1 2 2
+End
+
+Move U2
+CORNER1
+2 1 3 4
+EDGE1
+2 1 3 4
+CORNER2
+2 1 3 4
+EDGE2
+2 1 3 4
+CENTER1
+2 1 3 4
+EDGE3
+2 1 3 4
+EDGE4
+2 1 3 4
+End
+
+Move D2
+CORNER1
+1 2 4 3
+EDGE1
+1 2 4 3
+CORNER2
+1 2 4 3
+EDGE2
+1 2 4 3
+CENTER1
+1 2 4 3
+EDGE3
+1 2 4 3
+EDGE4
+1 2 4 3
+End
+
+Move F2
+CORNER1
+4 2 3 1
+CORNER2
+1 3 2 4
+EDGE2
+4 2 3 1
+EDGE3
+1 3 2 4
+EDGE4
+3 2 1 4
+End
+
+Move B2
+CORNER1
+1 3 2 4
+CORNER2
+4 2 3 1
+EDGE2
+1 3 2 4
+EDGE3
+4 2 3 1
+EDGE4
+1 4 3 2
+End
+
+Move L2
+CORNER1
+3 2 1 4
+EDGE1
+3 2 1 4
+CORNER2
+3 2 1 4
+End
+
+Move R2
+CORNER1
+1 4 3 2
+EDGE1
+1 4 3 2
+CORNER2
+1 4 3 2
+End
+
+Move l2
+CORNER1
+3 2 1 4
+EDGE1
+3 2 1 4
+CORNER2
+3 2 1 4
+EDGE2
+3 2 1 4
+CENTER1
+3 2 1 4
+EDGE3
+3 2 1 4
+End
+
+Move r2
+CORNER1
+1 4 3 2
+EDGE1
+1 4 3 2
+CORNER2
+1 4 3 2
+EDGE2
+1 4 3 2
+CENTER1
+1 4 3 2
+EDGE3
+1 4 3 2
+End
