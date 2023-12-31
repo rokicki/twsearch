@@ -9,6 +9,7 @@ all: build/bin/twsearch build/esm build-rust
 .PHONY: setup
 setup: node_modules
 	cargo install cargo-run-bin
+	@wasmer -V > /dev/null || echo "\nEnsure \`wasmer\` is installed: https://docs.wasmer.io/install\n"
 
 .PHONY: test
 test: \
