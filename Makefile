@@ -259,7 +259,7 @@ publish-rust-main:
 .PHONY: build-rust-wasm
 build-rust-wasm:
 	rm -rf "./.temp/rust-wasm"
-	wasm-pack build --release --target web --out-dir "../../.temp/rust-wasm" src/rs-wasm
+	cargo bin wasm-pack build --release --target web --out-dir "../../.temp/rust-wasm" src/rs-wasm
 	bun script/node-esm-compat.ts
 	bun run "./script/build-wasm-package.ts"
 
