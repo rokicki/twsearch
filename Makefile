@@ -6,6 +6,11 @@ build: build/bin/twsearch
 .PHONY: all
 all: build/bin/twsearch build/esm build-rust
 
+.PHONY: setup
+setup: node_modules
+	cargo install cargo-run-bin
+	@wasmer -V > /dev/null || echo "\nEnsure \`wasmer\` is installed: https://docs.wasmer.io/install\n"
+
 .PHONY: test
 test: \
 	test-warning \
@@ -255,7 +260,7 @@ publish-rust-main:
 .PHONY: build-rust-wasm
 build-rust-wasm:
 	rm -rf "./.temp/rust-wasm"
-	wasm-pack build --release --target web --out-dir "../../.temp/rust-wasm" src/rs-wasm
+	cargo bin wasm-pack build --release --target web --out-dir "../../.temp/rust-wasm" src/rs-wasm
 	bun script/node-esm-compat.ts
 	bun run "./script/build-wasm-package.ts"
 
@@ -268,12 +273,23 @@ test-rust-wasm: build-rust-wasm
 .PHONY: build-rust-ffi
 build-rust-ffi:
 	cargo build --release --package twsearch-ffi
+	mkdir -p "./.temp"
+	cargo bin cbindgen --crate twsearch-ffi --lang c --cpp-compat --output "./.temp/twsearch-ffi.h" # TODO: install `cbindgen`
+	cat "./.temp/twsearch-ffi.h" | sed "s#\[..\];#;#g" | sed "s#\[.\];#;#g" | sed "s#const uint8_t#const char#g" > "./target/release/libtwsearch_ffi.h"
 
 .PHONY: test-rust-ffi # TODO: non-PHONY?
-test-rust-ffi: build-rust-ffi
+test-rust-ffi: test-rust-ffi-rs test-rust-ffi-js test-rust-ffi-c
+
+.PHONY: test-rust-ffi-rs
+test-rust-ffi-rs: build-rust-ffi
 	cargo test --package twsearch-ffi
+
+.PHONY: test-rust-ffi-js
+test-rust-ffi-js: build-rust-ffi
 	bun run "src/rs-ffi/test/js_test.ts"
-	
+
+.PHONY: test-rust-ffi-c
+test-rust-ffi-c: build-rust-ffi
 	gcc -o src/rs-ffi/test/c_test.bin -L./target/release src/rs-ffi/test/c_test.c -ltwsearch_ffi
 	env LD_LIBRARY_PATH=./target/release src/rs-ffi/test/c_test.bin
 
