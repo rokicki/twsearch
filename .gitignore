@@ -18,3 +18,5 @@
 
 # Rust
 /target
+# `cargo-run-bin`
+/.bin
