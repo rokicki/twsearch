@@ -221,24 +221,9 @@ static struct symscmd : cmd {
   virtual void docommand(puzdef &pd) { processlines(pd, symsit); };
 } registersyms;
 void orderit(const puzdef &pd, setval p, const char *s) {
-  stacksetval p2(pd), p3(pd);
-  pd.assignpos(p2, pd.solved);
-  pd.mul(p2, p, p3);
-  int m = 1;
-  while (1) {
-    if (pd.comparepos(p3, pd.solved) == 0) {
-      cout << m << " " << s << endl;
-      return;
-    }
-    pd.mul(p3, p, p2);
-    m++;
-    if (pd.comparepos(p2, pd.solved) == 0) {
-      cout << m << " " << s << endl;
-      return;
-    }
-    pd.mul(p2, p, p3);
-    m++;
-  }
+  vector<int> cc = pd.cyccnts(p);
+  ll o = puzdef::order(cc);
+  cout << o << " " << s << endl;
 }
 static struct ordercmd : cmd {
   ordercmd()
