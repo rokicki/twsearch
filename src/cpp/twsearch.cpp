@@ -73,7 +73,7 @@ void reseteverything() {
 #else
   numthreads = 1;
 #endif
-  requesteduthreading = 4;
+  requesteduthreading = 1;
   verbose = 1;
   start = walltime();
   quarter = 0;
@@ -130,8 +130,8 @@ static intopt intopts[] = {
      "num  Use search-based canonical sequences to the given depth.", &ccount,
      0, 100},
     {"-t", "num  Use this many threads.", &numthreads, 1, MAXTHREADS},
-    {"--microthreads", "num  Use this many microthreads on each thread.",
-     &requesteduthreading, 1, MAXMICROTHREADING},
+//  {"--microthreads", "num  Use this many microthreads on each thread.",
+//   &requesteduthreading, 1, MAXMICROTHREADING},
     {"--orientationgroup",
      "num  Treat adjacent piece groups of this size as\n"
      "orientations.",
