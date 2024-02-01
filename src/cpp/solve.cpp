@@ -122,7 +122,7 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     if (uthr[uid].finished)
       continue;
     int v = uthr[uid].innerfetch(pd, pt);
-    if (v == 0) {
+    if (v <= 0) {
       if (uthr[uid].getwork(pd, pt)) {
         lookups++;
         extraprobes += uthr[uid].invflag;
