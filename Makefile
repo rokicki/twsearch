@@ -220,7 +220,7 @@ test-wasm: build/wasm-test/twsearch-test.wasm
 
 .PHONY: test-build-js
 test-build-js: build/esm-test
-	node build/esm-test/test.js
+	bun build/esm-test/test.js
 
 .PHONY: lint-js
 lint-js:
@@ -266,7 +266,7 @@ build-rust-wasm:
 
 .PHONY: test-rust-wasm
 test-rust-wasm: build-rust-wasm
-	node "script/test-dist-wasm.js"
+	bun "script/test-dist-wasm.js"
 
 # Rust FFI
 
