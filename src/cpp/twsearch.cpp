@@ -60,6 +60,8 @@ void reseteverything() {
   ignoreori = 0;
   distinguishall = 0;
   omitsets.clear();
+  omitoris.clear();
+  omitperms.clear();
   solutionsfound = 0;
   solutionsneeded = 1;
   noearlysolutions = 0;
@@ -201,6 +203,16 @@ puzdef makepuzdef(istream *f) {
   if (omitsets.size()) {
     pd.addoptionssum("omit");
     for (auto s : omitsets)
+      pd.addoptionssum(s.c_str());
+  }
+  if (omitoris.size()) {
+    pd.addoptionssum("omitoris");
+    for (auto s : omitoris)
+      pd.addoptionssum(s.c_str());
+  }
+  if (omitperms.size()) {
+    pd.addoptionssum("omitperms");
+    for (auto s : omitperms)
       pd.addoptionssum(s.c_str());
   }
   if (distinguishall)
@@ -398,6 +410,34 @@ static struct omitopt : specialopt {
     omitsets.insert(**argv);
   }
 } registeromitopt;
+
+static struct omitpermsopt : specialopt {
+  omitpermsopt()
+      : specialopt(
+            "--omitperms",
+            "setname  Omit the permutations for the following set name from "
+            "the puzzle.\nYou can provide as many separate omitperms options, "
+            " each with a separate\nset name, as you want.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    omitperms.insert(**argv);
+  }
+} registeromitpermsopt;
+
+static struct omitorisopt : specialopt {
+  omitorisopt()
+      : specialopt(
+            "--omitoris",
+            "setname  Omit the permutations for the following set name from "
+            "the puzzle.\nYou can provide as many separate omitoris options, "
+            " each with a separate\nset name, as you want.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    omitoris.insert(**argv);
+  }
+} registeromitorisopt;
 
 static struct nowriteopt : specialopt {
   nowriteopt() : specialopt("--nowrite", "Do not write pruning tables.") {}

@@ -2,7 +2,7 @@
 #include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori, distinguishall;
-set<string> omitsets;
+set<string> omitsets, omitperms, omitoris;
 static int lineno;
 void inerror(const string s, const string x = "") {
   if (lineno)
@@ -117,14 +117,18 @@ int oddperm(uchar *p, int n) {
 }
 int omitset(string s) {
   if (omitsets.find(s) != omitsets.end())
-    return 1;
-  if (s.size() < 2)
-    return 0;
-  if (nocorners && tolower(s[0]) == 'c' && s[1] != 0 && tolower(s[2]) == 'r')
-    return 1;
-  if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
-    return 1;
-  if (noedges && tolower(s[0]) == 'e' && tolower(s[1]) == 'd')
+    return 3;
+  if (s.size() >= 2) {
+    if (nocorners && tolower(s[0]) == 'c' && s[1] != 0 && tolower(s[2]) == 'r')
+      return 3;
+    if (nocenters && tolower(s[0]) == 'c' && tolower(s[1]) == 'e')
+      return 3;
+    if (noedges && tolower(s[0]) == 'e' && tolower(s[1]) == 'd')
+      return 3;
+  }
+  if (omitoris.find(s) != omitoris.end())
+    return 2;
+  if (omitperms.find(s) != omitperms.end())
     return 1;
   return 0;
 }
@@ -146,10 +150,11 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
       break;
     }
     if ((typ != 'm' && toks[0] == "?") || isnumber(toks[0])) {
-      if (ignore)
+      if (ignore == 3)
         continue;
-      if (curset < 0 || numseq > 1)
+      if (curset < 0 || numseq > 1) {
         inerror("! unexpected number sequence");
+      }
       int n = pz.setdefs[curset].size;
       expect(toks, n);
       uchar *p = r.dat + pz.setdefs[curset].off + numseq * n;
@@ -169,19 +174,21 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
           }
         }
       }
-      if (numseq == 1 && ignoreori)
+      if (numseq == 1 && (ignoreori || (ignore & 2)))
         for (int i = 0; i < n; i++)
           p[i] = 0;
+      if (numseq == 0 && (ignore & 1) && typ == 's') {
+        for (int i = 0; i < n; i++)
+          p[i] = offset;
+      }
       numseq++;
     } else {
       if (curset >= 0 && numseq == 0)
         inerror("! empty set def?");
       expect(toks, 1);
-      ignore = 0;
-      if (omitset(toks[0])) {
-        ignore = 1;
+      ignore = omitset(toks[0]);
+      if (ignore == 3)
         continue;
-      }
       curset = -1;
       for (int i = 0; i < (int)pz.setdefs.size(); i++)
         if (toks[0] == pz.setdefs[i].name) {
@@ -198,8 +205,9 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
   for (int i = 0; i < (int)pz.setdefs.size(); i++) {
     uchar *p = r.dat + pz.setdefs[i].off;
     int n = pz.setdefs[i].size;
+    ignore = omitset(pz.setdefs[i].name);
     vector<int> cnts;
-    if (p[0] == 0 || (typ == 's' && distinguishall)) {
+    if ((ignore & 1) == 0 && (p[0] == 0 || (typ == 's' && distinguishall))) {
       if (typ == 'S') {
         for (int j = 0; j < n; j++)
           p[j] = pz.solved.dat[pz.setdefs[i].off + j];
@@ -318,6 +326,7 @@ puzdef readdef(istream *f) {
   ull checksum = 0;
   pz.optionssum = 0;
   lineno = 0;
+  int ignore = 0;
   while (1) {
     vector<string> toks = getline(f, checksum);
     if (toks.size() == 0)
@@ -336,7 +345,8 @@ puzdef readdef(istream *f) {
       if (state != 1)
         inerror("! Set in wrong place");
       expect(toks, 4);
-      if (omitset(toks[1]))
+      ignore = omitset(toks[1]);
+      if (ignore == 3)
         continue;
       setdef sd;
       sd.name = toks[1];
@@ -344,7 +354,7 @@ puzdef readdef(istream *f) {
       sd.omod = getnumber(1, toks[3]);
       if (sd.omod > 127)
         inerror("! twsearch supports a maximum orientation size of 127");
-      if (ignoreori)
+      if (ignoreori || (ignore & 2))
         sd.omod = 1;
       sd.pparity = (sd.size == 1 ? 0 : 1);
       sd.oparity = 1;

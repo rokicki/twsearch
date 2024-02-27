@@ -14,6 +14,6 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
 puzdef readdef(istream *f);
 void addmovepowers(puzdef &pd);
 extern int nocorners, nocenters, noedges, ignoreori, distinguishall;
-extern set<string> omitsets;
+extern set<string> omitsets, omitperms, omitoris;
 #define READKSOLVE_H
 #endif
