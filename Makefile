@@ -82,7 +82,7 @@ format-cpp:
 	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format -i
 
 .PHONY: publish
-publish: publish-rust
+publish: test-rust publish-rust
 
 TWSEARCH_VERSION=v0.0.0
 
