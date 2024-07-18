@@ -255,7 +255,8 @@ publish-rust: publish-rust-main publish-rust-ffi
 
 .PHONY: publish-rust-main
 publish-rust-main:
-	cargo publish --package twsearch
+	@echo "WARNING: will fall back to `--no-verify` due to https://github.com/rust-lang/cargo/issues/8407" # TODO
+	cargo publish --package twsearch || cargo publish --package twsearch --no-verify
 
 # Rust WASM
 
@@ -297,4 +298,5 @@ test-rust-ffi-c: build-rust-ffi
 
 .PHONY: publish-rust-ffi
 publish-rust-ffi:
-	cargo publish --package twsearch-ffi
+	@echo "WARNING: will fall back to `--no-verify` due to https://github.com/rust-lang/cargo/issues/8407" # TODO
+	cargo publish --package twsearch-ffi || cargo publish --package twsearch-ffi --no-verify
