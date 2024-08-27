@@ -184,7 +184,7 @@ build/wasm-single-file/twsearch.mjs: $(WASMSOURCE) $(HSOURCE) build/wasm-single-
 # JS
 
 node_modules:
-	npm install
+	bun install
 
 ESBUILD_COMMON_ARGS = \
 		--format=esm --target=es2020 \
