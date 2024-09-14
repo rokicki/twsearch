@@ -194,14 +194,14 @@ ESBUILD_COMMON_ARGS = \
 
 .PHONY: dev
 dev: build/wasm-single-file/twsearch.mjs node_modules
-	npx esbuild ${ESBUILD_COMMON_ARGS} \
+	bun x esbuild ${ESBUILD_COMMON_ARGS} \
 		--sourcemap \
 		--servedir=src/js/dev \
 		src/js/dev/*.ts
 
 .PHONY: build/esm
 build/esm: build/wasm-single-file/twsearch.mjs node_modules
-	npx esbuild ${ESBUILD_COMMON_ARGS} \
+	bun x esbuild ${ESBUILD_COMMON_ARGS} \
 		--external:cubing \
 		--outdir=build/esm src/js/index.ts
 	mkdir -p ./.temp
@@ -211,7 +211,7 @@ build/esm: build/wasm-single-file/twsearch.mjs node_modules
 
 .PHONY: build/esm-test
 build/esm-test: build/wasm-single-file/twsearch.mjs node_modules
-	npx esbuild ${ESBUILD_COMMON_ARGS} \
+	bun x esbuild ${ESBUILD_COMMON_ARGS} \
 		--external:cubing \
 		--outdir=build/esm-test \
 		src/js/dev/test.ts
@@ -226,11 +226,11 @@ test-build-js: build/esm-test
 
 .PHONY: lint-js
 lint-js:
-	npx @biomejs/biome check ./script ./src/js/**/*.ts
+	bun x @biomejs/biome check ./script ./src/js/**/*.ts
 
 .PHONY: format-js
 format-js:
-	npx @biomejs/biome format ./script ./src/js/**/*.ts
+	bun x @biomejs/biome format ./script ./src/js/**/*.ts
 
 # Rust
 
