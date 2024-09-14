@@ -57,7 +57,7 @@ benchmark-rust:
 
 .PHONY: clean
 clean:
-	rm -rf ./.temp ./build ./dist ./src/js/generated-wasm/twsearch.* ./*.dwo ./target
+	rm -rf ./.temp ./build ./dist ./src/js/generated-wasm/twsearch.* ./*.dwo ./target ./package-lock.json
 
 .PHONY: cpp-clean
 cpp-clean:

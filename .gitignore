@@ -20,3 +20,6 @@
 /target
 # `cargo-run-bin`
 /.bin
+
+# Replaced with `bun.lockb`
+/package-lock.json
