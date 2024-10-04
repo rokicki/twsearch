@@ -226,11 +226,11 @@ test-build-js: build/esm-test
 
 .PHONY: lint-js
 lint-js:
-	bun x @biomejs/biome check ./script ./src/js/**/*.ts
+	bun x @biomejs/biome check ./script ./src/js/**/*.ts ./**/*.json
 
 .PHONY: format-js
 format-js:
-	bun x @biomejs/biome format ./script ./src/js/**/*.ts
+	bun x @biomejs/biome format ./script ./src/js/**/*.ts ./**/*.json
 
 # Rust
 
