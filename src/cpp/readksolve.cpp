@@ -451,7 +451,7 @@ puzdef readdef(istream *f) {
   if (distinguishall) {
     pz.solved = pz.id;
   }
-  pz.caninvert = pz.uniq && !pz.wildo;
+  pz.doubleprobe = pz.uniq && !pz.wildo && pz.defaultstart();
   pz.checksum = checksum;
   curline.clear();
   return pz;

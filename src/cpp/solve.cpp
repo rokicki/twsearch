@@ -175,7 +175,7 @@ int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
      *   default (identity perm and zero orientations).  We need to fix this
      *   soon.
      */
-  } else if (0 && pd.invertible() && v < 2 + pt.baseval && invflag == 0) {
+  } else if (pd.invertiblelookups() && v < 2 + pt.baseval && invflag == 0) {
     invflag = 1;
     pd.inv(posns[sp], *invtmp);
     return 3;

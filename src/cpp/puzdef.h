@@ -127,12 +127,14 @@ struct puzdef {
   ull checksum;
   ull optionssum;
   vector<illegal_t> illegal;
-  char haveillegal, wildo, dense, uniq, caninvert;
+  char haveillegal, wildo, dense, uniq, caninvert, doubleprobe;
   int comparepos(const setval a, const setval b) const {
     return memcmp(a.dat, b.dat, totsize);
   }
   int canpackdense() const { return dense; }
   int invertible() const { return caninvert; }
+  int invertiblelookups() const { return doubleprobe; }
+  int defaultstart() const;
   void assignpos(setval a, const setval b) const {
     memcpy(a.dat, b.dat, totsize);
   }

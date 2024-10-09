@@ -283,3 +283,19 @@ void domove(const puzdef &pd, setval p, int mv) {
 void domove(const puzdef &pd, setval p, int mv, setval pt) {
   domove(pd, p, pd.moves[mv].pos, pt);
 }
+int puzdef::defaultstart() const {
+  const uchar *a = solved.dat;
+  for (int i = 0; i < (int)setdefs.size(); i++) {
+    const setdef &sd = setdefs[i];
+    int n = sd.size;
+    for (int i = 0; i < n; i++)
+      if (i != a[i])
+        return 0;
+    a += n;
+    for (int i = 0; i < n; i++)
+      if (a[i] != 0)
+        return 0;
+    a += n;
+  }
+  return 1;
+}
