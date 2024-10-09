@@ -89,7 +89,7 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
       chunkmoves++;
       mul *= nmoves;
       if (mul >= (1ULL << 62) / nmoves) {
-        cout << "Mul got too big." << endl;
+        cout << "Mul got too big " << nmoves << " " << mul << endl;
         break;
       }
     }
