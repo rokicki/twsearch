@@ -170,7 +170,12 @@ int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
     v = 0;
   } else if (togo == 0) {
     v = possibsolution(pd);
-  } else if (pd.invertible() && v < 2 + pt.baseval && invflag == 0) {
+    /*
+     *   This code as written does not work if the start state is not the
+     *   default (identity perm and zero orientations).  We need to fix this
+     *   soon.
+     */
+  } else if (0 && pd.invertible() && v < 2 + pt.baseval && invflag == 0) {
     invflag = 1;
     pd.inv(posns[sp], *invtmp);
     return 3;

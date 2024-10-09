@@ -495,9 +495,10 @@ void expandmoveset(const puzdef &pd, vector<moove> &moves,
          this code as a temporary hack to fix this (but you won't be able
          to use move multiples on input anymore.)  I need to fix this in a
          better way.   -tgr
+       *
       if (quarter && m2.cost > 1)
          continue ;
-       */
+       * */
       m2.twist = (tw + order) % order;
       if (tw != 1) {
         string s2 = m.name;
