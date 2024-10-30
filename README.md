@@ -230,29 +230,29 @@ will be expanded with the contents of the `HOME` environment variable.
 
 What is working so far:
 
-* Parsing ksolve file
-* God's algorithm
-* Optimal solver for random positions
-* Canonical sequence data
-* Tree search using canonical sequences
-* Write pruning tables
-* Read pruning tables
-* Parse scramble file
-* Solve scramble positions
-* QTM solves/pruning tables
-* Symmetry reduction (except mirroring)
+- Parsing ksolve file
+- God's algorithm
+- Optimal solver for random positions
+- Canonical sequence data
+- Tree search using canonical sequences
+- Write pruning tables
+- Read pruning tables
+- Parse scramble file
+- Solve scramble positions
+- QTM solves/pruning tables
+- Symmetry reduction (except mirroring)
 
 Things to do:
 
-* Add algebraic support for when reading scrambles
-* Add grip information; derive moves according to SiGN
-* Print antipodes on two-bit God's algorithm
-* Coset solvers
+- Add algebraic support for when reading scrambles
+- Add grip information; derive moves according to SiGN
+- Print antipodes on two-bit God's algorithm
+- Coset solvers
 
 Things to consider:
 
-* Ignore pieces
-* Blocking moves
+- Ignore pieces
+- Blocking moves
 
 ## License
 
