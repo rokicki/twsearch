@@ -14,6 +14,7 @@ extern int noearlysolutions;
 extern int phase2;
 extern int optmindepth;
 extern int onlyimprovements;
+extern int alloptimal;
 extern string lastsolution;
 extern int globalinputmovecount;
 struct solvestate {

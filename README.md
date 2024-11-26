@@ -73,6 +73,8 @@ Options:
 
 `-a` *num*  Set the number of antipodes to print.  The default is 20.
 
+`--alloptimal`  Find all optimal solutions.
+
 `-C`  Show canonical sequence counts.  The option can be followed
    immediately by a number of levels (e.g., -C20).
 

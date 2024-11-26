@@ -5,6 +5,7 @@ ll solutionsfound = 0;
 ll solutionsneeded = 1;
 int noearlysolutions;
 int onlyimprovements;
+int alloptimal;
 int phase2;
 int optmindepth;
 string lastsolution;
@@ -62,6 +63,9 @@ void solveworker::init(int d_, int tid_, const setval p_) {
   p = p_;
   rover = 0;
 }
+int satisfiedsolutioncount() {
+  return alloptimal == 0 && solutionsfound >= solutionsneeded;
+}
 int microthread::possibsolution(const puzdef &pd) {
   if (callback) {
     return callback(posns[sp], movehist, d, tid);
@@ -80,7 +84,7 @@ int microthread::possibsolution(const puzdef &pd) {
       lastsolution += pd.moves[movehist[i]].name;
     }
     cout << endl << flush;
-    if (solutionsfound < solutionsneeded)
+    if (!satisfiedsolutioncount())
       r = 0;
     release_global_lock();
     return r;
@@ -92,7 +96,7 @@ int microthread::getwork(const puzdef &pd, prunetable &pt) {
     int w = -1;
     int finished = 0;
     get_global_lock();
-    finished = (solutionsfound >= solutionsneeded);
+    finished = satisfiedsolutioncount();
     if (workat < (int)workchunks.size())
       w = workat++;
     release_global_lock();
@@ -137,7 +141,7 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     if (lookups > checktarget) {
       int finished = 0;
       get_global_lock();
-      finished = (solutionsfound >= solutionsneeded);
+      finished = satisfiedsolutioncount();
       checkincrement += checkincrement / 30;
       checktarget = lookups + checkincrement;
       release_global_lock();
@@ -272,6 +276,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   int hid = 0;
   randomized.clear();
   for (int d = initd; d <= maxdepth; d++) {
+    if (alloptimal && solutionsfound > 0)
+      break;
     if (randomstart) {
       while ((int)randomized.size() <= d) {
         randomized.push_back({});
@@ -314,7 +320,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       totextra += solveworkers[i].extraprobes;
       pt.addlookups(solveworkers[i].lookups);
     }
-    if (solutionsfound >= solutionsneeded) {
+    if (alloptimal ? (solutionsfound > 0) : satisfiedsolutioncount()) {
       duration();
       double actualtime = start - starttime;
       if (totextra == 0) {
@@ -351,7 +357,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     if (flushback)
       if (flushback(d))
         break;
-    if (d != maxdepth)
+    if (d != maxdepth && (alloptimal == 0 || solutionsfound == 0))
       pt.checkextend(pd); // fill table up a bit more if needed
   }
   if (!phase2 && callback == 0)

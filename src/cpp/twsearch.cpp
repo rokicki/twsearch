@@ -68,6 +68,7 @@ void reseteverything() {
   optmindepth = 0;
   onlyimprovements = 0;
   randomstart = 0;
+  alloptimal = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -126,6 +127,7 @@ static boolopt boolopts[] = {
     {"-q", "Use only minimal (quarter) turns.", &quarter},
     {"-H", "Use 128-bit hash instead of full state for God's number searches.",
      &usehashenc},
+    {"--alloptimal", "Find all optimal solutions.", &alloptimal},
 };
 static intopt intopts[] = {
     {"--newcanon",
