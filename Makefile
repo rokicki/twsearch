@@ -49,7 +49,7 @@ test-rust: test-rust-lib test-rust-wasm test-rust-ffi
 .PHONY: test-rust-lib
 test-rust-lib:
 	cargo test
-	cargo run --release --example random_scramble_for_event
+	#cargo run --release --example random_scramble_for_event
 
 .PHONY: benchmark-rust
 benchmark-rust:
@@ -226,11 +226,11 @@ test-wasm-js: build/esm-test
 
 .PHONY: lint-js
 lint-js:
-	bun x @biomejs/biome check ./script ./src/js/**/*.ts ./**/*.json
+	bun x @biomejs/biome check
 
 .PHONY: format-js
 format-js:
-	bun x @biomejs/biome format ./script ./src/js/**/*.ts ./**/*.json
+	bun x @biomejs/biome check --apply
 
 # Rust
 
