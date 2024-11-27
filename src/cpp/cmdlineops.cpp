@@ -8,6 +8,7 @@
 #include "rotations.h"
 #include "solve.h"
 #include <iostream>
+#include <algorithm>
 ll proclim = 1'000'000'000'000'000'000LL;
 struct proclimcmd : cmd {
   proclimcmd(const char *opt, const char *docs) : cmd(opt, docs) {}
