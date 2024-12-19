@@ -1,7 +1,6 @@
 /.temp
 /build
 /dist
-/emsdk
 /node_modules
 
 # TODO
@@ -15,6 +14,7 @@
 /*.dSYM
 /twsearch
 /twsearch.wasm
+/emsdk
 
 # Rust
 /target
