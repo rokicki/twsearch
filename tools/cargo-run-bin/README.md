@@ -1,0 +1,1 @@
+This package must be named `cargo-bin`, because `cargo-run-bin` needs to believe its binary is `cargo-bin`: <https://github.com/dustinblackman/cargo-run-bin/issues/21#issuecomment-2600372315> (even though [`cargo-bin`](https://crates.io/crates/cargo-bin) is also a separate thing that exists).
