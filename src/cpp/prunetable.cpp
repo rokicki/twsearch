@@ -325,7 +325,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
   fillthreadworker((void *)&workerparams[0]);
 #endif
   for (int i = 0; i < wthreads; i++)
-    fillcnt += fillworkers[i].wfillcnt ;
+    fillcnt += fillworkers[i].wfillcnt;
   if (quiet == 0) {
     double dur = duration();
     double rate = (fillcnt - ofillcnt) / dur / 1e6;
