@@ -12,7 +12,7 @@ BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
    src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
    src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp
 
-EXTRASOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp \
+EXTRASOURCE = src/cpp/antipode.cpp \
    src/cpp/coset.cpp src/cpp/descsets.cpp \
    src/cpp/findalgo.cpp src/cpp/god.cpp src/cpp/orderedgs.cpp \
    src/cpp/ordertree.cpp src/cpp/shorten.cpp src/cpp/unrotate.cpp \
@@ -20,7 +20,7 @@ EXTRASOURCE = src/cpp/antipode.cpp src/cpp/calcsymm.cpp \
 
 CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
-OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdlineops.o \
+OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
    build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/puzdef.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
@@ -29,7 +29,7 @@ OBJ = build/cpp/antipode.o build/cpp/calcsymm.o build/cpp/canon.o build/cpp/cmdl
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o build/cpp/cmds.o \
    build/cpp/totalvar.o
 
-HSOURCE = src/cpp/antipode.h src/cpp/calcsymm.h src/cpp/canon.h src/cpp/cmdlineops.h \
+HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
    src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
