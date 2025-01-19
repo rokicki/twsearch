@@ -46,6 +46,7 @@ struct fillworker {
   int d;
   fillbuf fillbufs[MEMSHARDS];
   allocsetval *looktmp;
+  ull wfillcnt;
   char pad[256];
   void init(const puzdef &pd, int d_);
   ull fillstart(const puzdef &pd, prunetable &pt, int w);
