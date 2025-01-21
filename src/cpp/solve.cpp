@@ -275,7 +275,11 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   solutionsfound = 0;
   int hid = 0;
   randomized.clear();
+  ull lastlookups = 0;
+  ull lastextra = 0;
   for (int d = initd; d <= maxdepth; d++) {
+    lastlookups = totlookups;
+    lastextra = totextra;
     if (alloptimal && solutionsfound > 0)
       break;
     if (randomstart) {
@@ -340,16 +344,18 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       return d;
     }
     double dur = duration();
-    double rate = (totlookups - totextra) / dur / 1e6;
+    double rate = (totlookups - lastlookups - totextra + lastextra) / dur / 1e6;
     if (verbose) {
       if (verbose > 1 || dur > 1) {
         if (totextra == 0) {
-          cout << "Depth " << d << " in " << dur << " lookups " << totlookups
-               << " rate " << rate << endl
+          cout << "Depth " << d << " in " << dur << " lookups "
+               << totlookups - lastlookups << " rate " << rate << endl
                << flush;
         } else {
-          cout << "Depth " << d << " in " << dur << " probes " << totlookups
-               << " nodes " << totlookups - totextra << " rate " << rate << endl
+          cout << "Depth " << d << " in " << dur << " probes "
+               << totlookups - lastlookups << " nodes "
+               << totlookups - lastlookups - totextra + lastextra << " rate "
+               << rate << endl
                << flush;
         }
       }
