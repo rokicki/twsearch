@@ -127,7 +127,11 @@ static boolopt boolopts[] = {
     {"-q", "Use only minimal (quarter) turns.", &quarter},
     {"-H", "Use 128-bit hash instead of full state for God's number searches.",
      &usehashenc},
-    {"--alloptimal", "Find all optimal solutions.", &alloptimal},
+    {"--alloptimal",
+     "Find all optimal solutions.  If puzzle has rotations\n"
+     "and is reduced by symmetry, the set of solutions will also be\n"
+     "reduced by that symmetry.",
+     &alloptimal},
 };
 static intopt intopts[] = {
     {"--newcanon",
@@ -148,8 +152,12 @@ static intopt intopts[] = {
     {"-R", "num  Seed for random number generator.", &seed, -2000000000,
      2000000000},
 };
-static llopt solcountopt("-c", "num  Number of solutions to generate.",
-                         &solutionsneeded);
+static llopt solcountopt(
+    "-c",
+    "num  Number of solutions to generate.  If puzzle has rotations\n"
+    "and is reduced by symmetry, the set of solutions will also be\n"
+    "reduced by that symmetry.",
+    &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
  */
