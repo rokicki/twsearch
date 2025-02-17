@@ -364,6 +364,9 @@ struct setinfo {
    ull numstates, mult ;
    unsigned int *movetable ;
 } ;
+/*
+ *   rdv=0 means we are going backwards.
+ */
 ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
           int rdv, int wrv, int nmoves, ull roff, ull *bits) {
 // cout << "Recur sees" ;
@@ -376,24 +379,50 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
     for (int mv=0; mv<nmoves; mv++)
       offsets[at*nmoves+mv] *= mt[at].mult ;
     ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL ;
-    for (ull o=0; o<wid; o++) {
-      ull rd = bits[roff+o] ^ xormask ;
-      rd = rd & (rd >> 1) & 0x5555555555555555LL ;
+    if (rdv == 0) { // backwards
+      for (ull o=0; o<wid; o++) {
+        ull rd = bits[roff+o] ^ xormask ;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL ;
 // cout << "Rd is " << rd << endl ;
-      while (rd) {
-        int o2 = (ffsll(rd)-1) ;
-        rd &= ~(1LL << o2) ;
-        ull ofr = (o << 5) + (o2 >> 1) ;
-        for (int mv=0; mv<nmoves; mv++) {
+        while (rd) {
+          int o2 = (ffsll(rd)-1) ;
+          rd &= ~(1LL << o2) ;
+          ull ofr = (o << 5) + (o2 >> 1) ;
+          for (int mv=0; mv<nmoves; mv++) {
 // cout << "Inmv sees" ;
 // for (auto v: offsets) cout << " " << v ;
 // cout << endl ;
-          ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
+            ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
 // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " << offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv] << endl ;
-          ull wbits = bits[woff>>5] ;
-          if (((wbits >> ((woff & 31) * 2)) & 3) == 0) {
-            bits[woff>>5] += ((ull)wrv) << ((woff & 31) * 2) ;
-            r++ ;
+            ull wbits = bits[woff>>5] ;
+            if (((wbits >> ((woff & 31) * 2)) & 3) != 0) {
+              bits[roff+o] += ((ull)wrv) << o2 ;
+              r++ ;
+              break;
+            }
+          }
+        }
+      }
+    } else { // forwards
+      for (ull o=0; o<wid; o++) {
+        ull rd = bits[roff+o] ^ xormask ;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL ;
+// cout << "Rd is " << rd << endl ;
+        while (rd) {
+          int o2 = (ffsll(rd)-1) ;
+          rd &= ~(1LL << o2) ;
+          ull ofr = (o << 5) + (o2 >> 1) ;
+          for (int mv=0; mv<nmoves; mv++) {
+// cout << "Inmv sees" ;
+// for (auto v: offsets) cout << " " << v ;
+// cout << endl ;
+            ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
+// cout << "Woff is " << woff << " from " << at*nmoves+mv << " " << offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv] << endl ;
+            ull wbits = bits[woff>>5] ;
+            if (((wbits >> ((woff & 31) * 2)) & 3) == 0) {
+              bits[woff>>5] += ((ull)wrv) << ((woff & 31) * 2) ;
+              r++ ;
+            }
           }
         }
       }
@@ -546,6 +575,11 @@ void dotwobitgod3(puzdef &pd) {
   vector<ull> offsets(nmoves * (1 + movetables.size())) ;
   ll totset = 0;
   ll bitsset = 1;
+  ull levcnts[4] ;
+  for (int i=0; i<4; i++)
+    levcnts[i] = 0 ;
+  levcnts[0] = totsize - 1 ;
+  levcnts[1] = 1 ;
   for (int rd=0; ; rd++) {
     totset += bitsset ;
     cout << "Dist " << rd << " " << bitsset << " " << totset << " in " << duration() << endl ;
@@ -553,9 +587,14 @@ void dotwobitgod3(puzdef &pd) {
     int wrv = (rdv % 3) + 1 ;
     for (int i=0; i<nmoves; i++)
       offsets[i] = 0 ;
-    bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits);
+    if (levcnts[rdv] < levcnts[0])
+      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits);
+    else
+      bitsset = recur(movetables, offsets, 0, 0, wrv, nmoves, 0, bits);
     if (bitsset == 0)
       break ;
+    levcnts[wrv] += bitsset ;
+    levcnts[0] -= bitsset ;
   }
 }
 /*
