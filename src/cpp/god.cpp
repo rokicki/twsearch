@@ -368,7 +368,7 @@ struct setinfo {
  *   rdv=0 means we are going backwards.
  */
 ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
-          int rdv, int wrv, int nmoves, ull roff, ull *bits) {
+          int rdv, int wrv, int nmoves, ull roff, ull *bits, int back) {
 // cout << "Recur sees" ;
 // for (auto v: offsets) cout << " " << v ;
 // cout << endl ;
@@ -378,8 +378,8 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
     roff *= wid ;
     for (int mv=0; mv<nmoves; mv++)
       offsets[at*nmoves+mv] *= mt[at].mult ;
-    ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL ;
-    if (rdv == 0) { // backwards
+    if (back) { // backwards
+      ull xormask = 0xffffffffffffffffLL ;
       for (ull o=0; o<wid; o++) {
         ull rd = bits[roff+o] ^ xormask ;
         rd = rd & (rd >> 1) & 0x5555555555555555LL ;
@@ -395,7 +395,7 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
             ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
 // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " << offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv] << endl ;
             ull wbits = bits[woff>>5] ;
-            if (((wbits >> ((woff & 31) * 2)) & 3) != 0) {
+            if (((wbits >> ((woff & 31) * 2)) & 3) == rdv) {
               bits[roff+o] += ((ull)wrv) << o2 ;
               r++ ;
               break;
@@ -404,6 +404,7 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
         }
       }
     } else { // forwards
+      ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL ;
       for (ull o=0; o<wid; o++) {
         ull rd = bits[roff+o] ^ xormask ;
         rd = rd & (rd >> 1) & 0x5555555555555555LL ;
@@ -435,7 +436,7 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
 // cout << "Read " << offsets[at*nmoves+mv] << " from movetable " << mt[at].movetable[v*nmoves+mv] << " gives " << offsets[(at+1)*nmoves+mv] << endl ;
      }
      r += recur(mt, offsets, at+1, rdv, wrv, nmoves, roff*mt[at].mult + v,
-                bits) ;
+                bits, back) ;
     }
   }
   return r;
@@ -588,9 +589,9 @@ void dotwobitgod3(puzdef &pd) {
     for (int i=0; i<nmoves; i++)
       offsets[i] = 0 ;
     if (levcnts[rdv] < levcnts[0])
-      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits);
+      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 0);
     else
-      bitsset = recur(movetables, offsets, 0, 0, wrv, nmoves, 0, bits);
+      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 1);
     if (bitsset == 0)
       break ;
     levcnts[wrv] += bitsset ;
