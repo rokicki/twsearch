@@ -9,9 +9,9 @@
 #include <algorithm>
 #include <array>
 #include <cstdlib>
+#include <iostream>
 #include <map>
 #include <unordered_map>
-#include <iostream>
 /*
  *   God's algorithm using two bits per state.
  */
@@ -358,244 +358,258 @@ void dotwobitgod2(puzdef &pd) {
  *   each packed setdef fits in a long though.
  */
 struct levelinfo {
-   ull wbase, cnt, startbit ;
-} ;
+  ull wbase, cnt, startbit;
+};
 struct setinfo {
-   ull numstates, mult ;
-   unsigned int *movetable ;
-} ;
+  ull numstates, mult;
+  unsigned int *movetable;
+};
 /*
  *   rdv=0 means we are going backwards.
  */
-ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at,
-          int rdv, int wrv, int nmoves, ull roff, ull *bits, int back) {
-// cout << "Recur sees" ;
-// for (auto v: offsets) cout << " " << v ;
-// cout << endl ;
-  ull r = 0 ;
-  if (at == (int)mt.size()-1) {
-    ull wid = mt[at].mult >> 5 ;
-    roff *= wid ;
-    for (int mv=0; mv<nmoves; mv++)
-      offsets[at*nmoves+mv] *= mt[at].mult ;
+ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at, int rdv,
+          int wrv, int nmoves, ull roff, ull *bits, int back) {
+  // cout << "Recur sees" ;
+  // for (auto v: offsets) cout << " " << v ;
+  // cout << endl ;
+  ull r = 0;
+  if (at == (int)mt.size() - 1) {
+    ull wid = mt[at].mult >> 5;
+    roff *= wid;
+    for (int mv = 0; mv < nmoves; mv++)
+      offsets[at * nmoves + mv] *= mt[at].mult;
     if (back) { // backwards
-      ull xormask = 0xffffffffffffffffLL ;
-      for (ull o=0; o<wid; o++) {
-        ull rd = bits[roff+o] ^ xormask ;
-        rd = rd & (rd >> 1) & 0x5555555555555555LL ;
-// cout << "Rd is " << rd << endl ;
+      ull xormask = 0xffffffffffffffffLL;
+      for (ull o = 0; o < wid; o++) {
+        ull rd = bits[roff + o] ^ xormask;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL;
+        // cout << "Rd is " << rd << endl ;
         while (rd) {
-          int o2 = (ffsll(rd)-1) ;
-          rd &= ~(1LL << o2) ;
-          ull ofr = (o << 5) + (o2 >> 1) ;
-          for (int mv=0; mv<nmoves; mv++) {
-// cout << "Inmv sees" ;
-// for (auto v: offsets) cout << " " << v ;
-// cout << endl ;
-            ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
-// cout << "Woff is " << woff << " from " << at*nmoves+mv << " " << offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv] << endl ;
-            ull wbits = bits[woff>>5] ;
+          int o2 = (ffsll(rd) - 1);
+          rd &= ~(1LL << o2);
+          ull ofr = (o << 5) + (o2 >> 1);
+          for (int mv = 0; mv < nmoves; mv++) {
+            // cout << "Inmv sees" ;
+            // for (auto v: offsets) cout << " " << v ;
+            // cout << endl ;
+            ull woff =
+                offsets[at * nmoves + mv] + mt[at].movetable[ofr * nmoves + mv];
+            // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " <<
+            // offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv]
+            // << endl ;
+            ull wbits = bits[woff >> 5];
             if (((wbits >> ((woff & 31) * 2)) & 3) == rdv) {
-              bits[roff+o] += ((ull)wrv) << o2 ;
-              r++ ;
+              bits[roff + o] += ((ull)wrv) << o2;
+              r++;
               break;
             }
           }
         }
       }
     } else { // forwards
-      ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL ;
-      for (ull o=0; o<wid; o++) {
-        ull rd = bits[roff+o] ^ xormask ;
-        rd = rd & (rd >> 1) & 0x5555555555555555LL ;
-// cout << "Rd is " << rd << endl ;
+      ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL;
+      for (ull o = 0; o < wid; o++) {
+        ull rd = bits[roff + o] ^ xormask;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL;
+        // cout << "Rd is " << rd << endl ;
         while (rd) {
-          int o2 = (ffsll(rd)-1) ;
-          rd &= ~(1LL << o2) ;
-          ull ofr = (o << 5) + (o2 >> 1) ;
-          for (int mv=0; mv<nmoves; mv++) {
-// cout << "Inmv sees" ;
-// for (auto v: offsets) cout << " " << v ;
-// cout << endl ;
-            ull woff = offsets[at*nmoves+mv] + mt[at].movetable[ofr*nmoves+mv] ;
-// cout << "Woff is " << woff << " from " << at*nmoves+mv << " " << offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv] << endl ;
-            ull wbits = bits[woff>>5] ;
+          int o2 = (ffsll(rd) - 1);
+          rd &= ~(1LL << o2);
+          ull ofr = (o << 5) + (o2 >> 1);
+          for (int mv = 0; mv < nmoves; mv++) {
+            // cout << "Inmv sees" ;
+            // for (auto v: offsets) cout << " " << v ;
+            // cout << endl ;
+            ull woff =
+                offsets[at * nmoves + mv] + mt[at].movetable[ofr * nmoves + mv];
+            // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " <<
+            // offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv]
+            // << endl ;
+            ull wbits = bits[woff >> 5];
             if (((wbits >> ((woff & 31) * 2)) & 3) == 0) {
-              bits[woff>>5] += ((ull)wrv) << ((woff & 31) * 2) ;
-              r++ ;
+              bits[woff >> 5] += ((ull)wrv) << ((woff & 31) * 2);
+              r++;
             }
           }
         }
       }
     }
   } else {
-    for (ull v=0; v<mt[at].numstates; v++) {
-      for (int mv=0; mv<nmoves; mv++) {
-        offsets[(at+1)*nmoves+mv] =
-            offsets[at*nmoves+mv]*mt[at].mult + mt[at].movetable[v*nmoves+mv] ;
-// cout << "Read " << offsets[at*nmoves+mv] << " from movetable " << mt[at].movetable[v*nmoves+mv] << " gives " << offsets[(at+1)*nmoves+mv] << endl ;
-     }
-     r += recur(mt, offsets, at+1, rdv, wrv, nmoves, roff*mt[at].mult + v,
-                bits, back) ;
+    for (ull v = 0; v < mt[at].numstates; v++) {
+      for (int mv = 0; mv < nmoves; mv++) {
+        offsets[(at + 1) * nmoves + mv] =
+            offsets[at * nmoves + mv] * mt[at].mult +
+            mt[at].movetable[v * nmoves + mv];
+        // cout << "Read " << offsets[at*nmoves+mv] << " from movetable " <<
+        // mt[at].movetable[v*nmoves+mv] << " gives " <<
+        // offsets[(at+1)*nmoves+mv] << endl ;
+      }
+      r += recur(mt, offsets, at + 1, rdv, wrv, nmoves, roff * mt[at].mult + v,
+                 bits, back);
     }
   }
   return r;
 }
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1, loosetype *beg,
-                    loosetype *end, int temp, loosetype *lim, int looseper) ;
-static inline int compare(const void *a_, const void *b_, int looseper) ;
+                    loosetype *end, int temp, loosetype *lim, int looseper);
+static inline int compare(const void *a_, const void *b_, int looseper);
 void dotwobitgod3(puzdef &pd) {
   movemap.clear();
-  vector<int> imoves ;
+  vector<int> imoves;
   for (int i = 0; i < (int)pd.moves.size(); i++)
     if (!quarter || pd.moves[i].cost == 1) {
       movemap.push_back(i);
       imoves.push_back(pd.invmove(i));
     }
   nmoves = movemap.size();
-  vector<setinfo> movetables ;
+  vector<setinfo> movetables;
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
-    cout << "Freeing earlier work in " << duration() << endl ;
+    cout << "Freeing earlier work in " << duration() << endl;
     setdef &sd = pd.setdefs[i];
-    int lp = looseperone(pd, i, 0) ;
-    cout << "Calculating move table for setdef " << sd.name << " lp " << lp << endl;
-    vector<loosetype> workarr ;
+    int lp = looseperone(pd, i, 0);
+    cout << "Calculating move table for setdef " << sd.name << " lp " << lp
+         << endl;
+    vector<loosetype> workarr;
     stacksetval p1(pd), p2(pd);
     pd.assignpos(p1, pd.solved);
     while ((int)workarr.size() < lp)
-      workarr.push_back(0) ;
+      workarr.push_back(0);
     // first, calculate how many positions
     loosepackone(pd, p1, i, &(workarr[0]), 0, 0);
-    pd.assignpos(p2, p1) ;
-    vector<levelinfo> li ;
-    li.push_back({0, 1, 0}) ;
-    ull orbase = 0 ;
-    for (int rd=0; ; rd++) {
-      ull rbase = li[rd].wbase ;
-      ull rcnt = li[rd].cnt ;
-      cout << "At dist " << rd << " see " << rcnt << endl ;
-      ull wbase = rbase + rcnt ;
-      ull wcnt = 0 ;
-      for (ull j=0; j<rcnt; j++) {
-        looseunpackone(pd, p1, i, &(workarr[(rbase+j)*lp]));
-        while (workarr.size() < (wbase+wcnt+nmoves)*lp)
-          workarr.push_back(0) ;
-        for (int mvi=0; mvi<nmoves; mvi++) {
+    pd.assignpos(p2, p1);
+    vector<levelinfo> li;
+    li.push_back({0, 1, 0});
+    ull orbase = 0;
+    for (int rd = 0;; rd++) {
+      ull rbase = li[rd].wbase;
+      ull rcnt = li[rd].cnt;
+      cout << "At dist " << rd << " see " << rcnt << endl;
+      ull wbase = rbase + rcnt;
+      ull wcnt = 0;
+      for (ull j = 0; j < rcnt; j++) {
+        looseunpackone(pd, p1, i, &(workarr[(rbase + j) * lp]));
+        while (workarr.size() < (wbase + wcnt + nmoves) * lp)
+          workarr.push_back(0);
+        for (int mvi = 0; mvi < nmoves; mvi++) {
           pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
-          auto wptr = &(workarr[(wbase+wcnt)*lp]) ;
+          auto wptr = &(workarr[(wbase + wcnt) * lp]);
           loosepackone(pd, p2, i, wptr, 0, 0);
-          wcnt++ ;
+          wcnt++;
         }
       }
-      auto s2ptr = &(workarr[orbase*lp]) ;
-      auto s1ptr = &(workarr[rbase*lp]) ;
-      auto begptr = &(workarr[wbase*lp]) ;
-      auto endptr = &(workarr[(wbase+wcnt)*lp]) ;
-      auto nendptr = sortuniq(s2ptr, s1ptr, begptr, endptr, 0, endptr, lp) ;
-      wcnt = (nendptr - begptr) / lp ;
-      li.push_back({wbase, wcnt, 0}) ;
+      auto s2ptr = &(workarr[orbase * lp]);
+      auto s1ptr = &(workarr[rbase * lp]);
+      auto begptr = &(workarr[wbase * lp]);
+      auto endptr = &(workarr[(wbase + wcnt) * lp]);
+      auto nendptr = sortuniq(s2ptr, s1ptr, begptr, endptr, 0, endptr, lp);
+      wcnt = (nendptr - begptr) / lp;
+      li.push_back({wbase, wcnt, 0});
       if (wcnt == 0) {
-        cout << "Saw " << wbase << " required " << workarr.size() * sizeof(loosetype) << " bytes in " << duration() << endl ;
-        break ;
+        cout << "Saw " << wbase << " required "
+             << workarr.size() * sizeof(loosetype) << " bytes in " << duration()
+             << endl;
+        break;
       }
-      orbase = rbase ;
+      orbase = rbase;
     }
-    ull wbase = li[li.size()-1].wbase ;
+    ull wbase = li[li.size() - 1].wbase;
     if (wbase >= 4000000000LL)
-      error("! too many states from this one set") ;
-    for (int rd=0; rd<(int)li.size(); rd++) {
-      ull b = 1 ;
+      error("! too many states from this one set");
+    for (int rd = 0; rd < (int)li.size(); rd++) {
+      ull b = 1;
       while (b <= li[rd].cnt)
-         b += b ;
-      li[rd].startbit = b ;
+        b += b;
+      li[rd].startbit = b;
     }
-    unsigned int *mt = (unsigned int *)calloc(wbase, nmoves*sizeof(int)) ;
-    vector<loosetype> lptmp(lp) ;
-    int lord[3] ;
-    for (int rd=0; rd<(int)li.size(); rd++) {
-       int nordn = 0 ;
-       for (int pr=rd-1; pr<=rd+1; pr++)
-         if (pr >= 0 && pr < (int)li.size())
-           lord[nordn++] = pr ;
-       ll rbase = li[rd].wbase ;
-       ll rcnt = li[rd].cnt ;
-       for (ll j=0; j<rcnt; j++) {
-         looseunpackone(pd, p1, i, &(workarr[(rbase+j)*lp]));
-         for (int mvi=0; mvi<nmoves; mvi++) {
-           if (mt[(li[rd].wbase+j)*nmoves+mvi])
-             continue ;
-           pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
-           auto wptr = &(lptmp[0]) ;
-           loosepackone(pd, p2, i, wptr, 0, 0);
-           ll found = 0xfffffffffffffffLL ;
-           for (int pri=0; pri<nordn; pri++) {
-              int pr = lord[pri] ;
-              ull loc = 0 ;
-              for (ull b=li[pr].startbit; b; b>>=1) {
-                if (loc + b < li[pr].cnt &&
-                    compare(&(workarr[(li[pr].wbase+loc+b)*lp]), wptr, lp) <= 0)
-                   loc += b ;
-              }
-              if (loc < li[pr].cnt && 
-                compare(&(workarr[(li[pr].wbase+loc)*lp]), wptr, lp) == 0) {
-                found = loc + li[pr].wbase ;
-                if (pri > 0)
-                  swap(lord[pri], lord[pri>>1]) ;
-                break ;
-              }
-           }
-           if (found == 0xfffffffffffffffLL)
-             error("! did not find") ;
-           mt[(li[rd].wbase+j)*nmoves+mvi] = found ;
-           mt[found*nmoves+imoves[mvi]] = li[rd].wbase+j ;
-         }
-       }
+    unsigned int *mt = (unsigned int *)calloc(wbase, nmoves * sizeof(int));
+    vector<loosetype> lptmp(lp);
+    int lord[3];
+    for (int rd = 0; rd < (int)li.size(); rd++) {
+      int nordn = 0;
+      for (int pr = rd - 1; pr <= rd + 1; pr++)
+        if (pr >= 0 && pr < (int)li.size())
+          lord[nordn++] = pr;
+      ll rbase = li[rd].wbase;
+      ll rcnt = li[rd].cnt;
+      for (ll j = 0; j < rcnt; j++) {
+        looseunpackone(pd, p1, i, &(workarr[(rbase + j) * lp]));
+        for (int mvi = 0; mvi < nmoves; mvi++) {
+          if (mt[(li[rd].wbase + j) * nmoves + mvi])
+            continue;
+          pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
+          auto wptr = &(lptmp[0]);
+          loosepackone(pd, p2, i, wptr, 0, 0);
+          ll found = 0xfffffffffffffffLL;
+          for (int pri = 0; pri < nordn; pri++) {
+            int pr = lord[pri];
+            ull loc = 0;
+            for (ull b = li[pr].startbit; b; b >>= 1) {
+              if (loc + b < li[pr].cnt &&
+                  compare(&(workarr[(li[pr].wbase + loc + b) * lp]), wptr,
+                          lp) <= 0)
+                loc += b;
+            }
+            if (loc < li[pr].cnt &&
+                compare(&(workarr[(li[pr].wbase + loc) * lp]), wptr, lp) == 0) {
+              found = loc + li[pr].wbase;
+              if (pri > 0)
+                swap(lord[pri], lord[pri >> 1]);
+              break;
+            }
+          }
+          if (found == 0xfffffffffffffffLL)
+            error("! did not find");
+          mt[(li[rd].wbase + j) * nmoves + mvi] = found;
+          mt[found * nmoves + imoves[mvi]] = li[rd].wbase + j;
+        }
+      }
     }
-    movetables.push_back({wbase, wbase, mt}) ;
-    cout << "Move table built in " << duration() << endl ;
+    movetables.push_back({wbase, wbase, mt});
+    cout << "Move table built in " << duration() << endl;
   }
-  cout << "Freeing earlier work in " << duration() << endl ;
+  cout << "Freeing earlier work in " << duration() << endl;
   // for the last one, ensure the multiplier is a multiple of 32
-  setinfo &si = movetables[movetables.size()-1] ;
-  si.mult = (si.numstates + 31) & ~31LL ;
-  ull totsize = 1 ;
-  for (auto &si: movetables) {
-    ull ntotsize = totsize * (ull)si.mult ;
+  setinfo &si = movetables[movetables.size() - 1];
+  si.mult = (si.numstates + 31) & ~31LL;
+  ull totsize = 1;
+  for (auto &si : movetables) {
+    ull ntotsize = totsize * (ull)si.mult;
     if (ntotsize / (ull)si.mult != totsize)
-      error("! overflow in size calculation") ;
-    totsize = ntotsize ;
+      error("! overflow in size calculation");
+    totsize = ntotsize;
   }
-  ull bytesize = (totsize + 3) >> 2 ;
-  bytesize = (bytesize + 7) & ~7LL ;
+  ull bytesize = (totsize + 3) >> 2;
+  bytesize = (bytesize + 7) & ~7LL;
   if (bytesize > (ull)maxmem) {
-    cerr << "Bytesize required is " << bytesize << endl ;
-    error("! requires too much RAM") ;
+    cerr << "Bytesize required is " << bytesize << endl;
+    error("! requires too much RAM");
   }
-  ull *bits = (ull *)calloc(bytesize >> 3, sizeof(ull)) ;
-  bits[0] = 1 ;
-  vector<ull> offsets(nmoves * (1 + movetables.size())) ;
+  ull *bits = (ull *)calloc(bytesize >> 3, sizeof(ull));
+  bits[0] = 1;
+  vector<ull> offsets(nmoves * (1 + movetables.size()));
   ll totset = 0;
   ll bitsset = 1;
-  ull levcnts[4] ;
-  for (int i=0; i<4; i++)
-    levcnts[i] = 0 ;
-  levcnts[0] = totsize - 1 ;
-  levcnts[1] = 1 ;
-  for (int rd=0; ; rd++) {
-    totset += bitsset ;
-    cout << "Dist " << rd << " " << bitsset << " " << totset << " in " << duration() << endl ;
-    int rdv = (rd % 3) + 1 ;
-    int wrv = (rdv % 3) + 1 ;
-    for (int i=0; i<nmoves; i++)
-      offsets[i] = 0 ;
+  ull levcnts[4];
+  for (int i = 0; i < 4; i++)
+    levcnts[i] = 0;
+  levcnts[0] = totsize - 1;
+  levcnts[1] = 1;
+  for (int rd = 0;; rd++) {
+    totset += bitsset;
+    cout << "Dist " << rd << " " << bitsset << " " << totset << " in "
+         << duration() << endl;
+    int rdv = (rd % 3) + 1;
+    int wrv = (rdv % 3) + 1;
+    for (int i = 0; i < nmoves; i++)
+      offsets[i] = 0;
     if (levcnts[rdv] < levcnts[0])
       bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 0);
     else
       bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 1);
     if (bitsset == 0)
-      break ;
-    levcnts[wrv] += bitsset ;
-    levcnts[0] -= bitsset ;
+      break;
+    levcnts[wrv] += bitsset;
+    levcnts[0] -= bitsset;
   }
 }
 /*
@@ -658,9 +672,9 @@ static inline int compare(const void *a_, const void *b_, int looseper) {
       return (a[i] < b[i] ? -1 : 1);
   return 0;
 }
-static int qsortlooseper ;
+static int qsortlooseper;
 static inline int qsortcompare(const void *a_, const void *b_) {
-   return compare(a_, b_, qsortlooseper) ;
+  return compare(a_, b_, qsortlooseper);
 }
 const int SHIFT = 10;
 const int BUCKETS = 1 << SHIFT;
@@ -775,8 +789,8 @@ void mqsort(void *beg, ll numel, int looseper, ll sz) {
     tmqsort((array<loosetype, 8> *)beg, numel);
     break;
   default:
-    qsortlooseper = looseper ;
-    qsort(beg, numel, sz, qsortcompare) ;
+    qsortlooseper = looseper;
+    qsort(beg, numel, sz, qsortcompare);
   }
 }
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1, loosetype *beg,
@@ -1092,7 +1106,8 @@ void doarraygod2(const puzdef &pd) {
     if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
       break;
     if (levend != s_2)
-      mqsort(s_2, (levend - s_2) / looseper, looseper, looseper * sizeof(loosetype));
+      mqsort(s_2, (levend - s_2) / looseper, looseper,
+             looseper * sizeof(loosetype));
     s_1 = levend;
     reader = levend;
   }
@@ -1311,7 +1326,7 @@ static struct godcmd : cmd {
         forcearray ||
         (pd.logstates <= 50 &&
          ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
-    if (!forcearray) {
+    if (0 && !forcearray) { // disable new experimental code
       cout << "Using twobit arrays and separate setdefs" << endl;
       dotwobitgod3(pd);
     } else if (!forcearray && statesfit2 && pd.canpackdense()) {
