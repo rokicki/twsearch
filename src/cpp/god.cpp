@@ -398,7 +398,7 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at, int rdv,
             // offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv]
             // << endl ;
             ull wbits = bits[woff >> 5];
-            if (((wbits >> ((woff & 31) * 2)) & 3) == rdv) {
+            if ((int)(((wbits >> ((woff & 31) * 2)) & 3)) == rdv) {
               bits[roff + o] += ((ull)wrv) << o2;
               r++;
               break;
