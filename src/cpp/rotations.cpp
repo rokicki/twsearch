@@ -58,16 +58,9 @@ void calcrotations(puzdef &pd) {
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     setdef &sd = pd.setdefs[i];
     if (sd.omod != 1 && !sd.uniq) {
-      auto solv = pd.solved.dat;
-      int n = sd.size;
-      for (int j = 0; j < n; j++) {
-        if (solv[sd.off + n + j] != 0 && solv[sd.off + n + j] != 2 * sd.omod) {
-          warn("Can't use rotations for symmetry reduction when oriented "
-               "duplicated pieces that start in a non-zero, non-wildcard "
-               "state.");
-          return;
-        }
-      }
+      warn("Can't use rotations for symmetry reduction when oriented "
+           "duplicated pieces.") ;
+      return;
     }
   }
   stacksetval pw(pd);
