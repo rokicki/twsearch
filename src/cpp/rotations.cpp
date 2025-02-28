@@ -59,7 +59,7 @@ void calcrotations(puzdef &pd) {
     setdef &sd = pd.setdefs[i];
     if (sd.omod != 1 && !sd.uniq) {
       warn("Can't use rotations for symmetry reduction when oriented "
-           "duplicated pieces.") ;
+           "duplicated pieces.");
       return;
     }
   }
