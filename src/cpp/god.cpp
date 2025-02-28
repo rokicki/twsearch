@@ -457,10 +457,14 @@ void dotwobitgod3(puzdef &pd) {
   movemap.clear();
   vector<int> imoves;
   for (int i = 0; i < (int)pd.moves.size(); i++)
-    if (!quarter || pd.moves[i].cost == 1) {
+    if (!quarter || pd.moves[i].cost == 1)
       movemap.push_back(i);
-      imoves.push_back(pd.invmove(i));
-    }
+  for (auto mv : movemap) {
+    int mvi = pd.invmove(mv);
+    for (int j = 0; j < (int)movemap.size(); j++)
+      if (movemap[j] == mvi)
+        imoves.push_back(j);
+  }
   nmoves = movemap.size();
   vector<setinfo> movetables;
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
