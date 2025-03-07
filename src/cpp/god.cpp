@@ -365,7 +365,7 @@ struct setinfo {
   unsigned int *movetable;
 };
 /*
- *   rdv=0 means we are going backwards.
+ *   back=1 means we are going backwards.
  */
 ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at, int rdv,
           int wrv, int nmoves, ull roff, ull *bits, int back) {
@@ -388,6 +388,8 @@ ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at, int rdv,
           int o2 = (ffsll(rd) - 1);
           rd &= ~(1LL << o2);
           ull ofr = (o << 5) + (o2 >> 1);
+          if (ofr >= mt[at].numstates)
+            break;
           for (int mv = 0; mv < nmoves; mv++) {
             // cout << "Inmv sees" ;
             // for (auto v: offsets) cout << " " << v ;
