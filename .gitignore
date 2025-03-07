@@ -3,6 +3,9 @@
 /dist
 /node_modules
 
+# Prevent `.jj` objects from being indexed and searched in VS Code
+/.jj
+
 # TODO
 /*.dwo
 
