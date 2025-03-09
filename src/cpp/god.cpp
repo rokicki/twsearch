@@ -1253,7 +1253,7 @@ static struct godcmd : cmd {
     if (0 && !forcearray) { // disable new experimental code
       cout << "Using twobit arrays and separate setdefs" << endl;
       dotwobitgod3(pd);
-    } else if (!forcearray && statesfit2 && pd.canpackdense()) {
+    } else if (!forcearray && statesfit2 && pd.canpackdense() && !pd.wildo) {
       cout << "Using twobit arrays." << endl;
       dotwobitgod2(pd);
     } else if (statesfitsa) {
