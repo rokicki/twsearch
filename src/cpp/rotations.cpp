@@ -80,6 +80,12 @@ void calcrotations(puzdef &pd) {
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     setdef &sd = pd.setdefs[i];
     if (sd.omod != 1 && !sd.uniq) {
+      warn("Can't use rotations for symmetry reduction when oriented "
+           "duplicated pieces.");
+      return;
+/*
+ *   FIXME; we still aren't there yet.
+ *
       auto solv = pd.solved.dat;
       int n = sd.size;
       for (int j = 0; j < n; j++) {
@@ -90,6 +96,7 @@ void calcrotations(puzdef &pd) {
           return;
         }
       }
+ */
     }
   }
   stacksetval pw(pd);
