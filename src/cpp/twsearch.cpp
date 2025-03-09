@@ -62,6 +62,7 @@ void reseteverything() {
   omitsets.clear();
   omitoris.clear();
   omitperms.clear();
+  setsmustexist.clear();
   solutionsfound = 0;
   solutionsneeded = 1;
   noearlysolutions = 0;
@@ -418,6 +419,7 @@ static struct omitopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitsets.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitopt;
 
@@ -432,6 +434,7 @@ static struct omitpermsopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitperms.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitpermsopt;
 
@@ -446,6 +449,7 @@ static struct omitorisopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitoris.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitorisopt;
 
