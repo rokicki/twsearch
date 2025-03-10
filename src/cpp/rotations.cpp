@@ -8,45 +8,7 @@
 vector<uchar> setvaltovec(puzdef &pd, setval v) {
   return vector<uchar>(v.dat, v.dat + pd.totsize);
 }
-// rotinvmap is used as follows:
-//   If pd.rotgroup[i] * pd.solved * p1 == p2, then
-//      pd.rotinvmap[i] * (pd.solved * p1) = p2
-//  That is, rotinvmap allows us to symmetry-reduce *positions*,
-//  not just moves.
-//  Note however that pd.rotinvmap entries should *only* be
-//  applied to *positions* and never moves.
-//
-//  But the map has to be consistent across all instances of a given
-//  value, or we bugout.
-static int trytomakeinv(puzdef &pd, const setval &rot, setval &rotw) {
-  for (int j = 0; j < (int)pd.setdefs.size(); j++) {
-    setdef &sd = pd.setdefs[j];
-    int n = sd.size;
-    int off = sd.off;
-    for (int k = 0; k < 2 * n; k++)
-      rotw.dat[off + k] = 255;
-    for (int k = 0; k < n; k++) {
-      int pi = off + pd.solved.dat[off + k];
-      int pval = pd.solved.dat[off + rot.dat[off + k]];
-      if (rotw.dat[pi] == 255 || rotw.dat[pi] == pval)
-        rotw.dat[pi] = pval;
-      else
-        return 0;
-      int po = off + n + pd.solved.dat[off + k];
-      int oval = (pd.solved.dat[off + n + rot.dat[off + k]] +
-                  rot.dat[off + n + k] - pd.solved.dat[off + n + k] + sd.omod) %
-                 sd.omod;
-      if (pd.solved.dat[off + n + rot.dat[off + k]] == 2 * sd.omod)
-        oval = 0;
-      if (rotw.dat[po] == 255 || rotw.dat[po] == oval)
-        rotw.dat[po] = oval;
-      else
-        return 0;
-    }
-  }
-  return 1;
-}
-void calcrotinvs(puzdef &pd, int secondtime) {
+void calcrotinvs(puzdef &pd) {
   calclooseper(pd);
   stacksetval pw(pd);
   pd.rotinv.clear();
@@ -61,16 +23,32 @@ void calcrotinvs(puzdef &pd, int secondtime) {
     loosepack(pd, pw, enc.data(), 1);
     pd.rotinv.push_back(rotlook[enc]);
   }
+  // rotinvmap is used as follows:
+  //   If pd.rotgroup[i] * pd.solved * p1 == p2, then
+  //      pd.rotinvmap[i] * (pd.solved * p1) = p2
+  //  That is, rotinvmap allows us to symmetry-reduce *positions*,
+  //  not just moves.
+  //  Note however that pd.rotinvmap entries should *only* be
+  //  applied to *positions* and never moves.
   pd.rotinvmap.clear();
   for (int i = 0; i < (int)pd.rotgroup.size(); i++) {
     const setval &roti = pd.rotgroup[pd.rotinv[i]].pos;
     pd.rotinvmap.push_back(allocsetval(pd, roti));
     auto &rotw = pd.rotinvmap[i];
-    if (trytomakeinv(pd, pd.rotgroup[pd.rotinv[i]].pos, rotw) == 0) {
-      if (secondtime)
-        error("! internal error making rotinvmap");
-      else
-        pd.rotinvmap[i].dat[0] = 255;
+    for (int j = 0; j < (int)pd.setdefs.size(); j++) {
+      setdef &sd = pd.setdefs[j];
+      int n = sd.size;
+      int off = sd.off;
+      for (int k = 0; k < n; k++)
+        rotw.dat[off + k] = 255;
+      for (int k = 0; k < n; k++) {
+        rotw.dat[off + pd.solved.dat[off + k]] =
+            pd.solved.dat[off + roti.dat[off + k]];
+        rotw.dat[off + n + pd.solved.dat[off + k]] =
+            (pd.solved.dat[off + n + roti.dat[off + k]] +
+             roti.dat[off + n + k] - pd.solved.dat[off + n + k] + sd.omod) %
+            sd.omod;
+      }
     }
   }
   if (pd.rotinv.size() != pd.rotgroup.size())
@@ -83,20 +61,6 @@ void calcrotations(puzdef &pd) {
       warn("Can't use rotations for symmetry reduction when oriented "
            "duplicated pieces.");
       return;
-/*
- *   FIXME; we still aren't there yet.
- *
-      auto solv = pd.solved.dat;
-      int n = sd.size;
-      for (int j = 0; j < n; j++) {
-        if (solv[sd.off + n + j] != 0 && solv[sd.off + n + j] != 2 * sd.omod) {
-          warn("Can't use rotations for symmetry reduction when oriented "
-               "duplicated pieces that start in a non-zero, non-wildcard "
-               "state.");
-          return;
-        }
-      }
- */
     }
   }
   stacksetval pw(pd);
@@ -121,20 +85,17 @@ void calcrotations(puzdef &pd) {
       }
     }
   }
-  calcrotinvs(pd, 0);
+  calcrotinvs(pd);
   /*
    *   Filter the rotgroup to preserve:
    *      Identical piece chunks from solved
    *      Move restrictions (each move must map to another move)
-   *      If there are duplicated pieces with orientation, the
-   *         rotations must make the same change on all such pieces.
    */
   vector<moove> filtered;
   int remap[256];
-  stacksetval ptmp(pd);
   for (int i = 0; i < (int)q.size(); i++) {
     pd.mul(pd.solved, q[i].pos, pw);
-    int good = (pd.rotinvmap[i].dat[0] != 255);
+    int good = 1;
     for (int j = 0; good && j < (int)pd.setdefs.size(); j++) {
       setdef &sd = pd.setdefs[j];
       int n = sd.size;
@@ -168,7 +129,7 @@ void calcrotations(puzdef &pd) {
       filtered.push_back(q[i]);
   }
   swap(q, filtered);
-  calcrotinvs(pd, 1);
+  calcrotinvs(pd);
   if (quiet == 0)
     cout << "Rotation group size is " << q.size() << endl;
   // test that for a random p,
