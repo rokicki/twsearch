@@ -1250,7 +1250,8 @@ static struct godcmd : cmd {
         forcearray ||
         (pd.logstates <= 50 &&
          ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
-    if (0 && !forcearray) { // disable new experimental code
+    if (0 && pd.setdefs.size() > 1 &&
+        !forcearray) { // disable new experimental code
       cout << "Using twobit arrays and separate setdefs" << endl;
       dotwobitgod3(pd);
     } else if (!forcearray && statesfit2 && pd.canpackdense() && !pd.wildo) {
