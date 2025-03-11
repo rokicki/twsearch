@@ -23,6 +23,39 @@ void calcrotinvs(puzdef &pd) {
     loosepack(pd, pw, enc.data(), 1);
     pd.rotinv.push_back(rotlook[enc]);
   }
+}
+int rotation_ok_solved(puzdef &pd, const setval rot, setval &rotw) {
+  for (int j = 0; j < (int)pd.totsize; j++)
+    rotw.dat[j] = 255;
+  for (int j = 0; j < (int)pd.setdefs.size(); j++) {
+    setdef &sd = pd.setdefs[j];
+    int n = sd.size;
+    int off = sd.off;
+    for (int k = 0; k < n; k++) {
+      int pi = off + pd.solved.dat[off + k];
+      int pv = pd.solved.dat[off + rot.dat[off + k]];
+      if (rotw.dat[pi] == 255 || rotw.dat[pi] == pv)
+        rotw.dat[pi] = pv;
+      else
+        return 0;
+      int oi = off + n + pd.solved.dat[off + k];
+      if ((pd.solved.dat[off + n + k] == 2 * sd.omod) !=
+          (pd.solved.dat[off + n + rot.dat[off + k]] == 2 * sd.omod))
+        return 0;
+      int ov = 0;
+      if (pd.solved.dat[off + n + k] != 2 * sd.omod)
+        ov = (pd.solved.dat[off + n + rot.dat[off + k]] + rot.dat[off + n + k] -
+              pd.solved.dat[off + n + k] + sd.omod) %
+             sd.omod;
+      if (rotw.dat[oi] == 255 || rotw.dat[oi] == ov)
+        rotw.dat[oi] = ov;
+      else
+        return 0;
+    }
+  }
+  return 1;
+}
+void calcrotinvmap(puzdef &pd) {
   // rotinvmap is used as follows:
   //   If pd.rotgroup[i] * pd.solved * p1 == p2, then
   //      pd.rotinvmap[i] * (pd.solved * p1) = p2
@@ -35,34 +68,11 @@ void calcrotinvs(puzdef &pd) {
     const setval &roti = pd.rotgroup[pd.rotinv[i]].pos;
     pd.rotinvmap.push_back(allocsetval(pd, roti));
     auto &rotw = pd.rotinvmap[i];
-    for (int j = 0; j < (int)pd.setdefs.size(); j++) {
-      setdef &sd = pd.setdefs[j];
-      int n = sd.size;
-      int off = sd.off;
-      for (int k = 0; k < n; k++)
-        rotw.dat[off + k] = 255;
-      for (int k = 0; k < n; k++) {
-        rotw.dat[off + pd.solved.dat[off + k]] =
-            pd.solved.dat[off + roti.dat[off + k]];
-        rotw.dat[off + n + pd.solved.dat[off + k]] =
-            (pd.solved.dat[off + n + roti.dat[off + k]] +
-             roti.dat[off + n + k] - pd.solved.dat[off + n + k] + sd.omod) %
-            sd.omod;
-      }
-    }
+    if (rotation_ok_solved(pd, roti, rotw) == 0)
+      error("! internal error");
   }
-  if (pd.rotinv.size() != pd.rotgroup.size())
-    error("! error looking for rotation inverses");
 }
 void calcrotations(puzdef &pd) {
-  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
-    setdef &sd = pd.setdefs[i];
-    if (sd.omod != 1 && !sd.uniq) {
-      warn("Can't use rotations for symmetry reduction when oriented "
-           "duplicated pieces.");
-      return;
-    }
-  }
   stacksetval pw(pd);
   vector<moove> &q = pd.rotgroup;
   set<vector<uchar>> seen;
@@ -125,11 +135,16 @@ void calcrotations(puzdef &pd) {
         good = 0;
       }
     }
+    if (good) { // does this rotation work with identical pieces?
+      if (!rotation_ok_solved(pd, q[i].pos, pw))
+        good = 0;
+    }
     if (good)
       filtered.push_back(q[i]);
   }
   swap(q, filtered);
   calcrotinvs(pd);
+  calcrotinvmap(pd);
   if (quiet == 0)
     cout << "Rotation group size is " << q.size() << endl;
   // test that for a random p,
