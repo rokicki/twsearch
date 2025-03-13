@@ -70,6 +70,7 @@ void reseteverything() {
   onlyimprovements = 0;
   randomstart = 0;
   alloptimal = 0;
+  disablesymmetry = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -133,6 +134,7 @@ static boolopt boolopts[] = {
      "and is reduced by symmetry, the set of solutions will also be\n"
      "reduced by that symmetry.",
      &alloptimal},
+    {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
 };
 static intopt intopts[] = {
     {"--newcanon",

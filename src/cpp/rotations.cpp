@@ -4,6 +4,7 @@
 #include <map>
 #include <set>
 #include <vector>
+int disablesymmetry;
 // so we can use STL we wrap setvals in a vector.
 vector<uchar> setvaltovec(puzdef &pd, setval v) {
   return vector<uchar>(v.dat, v.dat + pd.totsize);
@@ -73,6 +74,8 @@ void calcrotinvmap(puzdef &pd) {
   }
 }
 void calcrotations(puzdef &pd) {
+  if (disablesymmetry)
+    return;
   stacksetval pw(pd);
   vector<moove> &q = pd.rotgroup;
   set<vector<uchar>> seen;
