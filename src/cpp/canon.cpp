@@ -11,22 +11,9 @@ static vector<allocsetval> posns;
 static vector<int> movehist;
 void makecanonstates(puzdef &pd) {
   int nbase = pd.basemoves.size();
-  if (quarter) { // rewrite base
-    int at = 1;
-    for (int i = 0; i < (int)pd.moves.size(); i++) {
-      moove &mv = pd.moves[i];
-      if (mv.cost > 1)
-        mv.cs = 0;
-      else
-        mv.cs = at++;
-    }
-    nbase = at;
-    cout << "For quarter turn, rewrote bases to " << nbase << endl;
-  } else {
-    for (int i = 0; i < (int)pd.moves.size(); i++) {
-      moove &mv = pd.moves[i];
-      mv.cs = mv.base;
-    }
+  for (int i = 0; i < (int)pd.moves.size(); i++) {
+    moove &mv = pd.moves[i];
+    mv.cs = mv.base;
   }
   /*
    *   If you raise this limit to 64, which may be possible, be sure to
@@ -88,7 +75,7 @@ void makecanonstates(puzdef &pd) {
     ull stateb = get<0>(statev);
     int prevm = get<1>(statev);
     int prevcnt = get<2>(statev);
-    canonmask.push_back(quarter ? 1 : 0);
+    canonmask.push_back(0);
     int fromst = qg++;
     int ms = 0;
     for (int m = 0; m < nbase; m++) {
@@ -98,7 +85,7 @@ void makecanonstates(puzdef &pd) {
         canonmask[fromst] |= 1LL << m;
         continue;
       }
-      if (!quarter && (((stateb >> m) & 1) != 0)) {
+      if (((stateb >> m) & 1) != 0) {
         canonmask[fromst] |= 1LL << m;
         continue;
       }
@@ -114,29 +101,6 @@ void makecanonstates(puzdef &pd) {
               nstb &= ~(1LL << i);
       int thism = -1;
       int thiscnt = 0;
-      if (quarter) {
-        if (m == 0) {
-          canonmask[fromst] |= 1LL << m;
-          continue;
-        }
-        while (pd.moves[ms].cs != m)
-          ms++;
-        // don't do opposing moves in a row
-        if (prevm >= 0 && ms != prevm &&
-            pd.moves[ms].base == pd.moves[prevm].base) {
-          canonmask[fromst] |= 1LL << m;
-          continue;
-        }
-        if (ms == prevm) {
-          if (2 * (prevcnt + 1) + (pd.moves[ms].twist != 1) >
-              pd.basemoveorders[pd.moves[ms].base]) {
-            canonmask[fromst] |= 1LL << m;
-            continue;
-          }
-        }
-        thism = ms;
-        thiscnt = (ms == prevm ? prevcnt + 1 : 1);
-      }
       trip nsi = make_tuple(nstb, thism, thiscnt);
       if (statemap.find(nsi) == statemap.end()) {
         statemap[nsi] = statecount++;

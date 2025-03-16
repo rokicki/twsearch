@@ -4,7 +4,7 @@ by the puzzle geometry component of cubing.js.  This document
 describes some of the architectural decisions and implementation
 details.
 
-Representing Moves and States:  ksolve vs twsearch
+# Representing Moves and States:  ksolve vs twsearch
 
 The program originated from my work with ksolve.  When I realized
 that the licensing for ksolve was unclear, I started completely
@@ -35,17 +35,16 @@ We will first discuss writing permutations on S_n as a list of n
 objects (without parentheses), and later discuss the cycle notation.
 
 For this discussion we will use the standard convention permuting
-the set of numbers 1..n.  Internally we will probably instead use
-the set of numbers 0..n-1, to match the convention in most programming
-languages of 0-based arrays, and all input and output will be
-appropriately transformed.
+the set of numbers 1..n.  Internally we instead use the set of numbers
+0..n-1, to match the convention in most programming languages of 0-based
+arrays, and all input and output will be appropriately transformed.
 
 A permutation can be written either as a transformation (the active
 form), or as a ordered sequence (the passive form).
 
 In the active form, a permutation written as 2 3 1 4 means that the
 item currently in the first slot is moved to the second position
-(so sigma(1)=2)), and an item in the second position is moved to
+(so sigma(1)=2), and an item in the second position is moved to
 the third position (so sigma(2)=3), and an item in the third position
 is moved to the first position (so sigma(3)=1), and the item in the
 fourth position is left alone.  Another way to interpret this is
@@ -69,7 +68,9 @@ passive permutation, you get the active representation of the
 original permutation, and vice versa.  Inversion can be performed
 by the following code:
 
-   for (i in 1..n) inv[p[i]] = i ;
+<ul>
+for (i in 1..n) inv[p[i]] = i ;
+</ul>
 
 So it doesn't matter if we use passive or active representations,
 as long as we are clear in what we use.
@@ -81,14 +82,18 @@ then sigma_p2(b)=c means that it moves further to c, so sigma_(p1*p2)(a)
 = sigma_p2(sigma_p1(a)).  Code to multiply two permutations looks
 like this:
 
-   for (i in 1..n) p3[i] = p2[p1[i]]
+<ul>
+for (i in 1..n) p3[i] = p2[p1[i]]
+</ul>
 
 But if we are using the passive representation, with left-to-right
 application order, then sigma_p1(a)=b means the piece that was in
 b moves to a, and sigma_p2(c)=a means that the piece that was in a
 moves to c, so sigma_(p1*p2)(a) = sigma_p1(sigma_p2(a)), or in code:
 
-   for (i in 1..n) p3[i]=p1[p2[i]]
+<ul>
+for (i in 1..n) p3[i]=p1[p2[i]]
+</ul>
 
 These are very different multiplication methods; getting multiplication
 correct is fundamental.
@@ -107,7 +112,9 @@ which is the active form.  Yet, if you look at the 4x4 centers
 definition file distributed with ksolve, the permutation vector for
 the solved position is given as
 
-    1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 6
+<ul>
+1 1 1 1 2 2 2 2 3 3 3 3 4 4 4 4 5 5 5 5 6 6 6 6
+</ul>
 
 and this cannot be an active permutation since it would try to cram
 multiple elements into the same place.  This has to be a passive
@@ -125,7 +132,9 @@ moves routine (which are both effectively multiplication, but
 actually differ in terms of orientation, which we will be getting
 to), the actual code used is:
 
-   for (i in 1..n) p3[i] = p1[p2[i]]
+<ul>
+for (i in 1..n) p3[i] = p1[p2[i]]
+</ul>
 
 This matches the passive mode multiplication procedure we derived above.
 
@@ -147,7 +156,7 @@ permutation, which makes writing them fairly easy.  Further, the
 permutation vector in the solved state doesn't matter at all, except
 in that it allows the definition of identical pieces.
 
-Let's move on to orientations.
+# Let's move on to orientations
 
 Orientations are just a concise way of specifying larger permutations.
 For instance, on the 3x3x3 cube, there are 54 stickers, 9 on each
@@ -163,24 +172,23 @@ Each orientation value expands a single permutation element in the
 small permutation to several in the larger permutation element.
 These elements collectively move together, potentially cycling due
 to rotations in three-dimensional space.  So instead of having 24
-stickers moving on eight cubies, we can instead have the eight
-cubies moving, and maintain how far each cubie is rotated against
+stickers moving on eight corners, we can instead have the eight
+corners moving, and maintain how far each corner is rotated against
 some standard configuration.  This standard configuration involves
-marking a single face as the primary face on every cubie, and then
+marking a single face as the primary face on every corner, and then
 keeping track of how far clockwise from the marked slot face the
-actual cubie face is.
+actual corner face is.
 
 In passive notation the permutation maps slots to elements, so our
 orientation should also map slots to orientations.  So if the value
 at index a in our permutation is b and in our orientation is c,
-that would seem to mean that piece b is currently in slot a in
-orientation c.  This is a good representation in that it has the
-following property:  orientation can be separated from permutation
-for state exploration purposes, because when multiplying to states
-s1 and s2, the orientation change depends only on s2 (the "move",
-usually) and not on s1.  So we can index the orientation separately
-from the permutation, which enables a lot of nice functionality.
-Other orientation conventions complicate this.
+that means that piece b is currently in slot a in orientation c.
+This is a good representation in that it has the following property:
+orientation can be separated from permutation for state exploration
+purposes, because when multiplying to states s1 and s2, the orientation
+change depends only on s2 (the "move", usually) and not on s1.  So we
+can index the orientation separately from the permutation, which enables
+a lot of nice functionality. Other orientation conventions complicate this.
 
 (This is even nicer if you can arrange so the largest number of
 moves do not affect the orientation in the solved state, because
@@ -194,27 +202,31 @@ permutation, and this affects (and complicates) the code.
 
 To convert a state to a move:
 
-   m.o[p[i]] = s.o[i]
+<ul>
+m.o[p[i]] = s.o[i]
+</ul>
 
 Note that the permutations are the same.  To convert a move to a
 state:
 
-   s.o[i] = m.o[p[i]]
+<ul>
+s.o[i] = m.o[p[i]]
+</ul>
 
 So for move 13425,01201 we convert to state 13425,02011.
 For state 13425,02011 we convert to move 13425,01201.
 
-sub movetostate      no[i]=o[p[i]] ;
-sub statetomove      no[p[i]]=o[i] ;
-sub sss      no[i] = (o1[p2[i]]+o2[i])%omod ;
-sub sms      no[i] = (o1[p2[i]]+o2[p2[i]])%omod ;
-sub mss      no[i] = (o1[p1[p2[i]]]+o2[i])%omod ;
-sub mms      no[i] = (o1[p1[p2[i]]]+o2[p2[i]])%omod ;
-sub mmm      no[p1[i]] = (o1[p1[i]]+o2[i])%omod ;
-sub smm      no[p1[i]] = (o1[i]+o2[i])%omod ;
-sub msm      no[p1[p2[i]]] = (o1[p1[p2[i]]]+o2[i])%omod ;
-sub ssm      no[p1[p2[i]]] = (o1[p2[i]]+o2[i])%omod ;
-sub sinv      no[p[i]] = (omod-o[i])%omod ;
+sub movetostate      no[i]=o[p[i]] ; \
+sub statetomove      no[p[i]]=o[i] ; \
+sub sss      no[i] = (o1[p2[i]]+o2[i])%omod ; \
+sub sms      no[i] = (o1[p2[i]]+o2[p2[i]])%omod ; \
+sub mss      no[i] = (o1[p1[p2[i]]]+o2[i])%omod ; \
+sub mms      no[i] = (o1[p1[p2[i]]]+o2[p2[i]])%omod ; \
+sub mmm      no[p1[i]] = (o1[p1[i]]+o2[i])%omod ; \
+sub smm      no[p1[i]] = (o1[i]+o2[i])%omod ; \
+sub msm      no[p1[p2[i]]] = (o1[p1[p2[i]]]+o2[i])%omod ; \
+sub ssm      no[p1[p2[i]]] = (o1[p2[i]]+o2[i])%omod ; \
+sub sinv      no[p[i]] = (omod-o[i])%omod ; \
 sub minv      no[i] = (omod-o[p[i]])%omod ;
 
 The twsearch program uses state representation everywhere.  In order
@@ -236,28 +248,29 @@ with comments preceded by a hash symbol (#) and blank lines ignored.
 To motivate this section, we list here the initial part of the 3x3x3
 twsearch definition file (omitting some moves for brevity):
 
-# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki.
+\# PuzzleGeometry 0.1 Copyright 2018 Tomas Rokicki
+
 Name PuzzleGeometryPuzzle
 
-Set EDGE 12 2
+Set EDGE 12 2 \
 Set CORNER 8 3
 
-Solved
-EDGE
-1 2 3 4 5 6 7 8 9 10 11 12
-0 0 0 0 0 0 0 0 0 0 0 0
-CORNER
-1 2 3 4 5 6 7 8
-0 0 0 0 0 0 0 0
+Solved \
+EDGE \
+1 2 3 4 5 6 7 8 9 10 11 12 \
+0 0 0 0 0 0 0 0 0 0 0 0 \
+CORNER \
+1 2 3 4 5 6 7 8 \
+0 0 0 0 0 0 0 0 \
 End
 
-Move F
-EDGE
-10 1 3 4 2 6 7 8 9 5 11 12
-1 1 0 0 1 0 0 0 0 1 0 0
-CORNER
-7 1 3 2 5 6 4 8
-2 1 0 2 0 0 1 0
+Move F \
+EDGE \
+10 1 3 4 2 6 7 8 9 5 11 12 \
+1 1 0 0 1 0 0 0 0 1 0 0 \
+CORNER \
+7 1 3 2 5 6 4 8 \
+2 1 0 2 0 0 1 0 \
 End
 
 Tokens on a line are whitespace separated.  The first command in the file
@@ -275,7 +288,7 @@ itself, then a name for the set (which must be unique among the sets),
 then a count of pieces in that set, and finally, a count of the number
 of ways that a piece might be oriented (which must be an integer between
 1 and 126 inclusive).  The orientation count must be supplied even if it is
-1.  There is no current limit on the count of sets.
+1\.  There is no current limit on the count of sets.
 
 Following the Set commands there must be a Solved command.  The Solved
 command is a single token on one line, followed by a position block,
@@ -341,7 +354,7 @@ last layer edge orientation step of the 3x3x3, you might make all last
 layer edges identical and oriented, and all last layer corners identical
 but unoriented.
 
-Move extension
+# Move extension
 
 When specifying moves, only a "base" move needs to be described.  A base
 move is one like "U" on the 3x3x3; it's the one that generally is not
@@ -368,7 +381,7 @@ We recommend any new software interacting with twsearch use this
 format as it is more logical and easier to reason about than the
 ksolve format.
 
-Symmetry and rotations
+# Symmetry and rotations
 
 In general when calculating solutions or most other operations,
 rotations are not used; only moves are used.  However, rotations
@@ -409,13 +422,13 @@ identical pieces, since generally the state of such a puzzle must
 only occur on the left hand side of a multiplication, and in the
 conjugation it appears on both the left and right hand side.  But
 for the specific case of symmetries restricted to those that preserve
-identical piece sets, we can indeed do such a conjugation.  So for
-instance on the 4x4x4, each set of centers has four identical pieces,
-so normally you cannot perform a multiplication of a move by a state,
-just of a state by a move.  But for conjugations, since each of the
-24 rotations maps one set of 4 identical pieces to a different set of
-identical pieces, the conjugation may indeed be performed, and twsearch
-knows how to do this.)
+identical piece sets, we can indeed do such a conjugation by moving the
+entire subset of identical pieces as a subset.  So for instance on the
+4x4x4, each set of centers has four identical pieces, so normally you
+cannot perform a multiplication of a move by a state, just of a state
+by a move.  But for conjugations, since each of the 24 rotations maps one
+set of 4 identical pieces to a different set of identical pieces, the
+conjugation may indeed be performed, and twsearch knows how to do this.)
 
 The symmetry reduction operation as described so far would be very
 slow.  Normally, for each node in a search, we perform a move, a hash,
@@ -437,7 +450,8 @@ that give us the least value for the first element, we calculate the
 second permutation element of the first set, and find the least
 possible value for that.  And so on.  Almost always we end up only needing
 to do a single full conjugation, reducing the cost of the symmetry
-reduction significantly.
+reduction significantly.  Essentially, we can pare down the elements of the
+symmetry group on a piece-by-piece basis.
 
 This algorithm assumes that the permutations of the first set of the
 puzzle do vary sufficiently with the moves so that we can identify the
@@ -463,16 +477,18 @@ of nodes and is thus more effective, speeding up overall search
 significantly.  At shallow levels that are not limited by memory
 (when the pruning table is not very full), the speedup is modest,
 but as the pruning table fills, the improved effectiveness of the
-table at a given memory size yields a signficant speed boost.
+table at a given memory size yields a significant speed boost.
 
-Internal puzzle representation
+There is one more type of symmetry that only applies under special
+circumstances. WIP
 
-The primary internal data structures are the puzzle definition
-(puzdef), the set definition (setdef), and the set value (setval).
-The setval is a bad name because it actually stores the full state
-of all sets in one contiguous memory array.  We will describe these
-structures from the bottom up, starting with the setval, then the
-setdef, then the puzdef.
+# Internal puzzle representation
+
+The primary internal data structures are the set definition (setdef),
+the puzzle definition (puzdef), and the set value (setval). The setval
+is a bad name because it actually stores the full state of all sets in
+one contiguous memory array.  We will describe these structures from the
+bottom up, starting with the setval, then the puzdef, then the setdef.
 
 The setval is just a contiguous array of unsigned bytes, with two
 bytes for each set element.  The values for the sets are stored in
@@ -482,7 +498,7 @@ set, with say n elements, we have n unsigned characters storing the
 permutation (for the case of a transformation) or the element numbers
 (in the case of a state); then we have a further n unsigned characters
 storing the orientation values in the same order.  Permutations and
-element ids are stored using a base of zero (despite being read
+element identities are stored using a base of zero (despite being read
 with a base of 1).
 
 The permutation portion of a state or transformation is always
@@ -534,13 +550,13 @@ not on the critical path.
 
 <><> puzdef <><>
 
-Canonical sequences
+# Canonical sequences
 
 The notion of canonical sequences is at the root of effective search
 in twisty puzzles.  Solving twisty puzzles usually involves doing
 a meet-in-the-middle search from both a given position and the solved
 position, attempting to identify a position approximately midway for
-which we have or can easily constract a path from the given position
+which we have or can easily contract a path from the given position
 to solved through that position.  Since the solved position is fixed
 for any position we might want to solve, we can precalculate the
 solved half of the meet-in-the-middle search and store it in what's
@@ -574,8 +590,8 @@ as L2 R2 D2 U2), but these remaining redundancies do not significantly
 increase the runtime.
 
 The 3x3x3 and larger cubes can be handled so simply because the commutes
-relation between moves is associative; if A commutes with B, and B commutes
-with C, so simply ordering the sets of moves that commute solves the
+relation between moves itself is commutative; if A commutes with B, then B
+commutes with A, so simply ordering the sets of moves that commute solves the
 problem.  But other puzzles, like the megaminx, have a more complicated
 commutes relation, and thus require somewhat more sophistication.  On
 the megaminx, L commutes with R, and L commutes with BR, but R does not
@@ -631,7 +647,7 @@ efficiency and speed of depth-first search with the redundancy
 elimination of breadth-first search, let's see how well our approach
 works.  There are a total of 232,248,063,316 unique positions at
 distance 10 for the Rubik's cube.  If we perform a depth-first
-search without any move restrictions, we'd explore 18^10 or 
+search without any move restrictions, we'd explore 18^10 or
 3,570,467,226,624 leaves, which is about 15 times too many.  Just
 ensuring that we don't repeat moves on a face reduces this to
 18 * 15^9 or 691,980,468,750, still very close to three times too
@@ -658,7 +674,7 @@ fixed on even cubies, and other moves changed to compensate.  For
 the 4x4x4 and outer block turn metric, we simply eliminate all
 outer block turns that turn (say) the BLD corner and perform our
 search; postprocessing the results can expand given solutions into
-many alternate solutions using all moves, if desired.  For the 
+many alternate solutions using all moves, if desired.  For the
 slice turn metric on the 4x4x4, we'd again fix the BLD corner, but
 now we'd transform the D move into 3u and require postprocessing
 to fix the sequence.  Note that cubing.js can easily generate .tws
@@ -678,27 +694,27 @@ factor inflation due to full-puzzle rotations, or other types of
 short identity sequences, will be reduced.  For example, on the
 2x2x2, we list here the options and the resulting branching factor:
 
-      option       states  branching factor
-    ------------  -------  ----------------
-    (default)           7          13.3485
-    --newcanon 1       19          13.3485
-    --newcanon 2      262          11.8098
-    --newcanon 3     3136          10.1869
-    --newcanon 4    31136           8.0426
-    --newcanon 5   236552           6.2356
+|   option     |  states | branching factor |
+| ------------ | ------- | ---------------- |
+| (default)    |       7 |          13.3485 |
+| --newcanon 1 |      19 |          13.3485 |
+| --newcanon 2 |     262 |          11.8098 |
+| --newcanon 3 |    3136 |          10.1869 |
+| --newcanon 4 |   31136 |           8.0426 |
+| --newcanon 5 |  236552 |           6.2356 |
 
 Now let's do the same for the pentultimate:
 
-      option       states  branching factor
-    ------------  -------  ----------------
-    (default)          13          41.9089
-    --newcanon 1       49          41.9089
-    --newcanon 2     2065          40.2458
-    --newcanon 3    83065          38.0152
-    --newcanon 4  3138180          35.0140
+|   option     |  states | branching factor |
+| ------------ | ------- | ---------------- |
+| (default)    |      13 |          41.9089 |
+| --newcanon 1 |      49 |          41.9089 |
+| --newcanon 2 |    2065 |          40.2458 |
+| --newcanon 3 |   83065 |          38.0152 |
+| --newcanon 4 | 3138180 |          35.0140 |
 
 As you can see, this approach is very effective on the 2x2x2, but that's
-a trivial puzzle anyway; on the Pentultimate, it's only a little effective.
+a trivial puzzle anyway; on the pentultimate, it's only a little effective.
 For comparison, using a fixed-corner metric on the 2x2x2 gives a branching
 factor of 6, and on the pentultimate it gives a branching factor of 24.
 
@@ -708,17 +724,17 @@ on God's number for a particular puzzle (if you know the number of states
 of the puzzle, which you can get with the --schreiersims option and
 possibly take into account full-puzzle rotations and identical pieces).
 
-Hashing
+# Pruning tables
 
-Indexing
+Modern optimal solvers
 
-Compact internal state representation
+- approximate table
+- cityhash
+- Compact internal state representation?
 
-Pruning tables in memory
-
-Reading and writing pruning tables
-
-Compression of pruning tables
+- 512 at a time
+- write when it feels like
+- Huffman coding
 
 Solve routines
 
@@ -729,6 +745,7 @@ God's Algorithm searches
 Compact external puzzle representation
 
 Utility routines
+
 * Uniquify
 * Conversion algorithm -> position
 * Shorten
@@ -742,7 +759,7 @@ To do
 
 * Make solve be iterative rather than recursive
   * Can prefetch/parallelize memory lookups better
-  * Can pause and restart search (ala generators)
+  * Can pause and restart search (aka generators)
   * Might be faster
 
 * Improve compression and decompression speed
@@ -753,7 +770,7 @@ To do
   MoveRepresentation rather than the older formats
 
 * Tighten setdef; if orientationmod=1 don't store orientation;
-  consider combining orientaiton and permutation if their
+  consider combining orientation and permutation if their
   product is small enough (and don't cares "work").
 
 * Fix allocsetval and stacksetval to be the same class and to
