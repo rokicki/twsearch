@@ -161,67 +161,75 @@ void microthread::innersetup(prunetable &pt) {
     h = pt.prefetchindexed(pt.gethashforlookup(posns[sp], looktmp));
 }
 int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
-  int prune_lookup = pt.lookuphindexed(h);
-  int move_index;
+  int v = pt.lookuphindexed(h);
+  int m, mi;
   ull mask, skipbase;
-  if (prune_lookup > togo) {
-    prune_lookup = togo - prune_lookup + 1;
+  if (v > togo) {
+    v = togo - v + 1;
+  } else if (v == 0 && togo == 1 && didprepass &&
+             pd.comparepos(posns[sp], pd.solved) == 0) {
+    v = 0;
+  } else if (v == 0 && togo > 0 && noearlysolutions &&
+             pd.comparepos(posns[sp], pd.solved) == 0) {
+    v = 0;
   } else if (togo == 0) {
-    // 1 if goal state, 0 if not
-    prune_lookup = possibsolution(pd);
+    v = possibsolution(pd);
     /*
      *   This code as written does not work if the start state is not the
      *   default (identity perm and zero orientations).  We need to fix this
      *   soon.
      */
-  } else if (pd.invertiblelookups() && prune_lookup < 2 + pt.baseval &&
-             invflag == 0) {
+  } else if (pd.invertiblelookups() && v < 2 + pt.baseval && invflag == 0) {
     invflag = 1;
     pd.inv(posns[sp], *invtmp);
     return 3;
   } else {
     mask = canonmask[st];
     skipbase = 0;
-    move_index = -1;
+    mi = -1;
     goto downstack;
   }
 upstack:
   if (solvestates.size() == 0)
-    return prune_lookup;
+    return v;
   {
     auto &ss = solvestates[solvestates.size() - 1];
     togo++;
     sp--;
     st = ss.st;
-    move_index = ss.mi;
+    mi = ss.mi;
     mask = ss.mask;
     skipbase = ss.skipbase;
   }
   solvestates.pop_back();
-  if (prune_lookup == 1)
+  if (v == 1)
     goto upstack;
-  if (prune_lookup < 0) {
-    if (prune_lookup == -1) {
-      if (pd.moves[move_index].base < 64)
-        skipbase |= 1LL << pd.moves[move_index].base;
+  if (v < 0) {
+    if (!quarter && v == -1) {
+      m = randomstart ? randomized[togo][mi] : mi;
+      if (pd.moves[m].base < 64)
+        skipbase |= 1LL << pd.moves[m].base;
     } else {
       skipbase = -1; // skip *all* remaining moves!
     }
   }
 downstack:
-  move_index++;
-  if (move_index >= (int)pd.moves.size()) {
-    prune_lookup = 0;
+  mi++;
+  if (mi >= (int)pd.moves.size()) {
+    v = 0;
     goto upstack;
   }
-  const moove &mv = pd.moves[move_index];
-  if (mv.base < 64 && ((skipbase >> mv.base) & 1))
+  m = randomstart ? randomized[togo][mi] : mi;
+  const moove &mv = pd.moves[m];
+  if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
     goto downstack;
   if ((mask >> mv.cs) & 1)
     goto downstack;
   pd.mul(posns[sp], mv.pos, posns[sp + 1]);
-  movehist[sp] = move_index;
-  solvestates.push_back({st, move_index, mask, skipbase});
+  if (!pd.legalstate(posns[sp + 1]))
+    goto downstack;
+  movehist[sp] = m;
+  solvestates.push_back({st, mi, mask, skipbase});
   togo--;
   sp++;
   st = canonnext[st][mv.cs];
