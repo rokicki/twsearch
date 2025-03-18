@@ -25,6 +25,10 @@ ull denseunpack_ordered(const puzdef &pd, ull v, setval pos);
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid = 0,
                int sym = 0);
 void looseunpack(const puzdef &pd, setval pos, loosetype *r);
+int looseperone(const puzdef &pd, int sdi, int symm);
+void loosepackone(const puzdef &pd, setval pos, int sdi, loosetype *w,
+                  int fromid = 0, int sym = 0);
+void looseunpackone(const puzdef &pd, setval pos, int sdi, loosetype *r);
 /*
  *   Some stuff to allow us to use positions in STL containers.
  */

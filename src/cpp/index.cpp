@@ -480,3 +480,144 @@ void looseunpack(const puzdef &pd, setval pos, loosetype *r) {
     p += n;
   }
 }
+int looseperone(const puzdef &pd, int sdi, int symm) {
+  int bits = 0;
+  const setdef &sd = pd.setdefs[sdi];
+  int n = sd.size;
+  bits += sd.pbits * (n - 1);
+  if (sd.oparity) {
+    bits += sd.obits * (n - 1);
+  } else {
+    bits += sd.obits * n;
+  }
+  if (symm && pd.rotgroup.size() > 0)
+    bits++;
+  return (bits + BITSPERLOOSE - 1) / BITSPERLOOSE;
+}
+void loosepackone(const puzdef &pd, setval pos, int sdi, loosetype *w,
+                  int fromid, int sym) {
+  uchar *p = pos.dat;
+  ull accum = 0;
+  int storedbits = 0;
+  const setdef &sd = pd.setdefs[sdi];
+  int n = sd.size;
+  p += sd.off;
+  if (n > 1) {
+    int bitsper = (fromid ? sd.pibits : sd.pbits);
+    for (int j = 0; j + 1 < n; j++) {
+      if (bitsper + storedbits > 64) {
+        *w++ = accum;
+        accum >>= BITSPERLOOSE;
+        storedbits -= BITSPERLOOSE;
+      }
+      accum += ((ull)p[j]) << storedbits;
+      storedbits += bitsper;
+    }
+  }
+  p += n;
+  if (sd.wildo) {
+    int lim = n;
+    int bitsper = sd.obits;
+    for (int j = 0; j < lim; j++) {
+      if (bitsper + storedbits > 64) {
+        *w++ = accum;
+        accum >>= BITSPERLOOSE;
+        storedbits -= BITSPERLOOSE;
+      }
+      int v = (p[j] >= sd.omod ? sd.omod : p[j]);
+      accum += ((ull)v) << storedbits;
+      storedbits += bitsper;
+    }
+  } else if (sd.omod != 1) {
+    int lim = (sd.oparity ? n - 1 : n);
+    int bitsper = sd.obits;
+    for (int j = 0; j < lim; j++) {
+      if (bitsper + storedbits > 64) {
+        *w++ = accum;
+        accum >>= BITSPERLOOSE;
+        storedbits -= BITSPERLOOSE;
+      }
+      accum += ((ull)p[j]) << storedbits;
+      storedbits += bitsper;
+    }
+  }
+  if (pd.rotgroup.size() > 0 && sym) {
+    if (1 + storedbits > 64) {
+      *w++ = accum;
+      accum >>= BITSPERLOOSE;
+      storedbits -= BITSPERLOOSE;
+    }
+    accum += ((ull)(sym - 1)) << storedbits;
+    storedbits++;
+  }
+  while (storedbits > 0) {
+    *w++ = accum;
+    accum >>= BITSPERLOOSE;
+    storedbits -= BITSPERLOOSE;
+  }
+}
+void looseunpackone(const puzdef &pd, setval pos, int sdi, loosetype *r) {
+  ull accum = 0;
+  int storedbits = 0;
+  uchar *p = pos.dat;
+  const setdef &sd = pd.setdefs[sdi];
+  p += sd.off;
+  int n = sd.size;
+  if (n > 1) {
+    int bitsper = sd.pbits;
+    ull mask = (1 << bitsper) - 1;
+    int msum = 0;
+    for (int j = 0; j + 1 < n; j++) {
+      if (storedbits < bitsper) {
+        accum += ((ull)(*r++)) << storedbits;
+        storedbits += BITSPERLOOSE;
+      }
+      p[j] = accum & mask;
+      msum += p[j];
+      accum >>= bitsper;
+      storedbits -= bitsper;
+    }
+    p[n - 1] = sd.psum - msum;
+  } else {
+    *p = 0;
+  }
+  p += n;
+  if (sd.wildo) {
+    int lim = n;
+    int bitsper = sd.obits;
+    ull mask = (1 << bitsper) - 1;
+    // int msum = 0 ;
+    for (int j = 0; j < lim; j++) {
+      if (storedbits < bitsper) {
+        accum += ((ull)(*r++)) << storedbits;
+        storedbits += BITSPERLOOSE;
+      }
+      p[j] = accum & mask;
+      if (p[j] >= sd.omod)
+        p[j] = 2 * sd.omod;
+      // msum += sd.omod - p[j] ;
+      accum >>= bitsper;
+      storedbits -= bitsper;
+    }
+  } else if (sd.omod != 1) {
+    int lim = (sd.oparity ? n - 1 : n);
+    int bitsper = sd.obits;
+    ull mask = (1 << bitsper) - 1;
+    int msum = 0;
+    for (int j = 0; j < lim; j++) {
+      if (storedbits < bitsper) {
+        accum += ((ull)(*r++)) << storedbits;
+        storedbits += BITSPERLOOSE;
+      }
+      p[j] = accum & mask;
+      msum += sd.omod - p[j];
+      accum >>= bitsper;
+      storedbits -= bitsper;
+    }
+    if (sd.oparity)
+      p[n - 1] = msum % sd.omod;
+  } else {
+    for (int j = 0; j < n; j++)
+      p[j] = 0;
+  }
+}

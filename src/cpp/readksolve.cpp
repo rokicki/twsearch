@@ -2,7 +2,7 @@
 #include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori, distinguishall;
-set<string> omitsets, omitperms, omitoris;
+set<string> omitsets, omitperms, omitoris, setsmustexist;
 static int lineno;
 void inerror(const string s, const string x = "") {
   if (lineno)
@@ -345,6 +345,7 @@ puzdef readdef(istream *f) {
       if (state != 1)
         inerror("! Set in wrong place");
       expect(toks, 4);
+      setsmustexist.erase(toks[1]);
       ignore = omitset(toks[1]);
       if (ignore == 3)
         continue;
@@ -451,9 +452,18 @@ puzdef readdef(istream *f) {
   if (distinguishall) {
     pz.solved = pz.id;
   }
+  pz.caninvert = pz.uniq && !pz.wildo;
   pz.doubleprobe = pz.uniq && !pz.wildo && pz.defaultstart();
   pz.checksum = checksum;
   curline.clear();
+  if (setsmustexist.size()) {
+    cerr << "The following sets were specified on the command line but "
+            "don't exist in the puzzle definition:"
+         << endl;
+    for (auto &s : setsmustexist)
+      cerr << "   " << s << endl;
+    error("! sets specified on command line don't exist");
+  }
   return pz;
 }
 void expandmoveset(const puzdef &pd, vector<moove> &moves,

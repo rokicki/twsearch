@@ -11,5 +11,6 @@ int slowmodm2inv(const puzdef &, const setval, setval, setval);
 int slowmodmip(const puzdef &, const setval, setval);
 int slowmodmip(const puzdef &, const setval, setval, const vector<moove> &,
                const vector<int> &);
+extern int disablesymmetry;
 #define ROTATIONS_H
 #endif

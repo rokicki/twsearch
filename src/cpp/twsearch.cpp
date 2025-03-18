@@ -62,6 +62,7 @@ void reseteverything() {
   omitsets.clear();
   omitoris.clear();
   omitperms.clear();
+  setsmustexist.clear();
   solutionsfound = 0;
   solutionsneeded = 1;
   noearlysolutions = 0;
@@ -69,6 +70,7 @@ void reseteverything() {
   onlyimprovements = 0;
   randomstart = 0;
   alloptimal = 0;
+  disablesymmetry = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -127,7 +129,12 @@ static boolopt boolopts[] = {
     {"-q", "Use only minimal (quarter) turns.", &quarter},
     {"-H", "Use 128-bit hash instead of full state for God's number searches.",
      &usehashenc},
-    {"--alloptimal", "Find all optimal solutions.", &alloptimal},
+    {"--alloptimal",
+     "Find all optimal solutions.  If puzzle has rotations\n"
+     "and is reduced by symmetry, the set of solutions will also be\n"
+     "reduced by that symmetry.",
+     &alloptimal},
+    {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
 };
 static intopt intopts[] = {
     {"--newcanon",
@@ -148,8 +155,12 @@ static intopt intopts[] = {
     {"-R", "num  Seed for random number generator.", &seed, -2000000000,
      2000000000},
 };
-static llopt solcountopt("-c", "num  Number of solutions to generate.",
-                         &solutionsneeded);
+static llopt solcountopt(
+    "-c",
+    "num  Number of solutions to generate.  If puzzle has rotations\n"
+    "and is reduced by symmetry, the set of solutions will also be\n"
+    "reduced by that symmetry.",
+    &solutionsneeded);
 /*
  *   Can be called multiple times at the start.
  */
@@ -410,6 +421,7 @@ static struct omitopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitsets.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitopt;
 
@@ -424,6 +436,7 @@ static struct omitpermsopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitperms.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitpermsopt;
 
@@ -438,6 +451,7 @@ static struct omitorisopt : specialopt {
     (*argc)--;
     (*argv)++;
     omitoris.insert(**argv);
+    setsmustexist.insert(**argv);
   }
 } registeromitorisopt;
 

@@ -4,6 +4,9 @@
 /node_modules
 .DS_Store
 
+# Prevent `.jj` objects from being indexed and searched in VS Code
+/.jj
+
 # TODO
 /*.dwo
 

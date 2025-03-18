@@ -60,6 +60,7 @@ void fillworker::init(const puzdef &pd, int d_) {
   d = d_;
   for (int i = 0; i < MEMSHARDS; i++)
     fillbufs[i].nchunks = 0;
+  wfillcnt = 0;
 }
 ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
   ull initmoves = pt.workchunks[w];
@@ -89,7 +90,7 @@ ull fillworker::fillflush(prunetable &pt, int shard) {
 #ifdef USE_PTHREADS
     pthread_mutex_lock(&(memshards[shard].mutex));
 #endif
-    pt.fillcnt += fb.nchunks;
+    wfillcnt += fb.nchunks;
     for (int i = 0; i < fb.nchunks; i++) {
       ull h = fb.chunks[i];
       if (((pt.mem[h >> 5] >> (2 * (h & 31))) & 3) == 0) {
@@ -323,6 +324,8 @@ void prunetable::filltable(const puzdef &pd, int d) {
 #else
   fillthreadworker((void *)&workerparams[0]);
 #endif
+  for (int i = 0; i < wthreads; i++)
+    fillcnt += fillworkers[i].wfillcnt;
   if (quiet == 0) {
     double dur = duration();
     double rate = (fillcnt - ofillcnt) / dur / 1e6;

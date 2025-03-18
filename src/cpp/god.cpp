@@ -10,6 +10,8 @@
 #include <array>
 #include <cstdlib>
 #include <iostream>
+#include <map>
+#include <unordered_map>
 /*
  *   God's algorithm using two bits per state.
  */
@@ -148,7 +150,6 @@ void innerloop(int back, int seek, int newv, ull sofar, vector<ull> &muld) {
           if (v2 == 3) {
             mem[off2 >> 5] -= (3LL - newv) << (2 * (off2 & 31));
             stashantipodedense(off2);
-            // cout << "From " << off << " to " << off2 << endl ;
             newseen++;
           }
         }
@@ -349,7 +350,327 @@ void dotwobitgod2(puzdef &pd) {
   }
   showantipodesdense(pd, 1);
 }
-static inline int compare(const void *a_, const void *b_) {
+/*
+ *   This version just builds a move table for each individual set,
+ *   individually, then does a Cartesian product.  We don't depend on
+ *   dense encoding nor do we depend on state size estimates; we just
+ *   calculate the full reachability of each set.  We do assume that
+ *   each packed setdef fits in a long though.
+ */
+struct levelinfo {
+  ull wbase, cnt, startbit;
+};
+struct setinfo {
+  ull numstates, mult;
+  unsigned int *movetable;
+};
+/*
+ *   back=1 means we are going backwards.
+ */
+ull recur(const vector<setinfo> &mt, vector<ull> &offsets, int at, int rdv,
+          int wrv, int nmoves, ull roff, ull *bits, int back) {
+  // cout << "Recur sees" ;
+  // for (auto v: offsets) cout << " " << v ;
+  // cout << endl ;
+  ull r = 0;
+  if (at == (int)mt.size() - 1) {
+    ull wid = mt[at].mult >> 5;
+    roff *= wid;
+    for (int mv = 0; mv < nmoves; mv++)
+      offsets[at * nmoves + mv] *= mt[at].mult;
+    if (back) { // backwards
+      ull xormask = 0xffffffffffffffffLL;
+      for (ull o = 0; o < wid; o++) {
+        ull rd = bits[roff + o] ^ xormask;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL;
+        // cout << "Rd is " << rd << endl ;
+        while (rd) {
+          int o2 = (ffsll(rd) - 1);
+          rd &= ~(1LL << o2);
+          ull ofr = (o << 5) + (o2 >> 1);
+          if (ofr >= mt[at].numstates)
+            break;
+          for (int mv = 0; mv < nmoves; mv++) {
+            // cout << "Inmv sees" ;
+            // for (auto v: offsets) cout << " " << v ;
+            // cout << endl ;
+            ull woff =
+                offsets[at * nmoves + mv] + mt[at].movetable[ofr * nmoves + mv];
+            // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " <<
+            // offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv]
+            // << endl ;
+            ull wbits = bits[woff >> 5];
+            if ((int)(((wbits >> ((woff & 31) * 2)) & 3)) == rdv) {
+              bits[roff + o] += ((ull)wrv) << o2;
+              r++;
+              break;
+            }
+          }
+        }
+      }
+    } else { // forwards
+      ull xormask = ((ull)(3 - rdv)) * 0x5555555555555555LL;
+      for (ull o = 0; o < wid; o++) {
+        ull rd = bits[roff + o] ^ xormask;
+        rd = rd & (rd >> 1) & 0x5555555555555555LL;
+        // cout << "Rd is " << rd << endl ;
+        while (rd) {
+          int o2 = (ffsll(rd) - 1);
+          rd &= ~(1LL << o2);
+          ull ofr = (o << 5) + (o2 >> 1);
+          for (int mv = 0; mv < nmoves; mv++) {
+            // cout << "Inmv sees" ;
+            // for (auto v: offsets) cout << " " << v ;
+            // cout << endl ;
+            ull woff =
+                offsets[at * nmoves + mv] + mt[at].movetable[ofr * nmoves + mv];
+            // cout << "Woff is " << woff << " from " << at*nmoves+mv << " " <<
+            // offsets[at*nmoves+mv] << " " << mt[at].movetable[ofr*nmoves+mv]
+            // << endl ;
+            ull wbits = bits[woff >> 5];
+            if (((wbits >> ((woff & 31) * 2)) & 3) == 0) {
+              bits[woff >> 5] += ((ull)wrv) << ((woff & 31) * 2);
+              r++;
+            }
+          }
+        }
+      }
+    }
+  } else {
+    for (ull v = 0; v < mt[at].numstates; v++) {
+      for (int mv = 0; mv < nmoves; mv++) {
+        offsets[(at + 1) * nmoves + mv] =
+            offsets[at * nmoves + mv] * mt[at].mult +
+            mt[at].movetable[v * nmoves + mv];
+        // cout << "Read " << offsets[at*nmoves+mv] << " from movetable " <<
+        // mt[at].movetable[v*nmoves+mv] << " gives " <<
+        // offsets[(at+1)*nmoves+mv] << endl ;
+      }
+      r += recur(mt, offsets, at + 1, rdv, wrv, nmoves, roff * mt[at].mult + v,
+                 bits, back);
+    }
+  }
+  return r;
+}
+loosetype *sortuniq(loosetype *s_2, loosetype *s_1, loosetype *beg,
+                    loosetype *end, int temp, loosetype *lim, int looseper);
+static inline int compare(const void *a_, const void *b_, int looseper);
+void dotwobitgod3(puzdef &pd) {
+  movemap.clear();
+  vector<int> imoves;
+  for (int i = 0; i < (int)pd.moves.size(); i++)
+    if (!quarter || pd.moves[i].cost == 1)
+      movemap.push_back(i);
+  for (auto mv : movemap) {
+    int mvi = pd.invmove(mv);
+    for (int j = 0; j < (int)movemap.size(); j++)
+      if (movemap[j] == mvi)
+        imoves.push_back(j);
+  }
+  nmoves = movemap.size();
+  vector<setinfo> movetables;
+  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
+    cout << "Freeing earlier work in " << duration() << endl;
+    setdef &sd = pd.setdefs[i];
+    int lp = looseperone(pd, i, 0);
+    cout << "Calculating move table for setdef " << sd.name << " lp " << lp
+         << endl;
+    vector<loosetype> workarr;
+    stacksetval p1(pd), p2(pd);
+    pd.assignpos(p1, pd.solved);
+    while ((int)workarr.size() < lp)
+      workarr.push_back(0);
+    // first, calculate how many positions
+    loosepackone(pd, p1, i, &(workarr[0]), 0, 0);
+    pd.assignpos(p2, p1);
+    vector<levelinfo> li;
+    li.push_back({0, 1, 0});
+    ull orbase = 0;
+    for (int rd = 0;; rd++) {
+      ull rbase = li[rd].wbase;
+      ull rcnt = li[rd].cnt;
+      cout << "At dist " << rd << " see " << rcnt << endl;
+      ull wbase = rbase + rcnt;
+      ull wcnt = 0;
+      for (ull j = 0; j < rcnt; j++) {
+        looseunpackone(pd, p1, i, &(workarr[(rbase + j) * lp]));
+        while (workarr.size() < (wbase + wcnt + nmoves) * lp)
+          workarr.push_back(0);
+        for (int mvi = 0; mvi < nmoves; mvi++) {
+          pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
+          auto wptr = &(workarr[(wbase + wcnt) * lp]);
+          loosepackone(pd, p2, i, wptr, 0, 0);
+          wcnt++;
+        }
+      }
+      auto s2ptr = &(workarr[orbase * lp]);
+      auto s1ptr = &(workarr[rbase * lp]);
+      auto begptr = &(workarr[wbase * lp]);
+      auto endptr = &(workarr[(wbase + wcnt) * lp]);
+      auto nendptr = sortuniq(s2ptr, s1ptr, begptr, endptr, 0, endptr, lp);
+      wcnt = (nendptr - begptr) / lp;
+      li.push_back({wbase, wcnt, 0});
+      if (wcnt == 0) {
+        cout << "Saw " << wbase << " required "
+             << workarr.size() * sizeof(loosetype) << " bytes in " << duration()
+             << endl;
+        break;
+      }
+      orbase = rbase;
+    }
+    ull wbase = li[li.size() - 1].wbase;
+    if (wbase >= 4000000000LL)
+      error("! too many states from this one set");
+    for (int rd = 0; rd < (int)li.size(); rd++) {
+      ull b = 1;
+      while (b <= li[rd].cnt)
+        b += b;
+      li[rd].startbit = b;
+    }
+    unsigned int *mt = (unsigned int *)calloc(wbase, nmoves * sizeof(int));
+    vector<loosetype> lptmp(lp);
+    int lord[3];
+    for (int rd = 0; rd < (int)li.size(); rd++) {
+      int nordn = 0;
+      for (int pr = rd - 1; pr <= rd + 1; pr++)
+        if (pr >= 0 && pr < (int)li.size())
+          lord[nordn++] = pr;
+      ll rbase = li[rd].wbase;
+      ll rcnt = li[rd].cnt;
+      for (ll j = 0; j < rcnt; j++) {
+        looseunpackone(pd, p1, i, &(workarr[(rbase + j) * lp]));
+        for (int mvi = 0; mvi < nmoves; mvi++) {
+          if (mt[(li[rd].wbase + j) * nmoves + mvi])
+            continue;
+          pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
+          auto wptr = &(lptmp[0]);
+          loosepackone(pd, p2, i, wptr, 0, 0);
+          ll found = 0xfffffffffffffffLL;
+          for (int pri = 0; pri < nordn; pri++) {
+            int pr = lord[pri];
+            ull loc = 0;
+            for (ull b = li[pr].startbit; b; b >>= 1) {
+              if (loc + b < li[pr].cnt &&
+                  compare(&(workarr[(li[pr].wbase + loc + b) * lp]), wptr,
+                          lp) <= 0)
+                loc += b;
+            }
+            if (loc < li[pr].cnt &&
+                compare(&(workarr[(li[pr].wbase + loc) * lp]), wptr, lp) == 0) {
+              found = loc + li[pr].wbase;
+              if (pri > 0)
+                swap(lord[pri], lord[pri >> 1]);
+              break;
+            }
+          }
+          if (found == 0xfffffffffffffffLL)
+            error("! did not find");
+          mt[(li[rd].wbase + j) * nmoves + mvi] = found;
+          mt[found * nmoves + imoves[mvi]] = li[rd].wbase + j;
+        }
+      }
+    }
+    movetables.push_back({wbase, wbase, mt});
+    cout << "Move table built in " << duration() << endl;
+  }
+  cout << "Freeing earlier work in " << duration() << endl;
+  // for the last one, ensure the multiplier is a multiple of 32
+  setinfo &si = movetables[movetables.size() - 1];
+  si.mult = (si.numstates + 31) & ~31LL;
+  ull totsize = 1;
+  for (auto &si : movetables) {
+    ull ntotsize = totsize * (ull)si.mult;
+    if (ntotsize / (ull)si.mult != totsize)
+      error("! overflow in size calculation");
+    totsize = ntotsize;
+  }
+  ull bytesize = (totsize + 3) >> 2;
+  bytesize = (bytesize + 7) & ~7LL;
+  if (bytesize > (ull)maxmem) {
+    cerr << "Bytesize required is " << bytesize << endl;
+    error("! requires too much RAM");
+  }
+  ull *bits = (ull *)calloc(bytesize >> 3, sizeof(ull));
+  bits[0] = 1;
+  vector<ull> offsets(nmoves * (1 + movetables.size()));
+  ll totset = 0;
+  ll bitsset = 1;
+  ull levcnts[4];
+  for (int i = 0; i < 4; i++)
+    levcnts[i] = 0;
+  levcnts[0] = totsize - 1;
+  levcnts[1] = 1;
+  for (int rd = 0;; rd++) {
+    totset += bitsset;
+    cout << "Dist " << rd << " " << bitsset << " " << totset << " in "
+         << duration() << endl;
+    int rdv = (rd % 3) + 1;
+    int wrv = (rdv % 3) + 1;
+    for (int i = 0; i < nmoves; i++)
+      offsets[i] = 0;
+    if (levcnts[rdv] < levcnts[0])
+      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 0);
+    else
+      bitsset = recur(movetables, offsets, 0, rdv, wrv, nmoves, 0, bits, 1);
+    if (bitsset == 0)
+      break;
+    levcnts[wrv] += bitsset;
+    levcnts[0] -= bitsset;
+  }
+}
+/*
+ *   Dead code; uses C++ unordered_maps but this is likely too slow.
+ *
+void dotwobitgod4(puzdef &pd) {
+  movemap.clear();
+  for (int i = 0; i < (int)pd.moves.size(); i++)
+    if (!quarter || pd.moves[i].cost == 1)
+      movemap.push_back(i);
+  nmoves = movemap.size();
+  vector<int *> movetables ;
+  for (int i = 0; i < (int)pd.setdefs.size(); i++) {
+    cout << "Freeing earlier work in " << duration() << endl ;
+    setdef &sd = pd.setdefs[i];
+    cout << "Calculating move table for setdef " << sd.name << endl;
+    unordered_map<ll, int> coordlookups;
+    stacksetval p1(pd), p2(pd);
+    pd.assignpos(p1, pd.solved);
+    vector<ull> q;
+    // first, calculate how many positions
+    ull st = loosepackone(pd, p1, i, 0, 0);
+    coordlookups[st] = 0;
+    q.push_back(st);
+    for (int qg=0; qg<(int)q.size(); qg++) {
+      ull src = q[qg];
+      looseunpackone(pd, p1, i, src);
+      for (int mvi=0; mvi<nmoves; mvi++) {
+        pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
+        ull dst = loosepackone(pd, p2, i, 0, 0);
+        if (coordlookups.find(dst) == coordlookups.end()) {
+          coordlookups[dst] = q.size();
+          q.push_back(dst);
+        }
+      }
+    }
+    cout << "Found " << q.size() << " elements; building move table in "
+         << duration() << endl;
+    int *mt = (int *)calloc((int)q.size(), nmoves*sizeof(int)) ;
+    for (ll qg=0; qg<(int)q.size(); qg++) {
+      ull src = q[qg];
+      looseunpackone(pd, p1, i, src);
+      for (int mvi=0; mvi<nmoves; mvi++) {
+        pd.mul(p1, pd.moves[movemap[mvi]].pos, p2);
+        ull dst = loosepackone(pd, p2, i, 0, 0);
+        mt[qg*nmoves+mvi] = coordlookups[dst] ;
+      }
+    }
+    movetables.push_back(mt) ;
+    cout << "Move table built in " << duration() << endl ;
+  }
+  cout << "Freeing earlier work in " << duration() << endl ;
+}
+ */
+static inline int compare(const void *a_, const void *b_, int looseper) {
   loosetype *a = (loosetype *)a_;
   loosetype *b = (loosetype *)b_;
   for (int i = 0; i < looseper; i++)
@@ -357,94 +678,16 @@ static inline int compare(const void *a_, const void *b_) {
       return (a[i] < b[i] ? -1 : 1);
   return 0;
 }
-const int SHIFT = 10;
-const int BUCKETS = 1 << SHIFT;
-const int SPLIT = 32;
-template <typename T> int extract(const T &a) { return a[0] >> (32 - SHIFT); }
-#ifdef USE_PTHREADS
-static int wi;
-#endif
-static ll beg[SPLIT], endb[SPLIT];
-static pair<ll, int> bysize[SPLIT];
-template <typename T> void tmqsort(T *a, ll n) {
-  if (n < 4096) {
-    sort(a, a + n);
-    return;
-  }
-  ll cnts[BUCKETS];
-  for (int i = 0; i < BUCKETS; i++)
-    cnts[i] = 0;
-  for (ll i = 0; i < n; i++)
-    cnts[extract(a[i])]++;
-  int split[BUCKETS];
-  ll cnts2[SPLIT];
-  ll rem = n;
-  ll goal = (2 * n + SPLIT) / (2 * SPLIT);
-  int at = 0;
-  for (int i = 0; i < SPLIT; i++)
-    cnts2[i] = 0;
-  for (int i = 0; i < BUCKETS; i++) {
-    if (at + 1 < SPLIT && cnts2[at] + cnts[i] - goal > goal - cnts2[at]) {
-      rem -= cnts2[at];
-      goal = (2 * rem + (SPLIT - at)) / (2 * (SPLIT - at));
-      at++;
-    }
-    split[i] = at;
-    cnts2[at] += cnts[i];
-  }
-  ll s = 0;
-  for (int i = 0; i < SPLIT; i++) {
-    beg[i] = s;
-    s += cnts2[i];
-    endb[i] = s;
-  }
-  for (int b = 0; b < SPLIT; b++) {
-    for (ll i = beg[b]; i < endb[b]; i++) {
-      while (1) {
-        int buck = split[extract(a[i])];
-        if (buck == b)
-          break;
-        swap(a[i], a[beg[buck]++]);
-      }
-    }
-  }
-  for (int i = 0; i < SPLIT; i++)
-    bysize[i] = {-cnts2[i], i};
-  sort(bysize, bysize + SPLIT);
-  s = 0;
-  for (int i = 0; i < SPLIT; i++) {
-    beg[i] = s;
-    s += cnts2[i];
-  }
-#ifdef USE_PTHREADS
-  wi = 0;
-  auto worker = [](void *ap) -> void * {
-    T *a = (T *)ap;
-    while (1) {
-      int w = -1;
-      get_global_lock();
-      if (wi < SPLIT)
-        w = wi++;
-      release_global_lock();
-      if (w < 0)
-        return (void *)0;
-      int b = bysize[w].second;
-      sort(a + beg[b], a + endb[b]);
-    }
-  };
-  for (int i = 0; i < numthreads; i++)
-    spawn_thread(i, worker, a);
-  for (int i = 0; i < numthreads; i++)
-    join_thread(i);
-#else
-  for (int i = 0; i < SPLIT; i++) {
-    int b = bysize[i].second;
-    sort(a + beg[b], a + endb[b]);
-  }
-#endif
+static int qsortlooseper;
+static inline int qsortcompare(const void *a_, const void *b_) {
+  return compare(a_, b_, qsortlooseper);
 }
-void mqsort(void *beg, ll numel, ll sz) {
-  switch (sz / sizeof(loosetype)) {
+template <typename T> void tmqsort(T *a, ll n) {
+  sort(a, a + n);
+  return;
+}
+void mqsort(void *beg, ll numel, int looseper, ll sz) {
+  switch (looseper) {
   case 1:
     tmqsort((array<loosetype, 1> *)beg, numel);
     break;
@@ -470,16 +713,17 @@ void mqsort(void *beg, ll numel, ll sz) {
     tmqsort((array<loosetype, 8> *)beg, numel);
     break;
   default:
-    qsort(beg, numel, sz, compare);
+    qsortlooseper = looseper;
+    qsort(beg, numel, sz, qsortcompare);
   }
 }
 loosetype *sortuniq(loosetype *s_2, loosetype *s_1, loosetype *beg,
-                    loosetype *end, int temp, loosetype *lim) {
+                    loosetype *end, int temp, loosetype *lim, int looseper) {
   size_t numel = (end - beg) / looseper;
   if (verbose > 1 || temp)
     cout << "Created " << numel << " elements in " << duration() << endl
          << flush;
-  mqsort(beg, numel, looseper * sizeof(loosetype));
+  mqsort(beg, numel, looseper, looseper * sizeof(loosetype));
   if (verbose > 1)
     cout << "Sorted " << flush;
   loosetype *s_0 = beg;
@@ -487,13 +731,13 @@ loosetype *sortuniq(loosetype *s_2, loosetype *s_1, loosetype *beg,
   loosetype *r_2 = s_2;
   loosetype *r_1 = s_1;
   while (beg < end) {
-    if (beg + looseper >= end || compare(beg, beg + looseper)) {
-      while (r_2 < s_1 && compare(beg, r_2) > 0)
+    if (beg + looseper >= end || compare(beg, beg + looseper, looseper)) {
+      while (r_2 < s_1 && compare(beg, r_2, looseper) > 0)
         r_2 += looseper;
-      if (r_2 >= s_1 || compare(beg, r_2)) {
-        while (r_1 < s_0 && compare(beg, r_1) > 0)
+      if (r_2 >= s_1 || compare(beg, r_2, looseper)) {
+        while (r_1 < s_0 && compare(beg, r_1, looseper) > 0)
           r_1 += looseper;
-        if (r_1 >= s_0 || compare(beg, r_1)) {
+        if (r_1 >= s_0 || compare(beg, r_1, looseper)) {
           memcpy(w, beg, looseper * sizeof(loosetype));
           w += looseper;
         }
@@ -681,7 +925,7 @@ void doarraygod(const puzdef &pd) {
           join_thread(i);
         if (reader == levend)
           break;
-        writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+        writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
       }
     } else {
 #endif
@@ -696,13 +940,13 @@ void doarraygod(const puzdef &pd) {
           loosepack(pd, p2, writer);
           writer += looseper;
           if (writer + looseper >= lim)
-            writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+            writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
         }
       }
 #ifdef USE_PTHREADS
     }
 #endif
-    writer = sortuniq(s_2, s_1, levend, writer, 0, lim);
+    writer = sortuniq(s_2, s_1, levend, writer, 0, lim, looseper);
     newseen = (writer - levend) / looseper;
     cnts.push_back(newseen);
     tot += newseen;
@@ -735,7 +979,7 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
     loosepack(pd, posns[sp], writer);
     writer += looseper;
     if (writer + looseper >= lim)
-      writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+      writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
     return;
   }
   ull mask = canonmask[st];
@@ -774,7 +1018,7 @@ void doarraygod2(const puzdef &pd) {
     ull newseen = 0;
     levend = writer;
     dorecurgod(pd, d, 0, 0);
-    writer = sortuniq(s_2, s_1, levend, writer, 0, lim);
+    writer = sortuniq(s_2, s_1, levend, writer, 0, lim, looseper);
     newseen = (writer - levend) / looseper;
     cnts.push_back(newseen);
     tot += newseen;
@@ -786,7 +1030,8 @@ void doarraygod2(const puzdef &pd) {
     if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
       break;
     if (levend != s_2)
-      mqsort(s_2, (levend - s_2) / looseper, looseper * sizeof(loosetype));
+      mqsort(s_2, (levend - s_2) / looseper, looseper,
+             looseper * sizeof(loosetype));
     s_1 = levend;
     reader = levend;
   }
@@ -926,7 +1171,7 @@ void doarraygodsymm(const puzdef &pd) {
           join_thread(i);
         if (reader == levend)
           break;
-        writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+        writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
       }
     } else {
 #endif
@@ -949,7 +1194,7 @@ void doarraygodsymm(const puzdef &pd) {
             loosepack(pd, p3, writer, 0, 1 + (sym > 1));
             writer += looseper;
             if (writer + looseper >= lim)
-              writer = sortuniq(s_2, s_1, levend, writer, 1, lim);
+              writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
           }
           if (!pd.invertible())
             break;
@@ -962,7 +1207,7 @@ void doarraygodsymm(const puzdef &pd) {
 #ifdef USE_PTHREADS
     }
 #endif
-    writer = sortuniq(s_2, s_1, levend, writer, 0, lim);
+    writer = sortuniq(s_2, s_1, levend, writer, 0, lim, looseper);
     newseen = (writer - levend) / looseper;
     cnts.push_back(newseen);
     tot += newseen;
@@ -1005,7 +1250,11 @@ static struct godcmd : cmd {
         forcearray ||
         (pd.logstates <= 50 &&
          ((ll)(pd.llstates * sizeof(loosetype) * looseper) <= maxmem));
-    if (!forcearray && statesfit2 && pd.canpackdense()) {
+    if (0 && pd.setdefs.size() > 1 &&
+        !forcearray) { // disable new experimental code
+      cout << "Using twobit arrays and separate setdefs" << endl;
+      dotwobitgod3(pd);
+    } else if (!forcearray && statesfit2 && pd.canpackdense() && !pd.wildo) {
       cout << "Using twobit arrays." << endl;
       dotwobitgod2(pd);
     } else if (statesfitsa) {
