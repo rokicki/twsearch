@@ -6,8 +6,16 @@
 # Prevent `.jj` objects from being indexed and searched in VS Code
 /.jj
 
+# Rust
+/target
+# `cargo-run-bin`
+/.bin
+
 # TODO
 /*.dwo
+
+# Replaced with `bun.lock`
+/package-lock.json
 
 # Legacy top-level files
 # These are no longer produced, but we want to avoid commmiting them,
@@ -18,11 +26,3 @@
 /twsearch
 /twsearch.wasm
 /emsdk
-
-# Rust
-/target
-# `cargo-run-bin`
-/.bin
-
-# Replaced with `bun.lockb`
-/package-lock.json
