@@ -86,10 +86,10 @@ void calcrotations(puzdef &pd) {
   m.twist = 0;
   q.push_back(m);
   for (int qg = 0; qg < (int)q.size(); qg++) {
-    for (int i = 0; i < (int)pd.rotations.size(); i++) {
+    for (int i = 0; i < (int)pd.baserotations.size(); i++) {
       vector<uchar> t(pd.totsize);
       setval w(t.data());
-      pd.mul(q[qg].pos, pd.rotations[i].pos, w);
+      pd.mul(q[qg].pos, pd.baserotations[i].pos, w);
       if (seen.find(t) == seen.end()) {
         seen.insert(t);
         m.name = "(rotation)";

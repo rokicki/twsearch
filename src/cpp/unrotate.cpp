@@ -30,13 +30,13 @@ void unrotate_setup(const puzdef &pd) {
     pd.assignpos(posns[0], pd.moves[i].pos);
     urinsert(pd, i, -1);
   }
-  for (int i = 0; i < (int)pd.rotations.size(); i++) {
-    pd.assignpos(posns[0], pd.rotations[i].pos);
+  for (int i = 0; i < (int)pd.baserotations.size(); i++) {
+    pd.assignpos(posns[0], pd.baserotations[i].pos);
     urinsert(pd, movesn + i, -1);
   }
   for (int i = 0; i < movesn; i++)
-    for (int j = 0; j < (int)pd.rotations.size(); j++) {
-      pd.mul(pd.moves[i].pos, pd.rotations[j].pos, posns[0]);
+    for (int j = 0; j < (int)pd.baserotations.size(); j++) {
+      pd.mul(pd.moves[i].pos, pd.baserotations[j].pos, posns[0]);
       urinsert(pd, i, movesn + j);
     }
 }
@@ -57,8 +57,8 @@ vector<int> unrotate(const puzdef &pd, const vector<int> &orig) {
         a = b;
         continue;
       }
-      pd.mul(a < movesn ? pd.moves[a].pos : pd.rotations[a - movesn].pos,
-             b < movesn ? pd.moves[b].pos : pd.rotations[b - movesn].pos,
+      pd.mul(a < movesn ? pd.moves[a].pos : pd.baserotations[a - movesn].pos,
+             b < movesn ? pd.moves[b].pos : pd.baserotations[b - movesn].pos,
              posns[0]);
       loosepack(pd, posns[0], urenc.data(), 1);
       auto it = urseen.find(urenc);
@@ -92,7 +92,7 @@ void unrotateit(const puzdef &pd, vector<int> &movelist, const char *) {
       if (mvind < (int)pd.moves.size())
         cout << " " << pd.moves[mvind].name;
       else
-        cout << " " << pd.rotations[mvind - pd.moves.size()].name;
+        cout << " " << pd.baserotations[mvind - pd.moves.size()].name;
   }
   cout << endl;
 }

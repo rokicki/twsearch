@@ -86,7 +86,7 @@ void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
       if (mvind < (int)pd.moves.size())
         cout << " " << pd.moves[mvind].name;
       else
-        cout << " " << pd.rotations[mvind - pd.moves.size()].name;
+        cout << " " << pd.baserotations[mvind - pd.moves.size()].name;
   }
   cout << endl;
 }

@@ -111,7 +111,7 @@ struct puzdef {
   string name;
   setdefs_t setdefs;
   allocsetval solved;
-  vector<moove> basemoves, moves, parsemoves, rotations, expandedrotations,
+  vector<moove> basemoves, moves, parsemoves, baserotations, expandedrotations,
       rotgroup;
   vector<movealias> aliases;
   vector<movealias> moveseqs;

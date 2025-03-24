@@ -145,7 +145,7 @@ void invertit(const puzdef &pd, vector<int> &movelist, const char *) {
         mv = &pd.expandedrotations[ind];
         int b = mv->base;
         o = pd.baserotorders[b];
-        cout << pd.rotations[b].name;
+        cout << pd.baserotations[b].name;
       }
       int twist = (o - mv->twist) % o;
       if (twist < 1) {

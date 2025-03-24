@@ -202,7 +202,6 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
 puzdef makepuzdef(istream *f) {
   doinit();
   puzdef pd = readdef(f);
-  addmovepowers(pd);
   if (legalmovelist)
     filtermovelist(pd, legalmovelist);
   if (nocorners)
@@ -240,7 +239,7 @@ puzdef makepuzdef(istream *f) {
     else
       gs = new generatingset(pd);
   }
-  if (pd.rotations.size())
+  if (pd.baserotations.size())
     calcrotations(pd);
   calculatesizes(pd);
   calclooseper(pd);

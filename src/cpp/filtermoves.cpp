@@ -19,7 +19,7 @@ void filtermovelist(puzdef &pd, const char *movelist) {
   int nummoves = pd.moves.size();
   int numbmoves = pd.basemoves.size();
   vector<int> moves = parsemoveorrotationlist(pd, movelist);
-  vector<int> lowinc(pd.basemoves.size() + pd.rotations.size());
+  vector<int> lowinc(pd.basemoves.size() + pd.baserotations.size());
   for (int i = 0; i < (int)moves.size(); i++) {
     moove &mv = moves[i] >= nummoves ? pd.expandedrotations[moves[i] - nummoves]
                                      : pd.moves[moves[i]];
@@ -33,7 +33,8 @@ void filtermovelist(puzdef &pd, const char *movelist) {
   vector<int> newbasemoveorders;
   for (int i = 0; i < (int)pd.basemoves.size() + (int)pd.baserotorders.size();
        i++) {
-    moove &bm = i >= numbmoves ? pd.rotations[i - numbmoves] : pd.basemoves[i];
+    moove &bm =
+        i >= numbmoves ? pd.baserotations[i - numbmoves] : pd.basemoves[i];
     int bmi =
         i >= numbmoves ? pd.baserotorders[i - numbmoves] : pd.basemoveorders[i];
     if (goodmove(bm, lowinc[i], bmi)) {
