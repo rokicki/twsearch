@@ -466,61 +466,68 @@ puzdef readdef(istream *f) {
   }
   return pz;
 }
+int expandonemove(const puzdef &pd, const moove &m, vector<moove> &newmoves,
+                  vector<string> &newnames) {
+  stacksetval p1(pd), p2(pd);
+  if (quarter && m.cost > 1)
+    return -1;
+  vector<allocsetval> movepowers;
+  movepowers.push_back(m.pos);
+  pd.assignpos(p1, m.pos);
+  pd.assignpos(p2, m.pos);
+  int foundzero = 0;
+  for (int p = 2; p < 1000000; p++) {
+    pd.mul(p1, m.pos, p2);
+    if (pd.comparepos(p2, pd.id) == 0) {
+      foundzero = 1;
+      break;
+    }
+    movepowers.push_back(allocsetval(pd, p2));
+    swap(p1.dat, p2.dat);
+  }
+  if (foundzero == 0)
+    error("! could not expand the moveset; order of a move too high");
+  int order = movepowers.size() + 1;
+  for (int j = 0; j < (int)movepowers.size(); j++) {
+    int tw = j + 1;
+    if (order - tw < tw)
+      tw -= order;
+    moove m2 = m;
+    m2.pos = movepowers[j];
+    m2.cost = abs(tw);
+    /* TODO: if a move with an extremely high order causes the number of
+       moves to get too high, and you are using quarter move metric, then
+       the make work chunks can fail or be highly suboptimal.  Uncomment
+       this code as a temporary hack to fix this (but you won't be able
+       to use move multiples on input anymore.)  I need to fix this in a
+       better way.   -tgr
+     *
+    if (quarter && m2.cost > 1)
+       continue ;
+     * */
+    m2.twist = (tw + order) % order;
+    if (tw != 1) {
+      string s2 = m.name;
+      if (tw != -1)
+        s2 += to_string(abs(tw));
+      if (tw < 0)
+        s2 += "'";
+      newnames.push_back(s2);
+      m2.name = s2;
+    }
+    newmoves.push_back(m2);
+  }
+  return order;
+}
 void expandmoveset(const puzdef &pd, vector<moove> &moves,
                    vector<moove> &newmoves, vector<string> &newnames,
                    vector<int> &basemoveorders) {
   stacksetval p1(pd), p2(pd);
   for (int i = 0; i < (int)moves.size(); i++) {
-    moove &m = moves[i];
-    if (quarter && m.cost > 1)
+    int order = expandonemove(pd, moves[i], newmoves, newnames);
+    if (order < 0)
       continue;
-    vector<allocsetval> movepowers;
-    movepowers.push_back(m.pos);
-    pd.assignpos(p1, m.pos);
-    pd.assignpos(p2, m.pos);
-    int foundzero = 0;
-    for (int p = 2; p < 1000000; p++) {
-      pd.mul(p1, m.pos, p2);
-      if (pd.comparepos(p2, pd.id) == 0) {
-        foundzero = 1;
-        break;
-      }
-      movepowers.push_back(allocsetval(pd, p2));
-      swap(p1.dat, p2.dat);
-    }
-    if (foundzero == 0)
-      error("! could not expand the moveset; order of a move too high");
-    int order = movepowers.size() + 1;
     basemoveorders.push_back(order);
-    for (int j = 0; j < (int)movepowers.size(); j++) {
-      int tw = j + 1;
-      if (order - tw < tw)
-        tw -= order;
-      moove m2 = m;
-      m2.pos = movepowers[j];
-      m2.cost = abs(tw);
-      /* TODO: if a move with an extremely high order causes the number of
-         moves to get too high, and you are using quarter move metric, then
-         the make work chunks can fail or be highly suboptimal.  Uncomment
-         this code as a temporary hack to fix this (but you won't be able
-         to use move multiples on input anymore.)  I need to fix this in a
-         better way.   -tgr
-       *
-      if (quarter && m2.cost > 1)
-         continue ;
-       * */
-      m2.twist = (tw + order) % order;
-      if (tw != 1) {
-        string s2 = m.name;
-        if (tw != -1)
-          s2 += to_string(abs(tw));
-        if (tw < 0)
-          s2 += "'";
-        newnames.push_back(s2);
-        m2.name = s2;
-      }
-      newmoves.push_back(m2);
-    }
   }
 }
 void addmovepowers(puzdef &pd) {
