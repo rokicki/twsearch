@@ -98,3 +98,28 @@ int isrotation(const string &mv) {
     return 1;
   return 0;
 }
+/*
+ *   This is used when we are expanding dynamic moves.  We want to apply a
+ *   move or rotation to a setval but only if we can find it; if we can't
+ *   we return 0 for failure.  We don't want to allocate extra memory or
+ *   anything here since we may be calling this a lot.
+ *
+ *   We only look in moves and expanded rotations because we haven't done
+ *   move filtering yet, so looking elsewhere won't find anything else.
+ */
+int domove_or_rotation_q(const puzdef &pd, setval &sv, setval &tmp,
+                         const string &mvstring) {
+  for (int i = 0; i < (int)pd.moves.size(); i++)
+    if (mvstring == pd.moves[i].name) {
+      pd.mul(sv, pd.moves[i].pos, tmp);
+      pd.assignpos(sv, tmp);
+      return 1;
+    }
+  for (int i = 0; i < (int)pd.expandedrotations.size(); i++)
+    if (mvstring == pd.expandedrotations[i].name) {
+      pd.mul(sv, pd.expandedrotations[i].pos, tmp);
+      pd.assignpos(sv, tmp);
+      return 1;
+    }
+  return 0;
+}

@@ -372,6 +372,72 @@ int expandonemove(const puzdef &pd, const moove &m, vector<moove> &newmoves,
   }
   return order;
 }
+void addnewmove(puzdef &pz, moove &m, vector<string> &newnames) {
+  if (isrotation(m.name)) {
+    m.base = pz.baserotations.size();
+    pz.baserotations.push_back(m);
+    int order = expandonemove(pz, m, pz.expandedrotations, newnames);
+    pz.baserotorders.push_back(order);
+  } else {
+    m.base = pz.basemoves.size();
+    pz.basemoves.push_back(m);
+    int order = expandonemove(pz, m, pz.moves, newnames);
+    pz.basemoveorders.push_back(order);
+  }
+}
+void expandalgomoves(puzdef &pd, vector<string> &newnames) {
+  int needed = pd.moveseqs.size();
+  if (needed == 0)
+    return;
+  vector<char> done(needed);
+  stacksetval p1(pd), p2(pd);
+  string move;
+  while (needed) {
+    int donethistime = 0;
+    for (int i = 0; i < (int)pd.moveseqs.size(); i++) {
+      if (done[i])
+        continue;
+      move.clear();
+      pd.assignpos(p1, pd.id);
+      int good = 1;
+      for (auto c : pd.moveseqs[i].srcstr) {
+        if (c <= ' ' || c == ',') {
+          if (move.size()) {
+            cout << "Trying move " << move << endl;
+            good = domove_or_rotation_q(pd, p1, p2, move);
+            if (good == 0)
+              break;
+            move.clear();
+          }
+        } else
+          move.push_back(c);
+      }
+      if (good && move.size()) {
+        cout << "Trying move " << move << endl;
+        good = domove_or_rotation_q(pd, p1, p2, move);
+      }
+      if (good) {
+        moove m(pd, pd.id);
+        m.name = pd.moveseqs[i].name;
+        m.pos = allocsetval(pd, p1);
+        m.cost = 1;
+        m.twist = 1;
+        addnewmove(pd, m, newnames);
+        done[i] = 1;
+        donethistime++;
+        needed--;
+      }
+    }
+    if (donethistime == 0) {
+      cerr << "Unexpanded:" << endl;
+      for (int i = 0; i < (int)pd.moveseqs.size(); i++)
+        if (!done[i])
+          cerr << " " << pd.moveseqs[i].name << " = " << pd.moveseqs[i].srcstr
+               << endl;
+      error("! could not expand all move sequences");
+    }
+  }
+}
 puzdef readdef(istream *f) {
   vector<string> newnames;
   curline.clear();
@@ -466,17 +532,7 @@ puzdef readdef(istream *f) {
           readposition(pz, 'm', f, checksum, toks[0] == "MoveTransformation");
       m.cost = 1;
       m.twist = 1;
-      if (isrotation(m.name)) {
-        m.base = pz.baserotations.size();
-        pz.baserotations.push_back(m);
-        int order = expandonemove(pz, m, pz.expandedrotations, newnames);
-        pz.baserotorders.push_back(order);
-      } else {
-        m.base = pz.basemoves.size();
-        pz.basemoves.push_back(m);
-        int order = expandonemove(pz, m, pz.moves, newnames);
-        pz.basemoveorders.push_back(order);
-      }
+      addnewmove(pz, m, newnames);
     } else if (toks[0] == "MoveAlias") {
       if (state != 2)
         inerror("! MoveAlias in wrong place");
@@ -522,5 +578,6 @@ puzdef readdef(istream *f) {
       cerr << "   " << s << endl;
     error("! sets specified on command line don't exist");
   }
+  expandalgomoves(pz, newnames);
   return pz;
 }

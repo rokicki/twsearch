@@ -17,5 +17,7 @@ vector<int> parsemoveorrotationlist(const puzdef &pd, const string &scr);
 vector<allocsetval> parsemovelist_generously(const puzdef &pd,
                                              const string &scr);
 int isrotation(const string &s);
+int domove_or_rotation_q(const puzdef &pd, setval &sv, setval &tmp,
+                         const string &s);
 #define PARSEMOVES_H
 #endif

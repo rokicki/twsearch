@@ -102,7 +102,7 @@ struct moove {
 };
 extern int origroup;
 struct movealias {
-  string src, dst;
+  string name, srcstr;
 };
 struct puzdef {
   puzdef()
