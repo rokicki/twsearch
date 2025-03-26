@@ -403,7 +403,6 @@ void expandalgomoves(puzdef &pd, vector<string> &newnames) {
       for (auto c : pd.moveseqs[i].srcstr) {
         if (c <= ' ' || c == ',') {
           if (move.size()) {
-            cout << "Trying move " << move << endl;
             good = domove_or_rotation_q(pd, p1, p2, move);
             if (good == 0)
               break;
@@ -412,10 +411,8 @@ void expandalgomoves(puzdef &pd, vector<string> &newnames) {
         } else
           move.push_back(c);
       }
-      if (good && move.size()) {
-        cout << "Trying move " << move << endl;
+      if (good && move.size())
         good = domove_or_rotation_q(pd, p1, p2, move);
-      }
       if (good) {
         moove m(pd, pd.id);
         m.name = pd.moveseqs[i].name;
