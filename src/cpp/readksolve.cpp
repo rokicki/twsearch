@@ -419,6 +419,7 @@ void expandalgomoves(puzdef &pd, vector<string> &newnames) {
         m.pos = allocsetval(pd, p1);
         m.cost = 1;
         m.twist = 1;
+        m.isalias = pd.moveseqs[i].isalias;
         addnewmove(pd, m, newnames);
         done[i] = 1;
         donethistime++;
@@ -534,7 +535,7 @@ puzdef readdef(istream *f) {
       if (state != 2)
         inerror("! MoveAlias in wrong place");
       expect(toks, 3);
-      pz.aliases.push_back({toks[1], toks[2]});
+      pz.moveseqs.push_back({toks[1], toks[2], 1});
     } else if (toks[0] == "MoveSequence") {
       if (state != 2)
         inerror("! MoveSequence in wrong place");
@@ -546,7 +547,7 @@ puzdef readdef(istream *f) {
           seq += " ";
         seq += toks[i];
       }
-      pz.moveseqs.push_back({toks[1], seq});
+      pz.moveseqs.push_back({toks[1], seq, 0});
     } else {
       inerror("! unexpected first token on line ", toks[0]);
     }

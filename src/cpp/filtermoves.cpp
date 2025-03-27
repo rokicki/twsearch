@@ -1,5 +1,6 @@
 #include "filtermoves.h"
 #include "parsemoves.h"
+#include <iostream>
 #include <map>
 /*
  *   Rewrite the movelist in the puzzle definition to restrict moves.
@@ -8,6 +9,8 @@
  *   we include only appropriate multiples.
  */
 int goodmove(const moove &mv, int inc, int order) {
+  if (mv.isalias)
+    return 0;
   if (inc == 0)
     return 0;
   if (order % inc != 0)
@@ -18,8 +21,11 @@ int goodmove(const moove &mv, int inc, int order) {
 void filtermovelist(puzdef &pd, const char *movelist) {
   int nummoves = pd.moves.size();
   int numbmoves = pd.basemoves.size();
-  vector<int> moves = parsemoveorrotationlist(pd, movelist);
-  vector<int> lowinc(pd.basemoves.size() + pd.baserotations.size());
+  vector<int> moves;
+  if (movelist != 0)
+    moves = parsemoveorrotationlist(pd, movelist);
+  vector<int> lowinc(pd.basemoves.size() + pd.baserotations.size(),
+                     movelist == 0);
   for (int i = 0; i < (int)moves.size(); i++) {
     moove &mv = moves[i] >= nummoves ? pd.expandedrotations[moves[i] - nummoves]
                                      : pd.moves[moves[i]];
@@ -75,5 +81,6 @@ void filtermovelist(puzdef &pd, const char *movelist) {
   pd.basemoveorders = newbasemoveorders;
   pd.basemoves = newbase;
   pd.moves = newmvs;
-  pd.addoptionssum(movelist);
+  if (movelist != 0)
+    pd.addoptionssum(movelist);
 }

@@ -95,14 +95,17 @@ struct allocsetval : setval {
   int sz;
 };
 struct moove {
-  moove(const puzdef &pd, const setval &iv) : name(), pos(pd, iv), cost(1) {}
+  moove(const puzdef &pd, const setval &iv)
+      : name(), pos(pd, iv), cost(1), isalias(0) {}
   string name;
   allocsetval pos;
   int cost, base, twist, cs;
+  char isalias;
 };
 extern int origroup;
 struct movealias {
   string name, srcstr;
+  int isalias;
 };
 struct puzdef {
   puzdef()
@@ -113,7 +116,6 @@ struct puzdef {
   allocsetval solved;
   vector<moove> basemoves, moves, parsemoves, baserotations, expandedrotations,
       rotgroup;
-  vector<movealias> aliases;
   vector<movealias> moveseqs;
   vector<allocsetval> rotinvmap;
   vector<int> basemoveorders, baserotorders;

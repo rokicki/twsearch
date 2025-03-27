@@ -202,8 +202,7 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
 puzdef makepuzdef(istream *f) {
   doinit();
   puzdef pd = readdef(f);
-  if (legalmovelist)
-    filtermovelist(pd, legalmovelist);
+  filtermovelist(pd, legalmovelist);
   if (nocorners)
     pd.addoptionssum("nocorners");
   if (nocenters)
