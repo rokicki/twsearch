@@ -1,6 +1,5 @@
 #include "filtermoves.h"
 #include "parsemoves.h"
-#include <iostream>
 #include <map>
 /*
  *   Rewrite the movelist in the puzzle definition to restrict moves.
@@ -43,6 +42,8 @@ void filtermovelist(puzdef &pd, const char *movelist) {
         i >= numbmoves ? pd.baserotations[i - numbmoves] : pd.basemoves[i];
     int bmi =
         i >= numbmoves ? pd.baserotorders[i - numbmoves] : pd.basemoveorders[i];
+    if (movelist == 0 && i >= (int)pd.basemoves.size())
+      continue;
     if (goodmove(bm, lowinc[i], bmi)) {
       int newbasenum = newbase.size();
       moove newmv = bm;
@@ -60,6 +61,8 @@ void filtermovelist(puzdef &pd, const char *movelist) {
     int obase = i >= nummoves ? numbmoves + bm.base : bm.base;
     int bmi = obase >= numbmoves ? pd.baserotorders[obase - numbmoves]
                                  : pd.basemoveorders[obase];
+    if (movelist == 0 && i >= (int)pd.moves.size())
+      continue;
     if (goodmove(bm, lowinc[obase], bmi)) {
       moove newmv = bm;
       int otwist = newmv.twist;
