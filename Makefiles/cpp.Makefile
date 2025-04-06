@@ -55,11 +55,11 @@ build/bin/twsearch: $(OBJ) | build/bin/
 
 .PHONY: lint-cpp
 lint-cpp:
-	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format --dry-run -Werror
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v ppqsort | xargs clang-format --dry-run -Werror
 
 .PHONY: format-cpp
 format-cpp:
-	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | xargs clang-format -i
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v ppqsort | xargs clang-format -i
 
 .PHONY: cpp-clean
 cpp-clean:

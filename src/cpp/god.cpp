@@ -3,6 +3,7 @@
 #include "canon.h"
 #include "cmds.h"
 #include "index.h"
+#include "ppqsort/ppqsort.h"
 #include "readksolve.h"
 #include "rotations.h"
 #include "threads.h"
@@ -12,7 +13,6 @@
 #include <iostream>
 #include <map>
 #include <unordered_map>
-#include "ppqsort/ppqsort.h"
 /*
  *   God's algorithm using two bits per state.
  */
@@ -231,7 +231,8 @@ void dotwobitgod2(puzdef &pd) {
     if (sd.llords > 1)
       parts.push_back(make_pair(sd.llords, i * 2 + 1));
   }
-  ppqsort::sort(ppqsort::execution::par, parts.begin(), parts.end(), numthreads);
+  ppqsort::sort(ppqsort::execution::par, parts.begin(), parts.end(),
+                numthreads);
   // how many parts should we use for the sym coord?
   numsym = 0;
   symcoordsize = 1;
