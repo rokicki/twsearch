@@ -3,7 +3,9 @@
 #include "canon.h"
 #include "cmds.h"
 #include "index.h"
+#ifdef USE_PPQSORT
 #include "ppqsort/ppqsort.h"
+#endif
 #include "readksolve.h"
 #include "rotations.h"
 #include "threads.h"
@@ -231,8 +233,12 @@ void dotwobitgod2(puzdef &pd) {
     if (sd.llords > 1)
       parts.push_back(make_pair(sd.llords, i * 2 + 1));
   }
+#ifdef USE_PPQSORT
   ppqsort::sort(ppqsort::execution::par, parts.begin(), parts.end(),
                 numthreads);
+#else
+  sort(parts.begin(), parts.end());
+#endif
   // how many parts should we use for the sym coord?
   numsym = 0;
   symcoordsize = 1;
@@ -685,7 +691,11 @@ static inline int qsortcompare(const void *a_, const void *b_) {
   return compare(a_, b_, qsortlooseper);
 }
 template <typename T> void tmqsort(T *a, ll n) {
+#ifdef USE_PPQSORT
   ppqsort::sort(ppqsort::execution::par, a, a + n, numthreads);
+#else
+  sort(a, a + n);
+#endif
   return;
 }
 void mqsort(void *beg, ll numel, int looseper, ll sz) {
