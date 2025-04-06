@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <unordered_map>
+#include "ppqsort/ppqsort.h"
 /*
  *   God's algorithm using two bits per state.
  */
@@ -230,7 +231,7 @@ void dotwobitgod2(puzdef &pd) {
     if (sd.llords > 1)
       parts.push_back(make_pair(sd.llords, i * 2 + 1));
   }
-  sort(parts.begin(), parts.end());
+  ppqsort::sort(ppqsort::execution::par, parts.begin(), parts.end(), numthreads);
   // how many parts should we use for the sym coord?
   numsym = 0;
   symcoordsize = 1;
@@ -683,7 +684,7 @@ static inline int qsortcompare(const void *a_, const void *b_) {
   return compare(a_, b_, qsortlooseper);
 }
 template <typename T> void tmqsort(T *a, ll n) {
-  sort(a, a + n);
+  ppqsort::sort(ppqsort::execution::par, a, a + n, numthreads);
   return;
 }
 void mqsort(void *beg, ll numel, int looseper, ll sz) {

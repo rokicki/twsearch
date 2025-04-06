@@ -1,7 +1,8 @@
 TWSEARCH_VERSION=v0.0.0
 
 # MAKEFLAGS += -j
-CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++17 -g -Wsign-compare
+# CXXFLAGS = -fsanitize=address -fsanitize=undefined -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
+CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS
 LDFLAGS = -lpthread
 
