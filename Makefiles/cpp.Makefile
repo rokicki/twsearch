@@ -26,9 +26,9 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/puzdef.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
-   build/cpp/orderedgs.o build/cpp/city.o build/cpp/coset.o build/cpp/descsets.o \
+   build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o build/cpp/cmds.o \
-   build/cpp/totalvar.o
+   build/cpp/totalvar.o build/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
@@ -44,7 +44,10 @@ build/cpp:
 build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp
 	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/%.o: src/cpp/vendor/cityhash/src/%.cc | build/cpp
+build/cpp/vendor/cityhash:
+	mkdir -p build/cpp/vendor/cityhash
+
+build/cpp/vendor/cityhash/%.o: src/cpp/vendor/cityhash/src/%.cc | build/cpp/vendor/cityhash
 	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/bin/:
