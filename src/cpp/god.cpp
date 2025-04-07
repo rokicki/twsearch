@@ -4,7 +4,7 @@
 #include "cmds.h"
 #include "index.h"
 #ifdef USE_PPQSORT
-#include "ppqsort/ppqsort.h"
+#include "vendor/ppqsort/ppqsort.h"
 #endif
 #include "readksolve.h"
 #include "rotations.h"
