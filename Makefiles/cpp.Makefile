@@ -6,6 +6,10 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
 LDFLAGS = -lpthread
 
+# TODO: why does this always trigger rebuilds when using as a target dependency?
+CPP_MAKEFILE = Makefile/cpp.Makefile
+${CPP_MAKEFILE}:
+
 BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
    src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
@@ -41,19 +45,19 @@ HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
 build/cpp:
 	mkdir -p build/cpp
 
-build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp
+build/cpp/%.o: src/cpp/%.cpp Makefiles/cpp.Makefile $(HSOURCE) | build/cpp
 	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/cpp/vendor/cityhash:
 	mkdir -p build/cpp/vendor/cityhash
 
-build/cpp/vendor/cityhash/%.o: src/cpp/vendor/cityhash/src/%.cc | build/cpp/vendor/cityhash
+build/cpp/vendor/cityhash/%.o: src/cpp/vendor/cityhash/src/%.cc Makefiles/cpp.Makefile | build/cpp/vendor/cityhash
 	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/bin/:
 	mkdir -p build/bin/
 
-build/bin/twsearch: $(OBJ) | build/bin/
+build/bin/twsearch: $(OBJ) Makefiles/cpp.Makefile | build/bin/
 	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
 
 .PHONY: lint-cpp
