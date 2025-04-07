@@ -4,6 +4,9 @@
 #include "cmds.h"
 #include "index.h"
 #ifdef USE_PPQSORT
+#if __cplusplus < 202002L
+#error Either compile with c++20 or better, or remove the USE_PPQSORT option
+#endif
 #include "vendor/ppqsort/ppqsort.h"
 #endif
 #include "readksolve.h"
