@@ -6,7 +6,7 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
 LDFLAGS = -lpthread
 
-BASESOURCE = src/cpp/canon.cpp src/cpp/cityhash/src/city.cc \
+BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
    src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
    src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
@@ -42,10 +42,10 @@ build/cpp:
 	mkdir -p build/cpp
 
 build/cpp/%.o: src/cpp/%.cpp $(HSOURCE) | build/cpp
-	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
+	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/%.o: src/cpp/cityhash/src/%.cc | build/cpp
-	$(CXX) -I./src/cpp/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
+build/cpp/%.o: src/cpp/vendor/cityhash/src/%.cc | build/cpp
+	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
 build/bin/:
 	mkdir -p build/bin/
