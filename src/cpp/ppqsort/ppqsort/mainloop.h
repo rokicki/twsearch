@@ -23,8 +23,7 @@ namespace ppqsort::impl {
     template <typename RandomIt, typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void deterministic_shuffle(RandomIt begin, RandomIt end, const diff_t l_size, const diff_t r_size,
                                        RandomIt pivot_pos, const int insertion_threshold) {
-        static_assert(sizeof(diff_t)>4);
-        if ((long long)l_size >= insertion_threshold) {
+        if (l_size >= insertion_threshold) {
             std::iter_swap(begin,             begin + l_size / 4);
             std::iter_swap(pivot_pos - 1, pivot_pos - l_size / 4);
 
@@ -36,7 +35,7 @@ namespace ppqsort::impl {
             }
         }
 
-        if ((long long)r_size >= insertion_threshold) {
+        if (r_size >= insertion_threshold) {
             std::iter_swap(pivot_pos + 1, pivot_pos + (1 + r_size / 4));
             std::iter_swap(end - 1,                   end - r_size / 4);
 
@@ -53,7 +52,6 @@ namespace ppqsort::impl {
               typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void median_of_three_medians(const RandomIt & begin, const RandomIt & end,
                                         const diff_t & size, Compare comp) {
-        static_assert(sizeof(diff_t)>4);
         RandomIt mid = begin + size/2;
         if constexpr (branchless) {
             sort_3_branchless(begin, mid, end - 1, comp);
@@ -73,7 +71,6 @@ namespace ppqsort::impl {
               typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void median_of_five_medians(const RandomIt & begin, const RandomIt & end,
                                        const diff_t & size, Compare comp) {
-        static_assert(sizeof(diff_t)>4);
         RandomIt x2 = begin + size/4;
         RandomIt mid = begin + size/2;
         RandomIt x4 = begin + size/4 * 3;
@@ -89,7 +86,6 @@ namespace ppqsort::impl {
     template <bool branchless, typename RandomIt, class Compare,
               typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void choose_pivot(const RandomIt & begin, const RandomIt & end, const diff_t & size, Compare comp) {
-        static_assert(sizeof(diff_t)>4);
         if (size > parameters::median_threshold) {
             median_of_three_medians<branchless>(begin, end, size, comp);
         } else {
@@ -105,7 +101,6 @@ namespace ppqsort::impl {
             typename T = typename std::iterator_traits<RandomIt>::value_type,
             typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void seq_loop(RandomIt begin, RandomIt end, Compare comp, diff_t bad_allowed, bool leftmost = true) {
-        static_assert(sizeof(diff_t)>4);
         constexpr int insertion_threshold = branchless ?
                                                   parameters::insertion_threshold_primitive
                                                   : parameters::insertion_threshold;

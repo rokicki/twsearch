@@ -21,7 +21,6 @@ namespace ppqsort::impl::cpp {
                    std::unique_ptr<std::atomic<bool>[]>& g_reserved_left,
                    std::unique_ptr<std::atomic<bool>[]>& g_reserved_right,
                    std::barrier<>& barrier, const int t_my_id, std::latch& part_done) {
-        static_assert(sizeof(diff_t)>4);
         // iterators for given block
         diff_t t_left = (block_size * t_my_id) + 1;
         diff_t t_right = (g_size-1) - block_size * t_my_id;
@@ -97,7 +96,6 @@ namespace ppqsort::impl::cpp {
     inline std::pair<RandomIt, bool> partition_right_branchless_par(const RandomIt g_begin,
                                                                     const RandomIt g_end, Compare comp,
                                                                     const int thread_count, ThreadPool<>& thread_pool) {
-        static_assert(sizeof(diff_t)>4);
         const diff_t g_size = g_end - g_begin;
         constexpr int block_size = parameters::buffer_size;
 

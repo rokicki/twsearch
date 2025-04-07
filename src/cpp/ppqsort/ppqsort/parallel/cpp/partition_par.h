@@ -12,7 +12,6 @@ namespace ppqsort::impl::cpp {
     template <side s, typename diff_t>
     inline bool get_new_block(diff_t& t_iter, diff_t& t_block_bound, std::atomic<diff_t>& g_distance,
                               std::atomic_ref<diff_t>& g_offset, const int& block_size) {
-        static_assert(sizeof(diff_t)>4);
         const diff_t t_size = g_distance.fetch_sub(block_size, std::memory_order_relaxed);
         if (t_size < block_size) {
             // last block not aligned, no new blocks available
@@ -36,7 +35,6 @@ namespace ppqsort::impl::cpp {
                             const diff_t& t_old, const diff_t& t_block_bound,
                             std::unique_ptr<std::atomic<bool>[]>& reserved, const int& block_size)
     {
-        static_assert(sizeof(diff_t)>4);
         const int t_dirty_blocks = g_dirty_blocks_side.load(std::memory_order_relaxed);
         diff_t swap_start = -1;
         for (int i = 0; i < t_dirty_blocks; ++i) {
@@ -79,7 +77,6 @@ namespace ppqsort::impl::cpp {
                                   const int& block_size, std::barrier<>& barrier,
                                   const int& t_my_id)
     {
-        static_assert(sizeof(diff_t)>4);
         const bool t_dirty_left = t_left <= t_left_end;
         const bool t_dirty_right = t_right >= t_right_start;
 
@@ -149,7 +146,6 @@ namespace ppqsort::impl::cpp {
                                std::unique_ptr<std::atomic<bool>[]>& g_reserved_left,
                                std::unique_ptr<std::atomic<bool>[]>& g_reserved_right,
                                std::barrier<>& barrier, const int t_my_id, std::latch& part_done) {
-        static_assert(sizeof(diff_t)>4);
         std::atomic_ref<diff_t> a_g_first_offset{g_first_offset};
         std::atomic_ref<diff_t> a_g_last_offset{g_last_offset};
         std::atomic_ref<unsigned char> a_g_already_partitioned{g_already_partitioned};
@@ -215,7 +211,6 @@ namespace ppqsort::impl::cpp {
                                                              Compare comp,
                                                              const int thread_count,
                                                              ThreadPool<>& thread_pool) {
-        static_assert(sizeof(diff_t)>4);
         constexpr int block_size = parameters::par_partition_block_size;
         const diff_t g_size = g_end - g_begin;
 

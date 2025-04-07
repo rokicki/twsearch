@@ -141,8 +141,9 @@ namespace ppqsort::execution {
 namespace ppqsort::impl {
     enum side { left, right };
 
-    inline int log2(const unsigned long long value) {
+    template <typename diff_t>
+    constexpr diff_t log2(const unsigned long long value) {
         // This is floor(log2(x))+1
-        return std::bit_width(value);
+        return static_cast<diff_t>(std::bit_width(value));
     }
 } // namespace ppqsort::impl

@@ -28,8 +28,9 @@ namespace ppqsort::impl {
        if (begin == end)
            return;
 
+       using diff_t = typename std::iterator_traits<RandomIt>::difference_type;
        constexpr bool branchless = Force_branchless || Branchless;
-       seq_loop<RandomIt, Compare, branchless>(begin, end, comp, log2(end - begin));
+       seq_loop<RandomIt, Compare, branchless>(begin, end, comp, log2<diff_t>(end - begin));
    }
 
    template <typename ExecutionPolicy, typename... T>

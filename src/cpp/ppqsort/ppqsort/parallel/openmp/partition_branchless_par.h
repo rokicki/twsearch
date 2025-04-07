@@ -13,7 +13,6 @@ namespace ppqsort::impl::openmp {
                                                                     const RandomIt g_end, Compare comp,
                                                                     const int thread_count)
     {
-        static_assert(sizeof(diff_t)>4);
         const diff_t g_size = g_end - g_begin;
         constexpr int block_size = parameters::buffer_size;
 

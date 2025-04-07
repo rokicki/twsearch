@@ -21,7 +21,6 @@ namespace ppqsort::impl::cpp {
                    std::unique_ptr<std::atomic<bool>[]>& g_reserved_left,
                    std::unique_ptr<std::atomic<bool>[]>& g_reserved_right,
                    std::barrier<>& barrier, const int t_my_id, std::latch& part_done) {
-        static_assert(sizeof(diff_t)>4);
         std::atomic_ref<diff_t> a_g_first_offset(g_first_offset);
         std::atomic_ref<diff_t> a_g_last_offset(g_last_offset);
         std::atomic_ref<unsigned char> a_g_already_partitioned(g_already_partitioned);
@@ -101,7 +100,6 @@ namespace ppqsort::impl::cpp {
     inline std::pair<RandomIt, bool> partition_right_branchless_par(const RandomIt g_begin,
                                                                     const RandomIt g_end, Compare comp,
                                                                     const int thread_count, ThreadPool<>& thread_pool) {
-        static_assert(sizeof(diff_t)>4);
         const diff_t g_size = g_end - g_begin;
         constexpr int block_size = parameters::buffer_size;
 

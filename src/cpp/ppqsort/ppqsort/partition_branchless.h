@@ -9,7 +9,6 @@ namespace ppqsort::impl {
                                   Offset* offsets_l, Offset* offsets_r,
                                   diff_t & num, bool swap)
     {
-        static_assert(sizeof(diff_t)>4);
         if (swap) {
             // this case is needed for descending distribution
             for (int i = 0; i < num; ++i)
@@ -37,7 +36,6 @@ namespace ppqsort::impl {
     inline diff_t swap_offsets(RandomIt first, RandomIt last,
                                Offset* offsets_l, Offset* offsets_r,
                                diff_t & num_l, diff_t & num_r) {
-        static_assert(sizeof(diff_t)>4);
         diff_t num = std::min(num_l, num_r);
         if (num == 0)
             return 0;
@@ -52,7 +50,6 @@ namespace ppqsort::impl {
                                Offset* offsets_l, Offset* offsets_r,
                                diff_t & num_l, diff_t & num_r,
                                bool & t_already_partitioned) {
-        static_assert(sizeof(diff_t)>4);
         diff_t num = std::min(num_l, num_r);
         if (num == 0)
             return 0;
@@ -70,7 +67,6 @@ namespace ppqsort::impl {
             typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void populate_block(RandomIt & begin, diff_t & offset, T pivot, Offset* offsets, diff_t& count,
                                Compare comp, const int & block_size) {
-        static_assert(sizeof(diff_t)>4);
         for (int i = 0; i < block_size; ++i) {
             offsets[count] = i;
             if constexpr (s == left)
@@ -88,7 +84,6 @@ namespace ppqsort::impl {
               typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void populate_block(RandomIt & it, T & pivot, Offset* offsets, diff_t& count,
                                Compare comp, const int & block_size) {
-        static_assert(sizeof(diff_t)>4);
         for (int i = 0; i < block_size; ++i) {
             offsets[count] = i;
             if constexpr (s == left)
@@ -107,7 +102,6 @@ namespace ppqsort::impl {
     inline void solve_left_block(const RandomIt & g_begin,
                                  diff_t & t_left, diff_t & t_left_start, diff_t & t_left_end,
                                  Offset * t_offsets_l, diff_t & t_count_l, const T & g_pivot, Compare comp) {
-        static_assert(sizeof(diff_t)>4);
         // find the first element from block start, which is greater or equal to pivot
         while (t_left <= t_left_end && comp(g_begin[t_left], g_pivot)) {
             ++t_left;
@@ -124,7 +118,6 @@ namespace ppqsort::impl {
                                   diff_t & t_right, diff_t & t_right_start, diff_t & t_right_end,
                                   Offset * t_offsets_r, diff_t & t_count_r, const T & g_pivot, Compare comp) {
         // find first elem from block g_end, which is less than pivot
-        static_assert(sizeof(diff_t)>4);
         while (t_right >= t_right_start && !comp(g_begin[t_right], g_pivot)) {
             --t_right;
         }
@@ -143,7 +136,6 @@ namespace ppqsort::impl {
                                       diff_t & count_l, diff_t & count_r,
                                       T & pivot, Compare comp,
                                       const int & block_size) {
-        static_assert(sizeof(diff_t)>4);
         diff_t size = last - first + 1;
         diff_t l_size, r_size;
         while (first <= last) {
@@ -187,7 +179,6 @@ namespace ppqsort::impl {
             typename T = typename std::iterator_traits<RandomIt>::value_type,
             typename diff_t = typename std::iterator_traits<RandomIt>::difference_type>
     inline void partition_branchless_core(RandomIt & first, RandomIt & last, T & pivot, Compare comp) {
-        static_assert(sizeof(diff_t)>4);
         constexpr const int block_size = parameters::buffer_size;
 
         // allign offsets buffers to fill whole cachelines for speed
