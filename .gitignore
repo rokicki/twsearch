@@ -26,3 +26,6 @@
 /twsearch
 /twsearch.wasm
 /emsdk
+
+# Temporary ignores for dev.
+/src/ruby-gem
