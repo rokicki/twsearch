@@ -1,5 +1,8 @@
 TWSEARCH_VERSION=v0.0.0
 
+.PHONY: build-cpp
+build-cpp: build/bin/twsearch
+
 # MAKEFLAGS += -j
 # CXXFLAGS = -fsanitize=address -fsanitize=undefined -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
 CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
