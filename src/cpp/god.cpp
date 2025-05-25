@@ -257,7 +257,7 @@ void dotwobitgod2(puzdef &pd) {
     symcoordsize = tsymcoordsize;
   }
   // can't split, fall back to simpler way
-  if (numsym == 0) {
+  if (numsym == 0 || numsym == (int)parts.size()) {
     dotwobitgod(pd);
     return;
   }
