@@ -24,7 +24,12 @@
 vector<ull> cnts, scnts;
 static vector<allocsetval> posns;
 static vector<int> movehist;
-void dotwobitgod(puzdef &pd) {
+/*
+ *   The old version uses two bits to represent distance=0,1,2 mod 3,
+ *   and 3 means unexplored.  For some cases this is slow.  So we use
+ *   a new version right below that's different.
+ */
+void odotwobitgod(puzdef &pd) {
   ull nlongs = (pd.llstates + 31) >> 5;
   ull memneeded = nlongs * 8;
   ull *mem = (ull *)malloc(memneeded);
@@ -99,6 +104,98 @@ void dotwobitgod(puzdef &pd) {
           }
         }
       }
+    }
+    cnts.push_back(newseen);
+    tot += newseen;
+  }
+  showantipodesdense(pd, 0);
+}
+/*
+ *   This new version uses two bits to represent old, frontier, new,
+ *   and unexplored.  It should be faster in most cases.
+ */
+void dotwobitgod(puzdef &pd) {
+  ull nlongs = (pd.llstates + 31) >> 5;
+  ull memneeded = nlongs * 8;
+  ull *mem = (ull *)malloc(memneeded);
+  if (mem == 0)
+    error("! not enough memory");
+  memset(mem, -1, memneeded);
+  stacksetval p1(pd), p2(pd);
+  pd.assignpos(p1, pd.solved);
+  ull off = densepack(pd, p1);
+  mem[off >> 5] -= 2LL << (2 * (off & 31));
+  cnts.clear();
+  cnts.push_back(1);
+  ull tot = 1;
+  for (int d = 0;; d++) {
+    resetantipodes();
+    cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
+         << duration() << endl
+         << flush;
+    if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
+      break;
+    ull newseen = 0;
+    int back = (pd.llstates - tot < cnts[d]) ;
+    int seek = 1;
+    int newv = 2;
+    if (back) {
+      for (ull bigi = 0; bigi < nlongs; bigi++) {
+        ull membigi = mem[bigi];
+        if (membigi == 0xffffffffffffffffLL || membigi == 0)
+          continue;
+        ull checkv = (membigi & 0x5555555555555555LL) &
+                     ((membigi >> 1) & 0x5555555555555555LL);
+        for (int smi = ffsll(checkv); checkv; smi = ffsll(checkv)) {
+          checkv -= 1LL << (smi - 1);
+          denseunpack(pd, (bigi << 5) + (smi >> 1), p1);
+          for (int i = 0; i < (int)pd.moves.size(); i++) {
+            if (quarter && pd.moves[i].cost > 1)
+              continue;
+            pd.mul(p1, pd.moves[i].pos, p2);
+            off = densepack(pd, p2);
+            int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+            if (v == seek) {
+              newseen++;
+              stashantipodedense((bigi << 5) + (smi >> 1));
+              mem[bigi] -= (3LL - newv) << (smi - 1);
+              break;
+            }
+          }
+        }
+      }
+    } else {
+      ull xorv = (3 - seek) * 0x5555555555555555LL;
+      for (ull bigi = 0; bigi < nlongs; bigi++) {
+        ull membigi = mem[bigi];
+        if (membigi == 0xffffffffffffffffLL || membigi == 0)
+          continue;
+        ull checkv = mem[bigi] ^ xorv;
+        checkv = (checkv & 0x5555555555555555LL) &
+                 ((checkv >> 1) & 0x5555555555555555LL);
+        for (int smi = ffsll(checkv); checkv; smi = ffsll(checkv)) {
+          checkv -= 1LL << (smi - 1);
+          denseunpack(pd, (bigi << 5) + (smi >> 1), p1);
+          for (int i = 0; i < (int)pd.moves.size(); i++) {
+            if (quarter && pd.moves[i].cost > 1)
+              continue;
+            pd.mul(p1, pd.moves[i].pos, p2);
+            off = densepack(pd, p2);
+            int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+            if (v == 3) {
+              newseen++;
+              stashantipodedense(off);
+              mem[off >> 5] -= (3LL - newv) << (2 * (off & 31));
+            }
+          }
+        }
+      }
+    }
+    for (ull bigi = 0; bigi < nlongs; bigi++) {
+      // now take all 1's down to 0, and all 2's down to 1.
+      ull membigi = mem[bigi];
+      mem[bigi] = membigi - ((membigi & 0x5555555555555555LL) ^
+                             ((membigi >> 1) & 0x5555555555555555LL));
     }
     cnts.push_back(newseen);
     tot += newseen;
