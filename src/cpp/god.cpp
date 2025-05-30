@@ -136,7 +136,7 @@ void dotwobitgod(puzdef &pd) {
     if (cnts[d] == 0 || (pd.logstates <= 62 && tot == pd.llstates))
       break;
     ull newseen = 0;
-    int back = (pd.llstates - tot < cnts[d]) ;
+    int back = (pd.llstates - tot < cnts[d]);
     int seek = 1;
     int newv = 2;
     if (back) {
@@ -148,7 +148,10 @@ void dotwobitgod(puzdef &pd) {
                      ((membigi >> 1) & 0x5555555555555555LL);
         for (int smi = ffsll(checkv); checkv; smi = ffsll(checkv)) {
           checkv -= 1LL << (smi - 1);
-          denseunpack(pd, (bigi << 5) + (smi >> 1), p1);
+          ull srci = (bigi << 5) + (smi >> 1);
+          if (srci >= pd.llstates)
+            continue;
+          denseunpack(pd, srci, p1);
           for (int i = 0; i < (int)pd.moves.size(); i++) {
             if (quarter && pd.moves[i].cost > 1)
               continue;
