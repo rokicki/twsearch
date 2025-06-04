@@ -142,7 +142,7 @@ void dotwobitgod(puzdef &pd) {
     if (back) {
       for (ull bigi = 0; bigi < nlongs; bigi++) {
         ull membigi = mem[bigi];
-        if (membigi == 0xffffffffffffffffLL || membigi == 0)
+        if (membigi == 0)
           continue;
         ull checkv = (membigi & 0x5555555555555555LL) &
                      ((membigi >> 1) & 0x5555555555555555LL);
