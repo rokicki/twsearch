@@ -128,7 +128,14 @@ void dotwobitgod(puzdef &pd) {
   cnts.clear();
   cnts.push_back(1);
   ull tot = 1;
+  const int NINDBUF = 32;
+  const ull NOVAL = 0xffffffffffffffffLL;
+  ull nind[NINDBUF];
+  ull soffa[NINDBUF];
+  int wnind = 0;
   for (int d = 0;; d++) {
+    for (int i = 0; i < NINDBUF; i++)
+      nind[i] = NOVAL;
     resetantipodes();
     cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " in "
          << duration() << endl
@@ -156,16 +163,40 @@ void dotwobitgod(puzdef &pd) {
             if (quarter && pd.moves[i].cost > 1)
               continue;
             pd.mul(p1, pd.moves[i].pos, p2);
-            off = densepack(pd, p2);
-            int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
-            if (v == seek) {
+            ull noff = densepack(pd, p2);
+            off = nind[wnind];
+            if (off != NOVAL) {
+              int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+              if (v == seek) {
+                ull soff = soffa[wnind];
+                if (((mem[soff >> 5] >> (2 * (soff & 31))) & 3) == 3) {
+                  stashantipodedense(soff);
+                  newseen++;
+                  mem[soff >> 5] -= (3LL - newv) << (2 * (soff & 31));
+                }
+              }
+            }
+            nind[wnind] = noff;
+            soffa[wnind] = srci;
+            prefetch(mem + (noff >> 5));
+            wnind = (wnind + 1) & (NINDBUF - 1);
+          }
+        }
+      }
+      for (int i = 0; i < NINDBUF; i++) {
+        off = nind[wnind];
+        if (off != NOVAL) {
+          ull soff = soffa[wnind];
+          int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+          if (v == seek) {
+            if (((mem[soff >> 5] >> (2 * (soff & 31))) & 3) == 3) {
+              stashantipodedense(soff);
               newseen++;
-              stashantipodedense((bigi << 5) + (smi >> 1));
-              mem[bigi] -= (3LL - newv) << (smi - 1);
-              break;
+              mem[soff >> 5] -= (3LL - newv) << (2 * (soff & 31));
             }
           }
         }
+        wnind = (wnind + 1) & (NINDBUF - 1);
       }
     } else {
       ull xorv = (3 - seek) * 0x5555555555555555LL;
@@ -183,15 +214,33 @@ void dotwobitgod(puzdef &pd) {
             if (quarter && pd.moves[i].cost > 1)
               continue;
             pd.mul(p1, pd.moves[i].pos, p2);
-            off = densepack(pd, p2);
-            int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
-            if (v == 3) {
-              newseen++;
-              stashantipodedense(off);
-              mem[off >> 5] -= (3LL - newv) << (2 * (off & 31));
+            ull noff = densepack(pd, p2);
+            off = nind[wnind];
+            if (off != NOVAL) {
+              int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+              if (v == 3) {
+                newseen++;
+                stashantipodedense(off);
+                mem[off >> 5] -= (3LL - newv) << (2 * (off & 31));
+              }
             }
+            nind[wnind] = noff;
+            prefetch(mem + (noff >> 5));
+            wnind = (wnind + 1) & (NINDBUF - 1);
           }
         }
+      }
+      for (int i = 0; i < NINDBUF; i++) {
+        off = nind[wnind];
+        if (off != NOVAL) {
+          int v = 3 & (mem[off >> 5] >> (2 * (off & 31)));
+          if (v == 3) {
+            newseen++;
+            stashantipodedense(off);
+            mem[off >> 5] -= (3LL - newv) << (2 * (off & 31));
+          }
+        }
+        wnind = (wnind + 1) & (NINDBUF - 1);
       }
     }
     for (ull bigi = 0; bigi < nlongs; bigi++) {
