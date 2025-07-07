@@ -31,10 +31,11 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
   unordered_map<vector<loosetype>, pair<int, vector<int>>,
                 hashvector<loosetype>>
       fini;
+  int maxdepthoption = maxdepth;
   {
   again:
     for (int md = 1; md < (int)seq.size(); md++) {
-      if (md > maxdepth)
+      if (md > maxdepthoption)
         break;
       for (int len = seq.size(); len > md; len--) {
         cout << "Working with depth " << md << " length " << len << endl;
