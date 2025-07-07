@@ -107,9 +107,7 @@ struct prunetable {
     return h;
   }
   ull indexhash(ull lowb) const {
-    ull h = lowb;
-    h -= h >> subshift;
-    h >>= memshift;
+    ull h = ((lowb >> shift1) * memmul) >> shift2;
     h ^= 0xff & ((((h & 0xfe) - 2) >> 8) & (lowb | 2));
     return h;
   }
@@ -154,7 +152,7 @@ struct prunetable {
   int readpt(const puzdef &pd);
   const puzdef *pdp;
   ull size, popped, totpop, ptotpop;
-  ull subshift, memshift;
+  ull shift1, shift2, memmul;
   ull lookupcnt;
   ull fillcnt;
   ull *mem, *amem;

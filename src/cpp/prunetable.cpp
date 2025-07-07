@@ -241,9 +241,11 @@ void ioqueue::finishall() {
 }
 /*
  *   We used to support table sizes that were only powers of two.
- *   Now we support table sizes that are powers of 2 and also
- *   3/4, 7/8, 15/16, and 31/32 times powers of two, so we can make
- *   better use of large memory machines.
+ *   Then we supported table sizes that are powers of 2 and also
+ *   3/4, 7/8, 15/16, and 31/32 times powers of two.  But now we
+ *   support memory sizes that are integer k * 2^n where k <= 255.
+ *   We do this with a right shift, then a multiply, then another
+ *   right shift, always staying 2^64 bytes.
  */
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
   pdp = &pd;
@@ -252,27 +254,31 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   while (2 * bytesize <= maxmem &&
          (pd.logstates > 55 || 8 * bytesize < pd.llstates))
     bytesize *= 2;
-  subshift = 42;
-  for (int sh = 1;
-       (bytesize | (bytesize >> 1)) <= maxmem && (bytesize >> sh) &&
-       (pd.logstates > 55 || 4 * (bytesize | (bytesize >> 1)) < pd.llstates);
-       sh++) {
-    subshift = sh + 1;
-    bytesize |= bytesize >> 1;
+  // now add up to 7 additional bits, so long as we don't go over
+  // maxmem or the other limits.
+  ull subbytesize = bytesize;
+  for (int i = 0; i < 7; i++) {
+    subbytesize >>= 1;
+    if (bytesize + subbytesize <= maxmem &&
+        (pd.logstates > 55 || 8 * (subbytesize + bytesize) < pd.llstates))
+      bytesize += subbytesize;
   }
-  size = bytesize * 4;
+  // now calculate the shifts.
+  size = 4 * bytesize;
+  shift2 = 2;
+  while ((size & (1LL << shift2)) == 0)
+    shift2++;
+  memmul = bytesize >> shift2;
+  shift1 = 0;
+  while (memmul >> shift1)
+    shift1++;
+  // <><>
   shardshift = 0;
   while ((size >> shardshift) > MEMSHARDS)
     shardshift++;
-  ull hh = 0xffffffffffffffffULL;
-  hh -= hh >> subshift;
-  memshift = 0;
-  while (hh >> memshift > size)
-    memshift++;
   if (quiet == 0)
-    cout << "For memsize " << maxmem << " bytesize " << bytesize << " subshift "
-         << subshift << " memshift " << memshift << " shardshift " << shardshift
-         << endl;
+    cout << "For memsize " << maxmem << " sh1 " << shift1 << " mul " << memmul
+         << " sh2 " << shift2 << " shardshift " << shardshift << endl;
   totpop = 0;
   ptotpop = 0;
   baseval = 0;
@@ -403,9 +409,9 @@ string prunetable::makefilename(const puzdef &pd, bool create_dirs) const {
   const char *cachedir = prune_table_dir(create_dirs);
   string filename(cachedir, cachedir + strlen(cachedir));
 #ifdef USECOMPRESSION
-  filename += "tws7-" + inputbasename + "-";
+  filename += "tws9-" + inputbasename + "-";
 #else
-  filename += "tws6-" + inputbasename + "-";
+  filename += "tws8-" + inputbasename + "-";
 #endif
   if (quarter)
     filename += "q-";
@@ -712,8 +718,9 @@ void prunetable::writept(const puzdef &pd) {
   w.put(SIGNATURE);
   w.write((char *)&pd.checksum, sizeof(pd.checksum));
   w.write((char *)&size, sizeof(size));
-  w.write((char *)&subshift, sizeof(subshift));
-  w.write((char *)&memshift, sizeof(memshift));
+  w.write((char *)&shift1, sizeof(shift1));
+  w.write((char *)&shift2, sizeof(shift2));
+  w.write((char *)&memmul, sizeof(memmul));
   w.write((char *)&popped, sizeof(popped));
   w.write((char *)&totpop, sizeof(totpop));
   w.write((char *)&ptotpop, sizeof(ptotpop));
@@ -783,8 +790,9 @@ int prunetable::readpt(const puzdef &pd) {
     r.close();
     return 0;
   }
-  r.read((char *)&subshift, sizeof(subshift));
-  r.read((char *)&memshift, sizeof(memshift));
+  r.read((char *)&shift1, sizeof(shift1));
+  r.read((char *)&shift2, sizeof(shift2));
+  r.read((char *)&memmul, sizeof(memmul));
   r.read((char *)&popped, sizeof(popped));
   r.read((char *)&totpop, sizeof(totpop));
   r.read((char *)&ptotpop, sizeof(ptotpop));
