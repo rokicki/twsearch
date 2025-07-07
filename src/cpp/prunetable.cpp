@@ -268,11 +268,14 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   shift2 = 2;
   while ((size & (1LL << shift2)) == 0)
     shift2++;
-  memmul = bytesize >> shift2;
+  memmul = size >> shift2;
   shift1 = 0;
   while (memmul >> shift1)
     shift1++;
-  // <><>
+  ull hi = memmul * (0xffffffffffffffffULL >> shift1);
+  shift2 = 0;
+  while ((hi >> shift2) > size)
+    shift2++;
   shardshift = 0;
   while ((size >> shardshift) > MEMSHARDS)
     shardshift++;
