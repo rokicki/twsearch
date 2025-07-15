@@ -311,6 +311,7 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
         toks[0] == "StartState") {
       expect(toks, 2);
       scramblename = toks[1];
+      // this call is to readksolve.cpp's readposition, not the one above
       allocsetval p =
           readposition(pd, 'S', f, checksum,
                        toks[0] == "ScrambleState" || toks[0] == "StartState");
