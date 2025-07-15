@@ -209,14 +209,15 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
     }
   }
   for (int i = 0; i < (int)pz.setdefs.size(); i++) {
-    uchar *p = r.dat + pz.setdefs[i].off;
-    int n = pz.setdefs[i].size;
-    ignore = omitset(pz.setdefs[i].name);
+    auto &sd = pz.setdefs[i];
+    uchar *p = r.dat + sd.off;
+    int n = sd.size;
+    ignore = omitset(sd.name);
     vector<int> cnts;
     if ((ignore & 1) == 0 && (p[0] == 0 || (typ == 's' && distinguishall))) {
       if (typ == 'S') {
         for (int j = 0; j < n; j++)
-          p[j] = pz.solved.dat[pz.setdefs[i].off + j];
+          p[j] = pz.solved.dat[sd.off + j];
       } else {
         cnts.resize(n);
         for (int j = 0; j < n; j++) {
@@ -224,12 +225,40 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
           cnts[j]++;
         }
         if (typ == 's') {
-          pz.setdefs[i].psum = n * (n - 1) / 2;
-          pz.setdefs[i].cnts = cnts;
+          sd.psum = n * (n - 1) / 2;
+          sd.cnts = cnts;
         }
       }
     } else {
+      if (typ == 's') {
+        for (int j = 0; j < n; j++) {
+          if (p[j] > (int)cnts.size())
+            cnts.resize(p[j]);
+          cnts[p[j] - 1]++;
+        }
+        for (int j = 0; j < (int)cnts.size(); j++)
+          if (cnts[j] == 0) {
+            // We have some elements that are not contiguous.  We will
+            // build and populate the pack and unpack arrays for input
+            // and output.
+            sd.pack.resize(cnts.size());
+            for (int k = 0; k < (int)cnts.size(); k++)
+              if (cnts[k] != 0) {
+                sd.pack[k] = sd.unpack.size();
+                sd.unpack.push_back(k);
+              }
+            break;
+          }
+        cnts.clear();
+      }
       int sum = 0;
+      if (typ != 'm' && sd.pack.size()) {
+        for (int k = 0; k < n; k++) {
+          if (p[k] > (int)sd.pack.size())
+            inerror("! input value too high");
+          p[k] = 1 + sd.pack[p[k] - 1];
+        }
+      }
       for (int j = 0; j < n; j++) {
         int v = --p[j];
         sum += v;
@@ -237,30 +266,28 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
           cnts.resize(v + 1);
         cnts[v]++;
       }
-      if (typ == 's')
-        pz.setdefs[i].psum = sum;
-      for (int j = 0; j < (int)cnts.size(); j++)
-        if (cnts[j] == 0)
-          inerror("! values are not contiguous");
-      if (typ == 'S' && !(cnts == pz.setdefs[i].cnts))
+      if (typ == 's') {
+        sd.cnts = cnts;
+        sd.psum = sum;
+      }
+      if (typ == 'S' && !(cnts == sd.cnts)) {
         inerror("! scramble position permutation doesn't match solved");
-      if (typ == 's')
-        pz.setdefs[i].cnts = cnts;
+      }
       if ((int)cnts.size() != n) {
         if (typ != 's' && typ != 'S')
           inerror("! expected, but did not see, a proper permutation");
         else {
-          pz.setdefs[i].uniq = 0;
+          sd.uniq = 0;
           pz.uniq = 0;
-          pz.setdefs[i].pbits = ceillog2(cnts.size());
+          sd.pbits = ceillog2(cnts.size());
           if (n > 64) {
-            pz.setdefs[i].dense = 0;
+            sd.dense = 0;
             pz.dense = 0;
           }
         }
       } else {
         if (typ != 'S' && oddperm(p, n))
-          pz.setdefs[i].pparity = 0;
+          sd.pparity = 0;
       }
     }
     p += n;
@@ -268,53 +295,52 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
     int checkwildo = 0;
     for (int j = 0; j < n; j++) {
       if (p[j] == 255 && typ != 'm') {
-        if (pz.setdefs[i].omod == 1) {
+        if (sd.omod == 1) {
           p[j] = 0;
         } else {
-          p[j] = 2 * pz.setdefs[i].omod;
+          p[j] = 2 * sd.omod;
           if (typ == 's') {
-            pz.setdefs[i].wildo = 1;
-            pz.setdefs[i].obits = ceillog2(pz.setdefs[i].omod + 1);
+            sd.wildo = 1;
+            sd.obits = ceillog2(sd.omod + 1);
             pz.wildo = 1;
-            pz.setdefs[i].oparity = 0;
+            sd.oparity = 0;
           } else {
             if (typ != 'S')
               inerror("! internal error; should be reading scramble");
             checkwildo = 1;
           }
         }
-      } else if (p[j] >= pz.setdefs[i].omod) {
+      } else if (p[j] >= sd.omod) {
         inerror("! modulo value too large");
       }
       s += p[j];
     }
     // ensure all identical pieces either are not wild orientation
     // or are all wild orientation
-    if (typ == 's' && pz.setdefs[i].wildo) {
+    if (typ == 's' && sd.wildo) {
       for (int j = 0; j < n; j++)
         for (int k = j + 1; k < n; k++)
           if (p[j - n] == p[k - n])
-            if ((p[j] < pz.setdefs[i].omod) != (p[k] < pz.setdefs[i].omod))
+            if ((p[j] < sd.omod) != (p[k] < sd.omod))
               inerror("! inconsistent orientation wildcards across identical "
                       "pieces");
     }
-    if (typ == 'S' && (checkwildo || pz.setdefs[i].wildo)) {
+    if (typ == 'S' && (checkwildo || sd.wildo)) {
       if (!checkwildo)
         inerror(
             "! solved state in def has ? orientation but scramble does not");
-      if (!pz.setdefs[i].wildo)
+      if (!sd.wildo)
         inerror("! scramble def has ? orientation but solved state in def does "
                 "not");
       for (int j = 0; j < n; j++)
         for (int k = 0; k < n; k++)
-          if (p[j - n] == pz.solved.dat[pz.setdefs[i].off + k])
-            if ((p[j] < pz.setdefs[i].omod) !=
-                (pz.solved.dat[pz.setdefs[i].off + n + k] < pz.setdefs[i].omod))
+          if (p[j - n] == pz.solved.dat[sd.off + k])
+            if ((p[j] < sd.omod) != (pz.solved.dat[sd.off + n + k] < sd.omod))
               inerror("! inconsistent use of orientation wildcards between "
                       "solved state and scramble");
     }
-    if (s % pz.setdefs[i].omod != 0)
-      pz.setdefs[i].oparity = 0;
+    if (s % sd.omod != 0)
+      sd.oparity = 0;
     if (typ == 'm' && !new_style) { // fix moves
       static uchar f[256];
       for (int j = 0; j < n; j++)

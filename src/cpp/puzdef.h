@@ -36,10 +36,12 @@ struct setdef {
   double logstates;
   unsigned long long llperms, llords, llstates;
   vector<int> cnts; // only not empty when not unique.
+  vector<int> pack, unpack;
+  // only not empty when values not 1..x (or 0..x for new format)
   setdef()
       : size(0), off(0), name(), omod(0), pbits(0), obits(0), pibits(0),
         psum(0), uniq(1), pparity(0), oparity(0), wildo(0), logstates(0),
-        llperms(0), llords(0), llstates(0), cnts() {}
+        llperms(0), llords(0), llstates(0), cnts(), pack(), unpack() {}
   void mulp(const uchar *ap, const uchar *bp, uchar *cp) const {
     for (int j = 0; j < size; j++)
       cp[j] = ap[bp[j]];

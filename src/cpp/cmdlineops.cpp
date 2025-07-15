@@ -308,8 +308,11 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
     } else {
       cout << "   " << pd.setdefs[i].name << endl;
       cout << "  ";
-      for (int i = 0; i < n; i++)
-        cout << " " << (int)(a[i] + 1);
+      for (int j = 0; j < n; j++)
+        if (pd.setdefs[i].pack.size())
+          cout << " " << (int)(pd.setdefs[i].unpack[a[j]] + 1);
+        else
+          cout << " " << (int)(a[j] + 1);
       cout << endl;
       if (sd.omod > 1) {
         cout << "  ";
