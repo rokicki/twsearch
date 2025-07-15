@@ -132,8 +132,14 @@ int omitset(string s) {
     return 1;
   return 0;
 }
+/*
+ *   The new style boolean indicates that permutations are zero-based
+ *   and also that the orientation changes in moves are associated with
+ *   the piece at that location (unlike ksolve which has a really funky
+ *   way of doing moves, that make them completely distinct from states).
+ */
 allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
-                         bool zero_indexed) {
+                         bool new_style) {
   allocsetval r(pz, pz.id);
   int curset = -1;
   int numseq = 0;
@@ -158,7 +164,7 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
       int n = pz.setdefs[curset].size;
       expect(toks, n);
       uchar *p = r.dat + pz.setdefs[curset].off + numseq * n;
-      int offset = (numseq == 0 && zero_indexed) ? 0 : 1;
+      int offset = (numseq == 0 && new_style) ? 0 : 1;
       if (typ != 'm') {
         for (int i = 0; i < n; i++) {
           p[i] = getnumberorneg(offset - numseq, toks[i]);
@@ -309,7 +315,7 @@ allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
     }
     if (s % pz.setdefs[i].omod != 0)
       pz.setdefs[i].oparity = 0;
-    if (typ == 'm' && !zero_indexed) { // fix moves
+    if (typ == 'm' && !new_style) { // fix moves
       static uchar f[256];
       for (int j = 0; j < n; j++)
         f[j] = p[j];
