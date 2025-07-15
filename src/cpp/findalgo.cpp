@@ -7,9 +7,10 @@
 #include <map>
 map<ll, ll> bestsofar;
 const int HIWR = 4;
+const int KEYM = 2 * HIWR + 1;
 static int algostrict;
 ll extendkey(ll k, int nwr, int npwr) {
-  return k * 10 + nwr * 2 + (npwr == 0 ? 0 : 1);
+  return k * KEYM + nwr * 2 + (npwr == 0 ? 0 : 1);
 }
 static int algocmp(int oldlen, int newlen) {
   if (algostrict)
@@ -19,7 +20,7 @@ static int algocmp(int oldlen, int newlen) {
 }
 void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
   while (setnum >= 0) {
-    int dig = key % 10;
+    int dig = key % KEYM;
     if (dig != 0) {
       if (s.size() > 0)
         s += " ";
@@ -33,7 +34,7 @@ void keydesc(const puzdef &pd, ll key, int setnum, string &s) {
       }
     }
     setnum--;
-    key /= 10;
+    key /= KEYM;
   }
 }
 string keydesc(const puzdef &pd, ll key) {
