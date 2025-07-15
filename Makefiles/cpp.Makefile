@@ -24,7 +24,7 @@ EXTRASOURCE = src/cpp/antipode.cpp \
    src/cpp/coset.cpp src/cpp/descsets.cpp \
    src/cpp/findalgo.cpp src/cpp/god.cpp src/cpp/orderedgs.cpp \
    src/cpp/ordertree.cpp src/cpp/shorten.cpp src/cpp/unrotate.cpp \
-   src/cpp/test.cpp src/cpp/totalvar.cpp
+   src/cpp/test.cpp src/cpp/totalvar.cpp src/cpp/beamsearch.cpp
 
 CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
@@ -34,7 +34,8 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
-   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o build/cpp/cmds.o \
+   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o \
+   build/cpp/cmds.o build/cpp/beamsearch.o \
    build/cpp/totalvar.o build/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
