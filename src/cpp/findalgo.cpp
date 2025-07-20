@@ -7,7 +7,7 @@
 #include <map>
 map<ll, ll> bestsofar;
 const int HIWR = 4;
-const int KEYM = 2 * HIWR + 1;
+const int KEYM = 2 * HIWR + 2;
 static int algostrict;
 ll extendkey(ll k, int nwr, int npwr) {
   return k * KEYM + nwr * 2 + (npwr == 0 ? 0 : 1);
