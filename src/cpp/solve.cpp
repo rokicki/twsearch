@@ -52,12 +52,12 @@ void microthread::init(const puzdef &pd, int d_, int tid_, const setval p_) {
   pd.assignpos(posns[0], p_);
   d = d_;
   tid = tid_;
-}
-void solveworker::init(int d_, int tid_, const setval p_) {
   lookups = 0;
   extraprobes = 0;
+}
+void solveworker::init(int d_, int tid_, const setval p_) {
   checkincrement = 10000 + myrand(10000);
-  checktarget = lookups + checkincrement;
+  checktarget = checkincrement;
   d = d_;
   tid = tid_;
   p = p_;
@@ -115,11 +115,11 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     uthr[uid].finished = 0;
     if (uthr[uid].getwork(pd, pt)) {
       active++;
-      lookups++;
-      extraprobes += uthr[uid].invflag;
+      uthr[uid].lookups++;
+      uthr[uid].extraprobes += uthr[uid].invflag;
     }
   }
-  while (active) {
+  for (ll checkcnt=0; active; checkcnt++) {
     int uid = rover++;
     if (rover >= workinguthreading)
       rover = 0;
@@ -128,8 +128,8 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     int v = uthr[uid].innerfetch(pd, pt);
     if (v <= 0) {
       if (uthr[uid].getwork(pd, pt)) {
-        lookups++;
-        extraprobes += uthr[uid].invflag;
+        uthr[uid].lookups++;
+        uthr[uid].extraprobes += uthr[uid].invflag;
         v = 3;
       } else {
         active--;
@@ -138,19 +138,19 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     }
     if (v != 3)
       return v;
-    if (lookups > checktarget) {
+    if (checkcnt > checktarget) {
       int finished = 0;
       get_global_lock();
       finished = satisfiedsolutioncount();
-      checkincrement += checkincrement / 30;
-      checktarget = lookups + checkincrement;
+      checkincrement += checkincrement / 100;
+      checktarget = checkcnt + checkincrement;
       release_global_lock();
       if (finished)
         return 0;
     }
     uthr[uid].innersetup(pt);
-    lookups++;
-    extraprobes += uthr[uid].invflag;
+    uthr[uid].lookups++;
+    uthr[uid].extraprobes += uthr[uid].invflag;
   }
   return 0;
 }
@@ -320,9 +320,17 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     threadworker((void *)&workerparams[0]);
 #endif
     for (int i = 0; i < wthreads; i++) {
-      totlookups += solveworkers[i].lookups;
-      totextra += solveworkers[i].extraprobes;
-      pt.addlookups(solveworkers[i].lookups);
+      ll thr_totlookups = 0;
+      ll thr_totextra = 0;
+      for (int j = 0; j < workinguthreading; j++) {
+         thr_totlookups += solveworkers[i].uthr[j].lookups;
+         thr_totextra += solveworkers[i].uthr[j].extraprobes;
+         solveworkers[i].uthr[j].lookups = 0;
+         solveworkers[i].uthr[j].extraprobes = 0;
+      }
+      totlookups += thr_totlookups;
+      totextra += thr_totextra;
+      pt.addlookups(thr_totlookups);
     }
     if (alloptimal ? (solutionsfound > 0) : satisfiedsolutioncount()) {
       duration();

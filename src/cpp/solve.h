@@ -31,6 +31,7 @@ struct microthread {
   setval *looktmp, *invtmp;
   int sp, st, d, togo, finished, tid, invflag;
   ull h;
+  long long extraprobes, lookups ;
   void init(const puzdef &pd, int d_, int tid_, const setval p);
   void innersetup(prunetable &pt);
   int innerfetch(const puzdef &pd, prunetable &pt);
@@ -39,7 +40,7 @@ struct microthread {
   int getwork(const puzdef &pd, prunetable &pt);
 };
 struct solveworker {
-  long long extraprobes, lookups, checktarget, checkincrement;
+  long long checktarget, checkincrement;
   setval p;
   int d, numuthr, rover, tid;
   struct microthread uthr[MAXMICROTHREADING];
