@@ -119,7 +119,7 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
       uthr[uid].extraprobes += uthr[uid].invflag;
     }
   }
-  for (ll checkcnt=0; active; checkcnt++) {
+  for (ll checkcnt = 0; active; checkcnt++) {
     int uid = rover++;
     if (rover >= workinguthreading)
       rover = 0;
@@ -323,10 +323,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       ll thr_totlookups = 0;
       ll thr_totextra = 0;
       for (int j = 0; j < workinguthreading; j++) {
-         thr_totlookups += solveworkers[i].uthr[j].lookups;
-         thr_totextra += solveworkers[i].uthr[j].extraprobes;
-         solveworkers[i].uthr[j].lookups = 0;
-         solveworkers[i].uthr[j].extraprobes = 0;
+        thr_totlookups += solveworkers[i].uthr[j].lookups;
+        thr_totextra += solveworkers[i].uthr[j].extraprobes;
+        solveworkers[i].uthr[j].lookups = 0;
+        solveworkers[i].uthr[j].extraprobes = 0;
       }
       totlookups += thr_totlookups;
       totextra += thr_totextra;
