@@ -78,6 +78,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
       }
     }
   }
+  maxdepth = maxdepthoption;
   return seq;
 }
 void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
