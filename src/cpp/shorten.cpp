@@ -54,7 +54,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
             } else {
               srcsol.resize(len);
               for (int j = i; j < i + len; j++)
-                srcsol[j - i] = seq[j];
+                srcsol[i + len - j - 1] = pd.invmove(seq[j]);
               fini[shenc] = {md, srcsol};
             }
             it = fini.find(shenc);
