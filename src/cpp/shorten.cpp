@@ -20,6 +20,9 @@ int shortencb(setval &, const vector<int> &moves, int d, int) {
   return 1;
 }
 int shortencbf(int) { return 0; }
+static unordered_map<vector<loosetype>, pair<int, vector<int>>,
+                     hashvector<loosetype>>
+    fini;
 vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
   if (!pd.invertible())
     error("! can only shorten invertible positions");
@@ -28,9 +31,6 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
   setsolvecallback(shortencb, shortencbf);
   vector<int> seq = orig;
   stacksetval pos(pd);
-  unordered_map<vector<loosetype>, pair<int, vector<int>>,
-                hashvector<loosetype>>
-      fini;
   int maxdepthoption = maxdepth;
   {
   again:
@@ -59,8 +59,8 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
             }
             it = fini.find(shenc);
           }
-          vector<int> &sol = it->second.second;
-          if ((int)sol.size() < len) {
+          const vector<int> &sol = it->second.second;
+          if ((int)sol.size() <= md) {
             cout << "Improving sequence from " << len << " to " << sol.size()
                  << endl;
             for (int j = 0; j < (int)sol.size(); j++) {
