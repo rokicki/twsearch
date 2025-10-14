@@ -277,6 +277,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   randomized.clear();
   ull lastlookups = 0;
   ull lastextra = 0;
+  pt.checkextend(pd); // fill table up a bit more if needed
   for (int d = initd; d <= maxdepth; d++) {
     lastlookups = totlookups;
     lastextra = totextra;
@@ -299,10 +300,11 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     if (d < optmindepth)
       continue;
     hid = d;
-    if (d - initd > 3)
+    if (d - initd > 1) {
       workchunks = makeworkchunks(pd, d, p, requesteduthreading);
-    else
+    } else {
       workchunks = makeworkchunks(pd, 0, p, requesteduthreading);
+    }
     workat = 0;
     int wthreads = setupthreads(pd, pt, workchunks, workerparams);
     workinguthreading =

@@ -32,6 +32,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
   vector<int> seq = orig;
   stacksetval pos(pd);
   int maxdepthoption = maxdepth;
+  int mindepthoption = optmindepth;
   {
   again:
     for (int md = 1; md < (int)seq.size(); md++) {
@@ -40,6 +41,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
       for (int len = seq.size(); len > md; len--) {
         cout << "Working with depth " << md << " length " << len << endl;
         maxdepth = md;
+        optmindepth = md;
         for (int i = 0; i + len <= (int)seq.size(); i++) {
           pd.assignpos(pos, pd.id);
           for (int j = i; j < i + len; j++)
@@ -79,6 +81,7 @@ vector<int> shorten(const puzdef &pd, const vector<int> &orig) {
     }
   }
   maxdepth = maxdepthoption;
+  optmindepth = mindepthoption;
   return seq;
 }
 void shortenit(const puzdef &pd, vector<int> &movelist, const char *) {
