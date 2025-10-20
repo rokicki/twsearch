@@ -262,10 +262,17 @@ int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
 int maxdepth = 1000000000;
 int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   solutionsfound = solutionsneeded;
-  if (gs && !gs->resolve(p)) {
-    if (!phase2)
-      cout << "Ignoring unsolvable position." << endl;
-    return -1;
+  if (gs) {
+    stacksetval solinv(pd), premul(pd);
+    if (!pd.invertible())
+      error("! can't checkbefresolve when not invertible");
+    pd.inv(pd.solved, solinv);
+    pd.mul(solinv, p, premul);
+    if (!gs->resolve(premul)) {
+      if (!phase2)
+        cout << "Ignoring unsolvable position." << endl;
+      return -1;
+    }
   }
   stacksetval looktmp(pd);
   double starttime = walltime();
