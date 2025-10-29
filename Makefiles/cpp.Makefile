@@ -15,9 +15,9 @@ ${CPP_MAKEFILE}:
 
 BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
-   src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/puzdef.cpp \
-   src/cpp/readksolve.cpp src/cpp/rotations.cpp src/cpp/solve.cpp \
-   src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
+   src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/pruneio.cpp \
+   src/cpp/puzdef.cpp src/cpp/readksolve.cpp src/cpp/rotations.cpp \
+   src/cpp/solve.cpp src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
    src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp
 
 EXTRASOURCE = src/cpp/antipode.cpp \
@@ -30,7 +30,7 @@ CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
 OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
-   build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/puzdef.o \
+   build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/pruneio.o build/cpp/puzdef.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
