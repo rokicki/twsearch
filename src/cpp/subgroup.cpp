@@ -15,14 +15,15 @@ using namespace std;
 const char *subgroupmovelist;
 struct subgroupmovelistopt : stringopt {
   subgroupmovelistopt()
-      : stringopt("--subgroupmoves",
-  "Target subgroup moves.  This changes the solved position\n"
-  "from the one in the provided tws file by chasing orbits and\n"
-  "using identical pieces and orientation wildcards, to make the\n"
-  "target subgroup be that given by the moves listed.  This will\n"
-  "not always work correctly if the subgroup has nontrivial\n"
-  "structure, like the squares group on the 3x3x3.",
-                  &subgroupmovelist) {}
+      : stringopt(
+            "--subgroupmoves",
+            "Target subgroup moves.  This changes the solved position\n"
+            "from the one in the provided tws file by chasing orbits and\n"
+            "using identical pieces and orientation wildcards, to make the\n"
+            "target subgroup be that given by the moves listed.  This will\n"
+            "not always work correctly if the subgroup has nontrivial\n"
+            "structure, like the squares group on the 3x3x3.",
+            &subgroupmovelist) {}
 } subgroupmovelistoptinst;
 /*
  *   This patches up the solved state for the subgroup defined by the
@@ -71,7 +72,7 @@ void runsubgroup(puzdef &pd) {
         }
       }
     }
-    if (verbose > 1) {
+    if (verbose > 2) {
       cout << "For set " << sd.name << " queue " << qe << endl;
       for (int j = 0; j < n; j++) {
         for (int k = 0; k < sz; k++)
@@ -137,12 +138,11 @@ void runsubgroup(puzdef &pd) {
     if (sd.wildo)
       sd.obits = ceillog2(sd.omod + 1);
   }
-  if (verbose > 1) {
+  if (verbose > 2) {
     for (int i = 0; i < pd.totsize; i++)
       cout << " " << (int)pd.solved.dat[i];
     cout << endl;
   }
-  if (verbose) {
-    emitposition(pd, pd.solved, 0);
-  }
+  if (verbose)
+    emitsolved(pd, pd.solved, 0);
 }

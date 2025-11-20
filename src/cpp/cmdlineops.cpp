@@ -276,13 +276,17 @@ void emitcompact(int v) {
 void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
   uchar *a = p.dat;
   if (compact) {
-    if (fixmoves)
+    if (fixmoves == 1)
       cout << "CMOV ";
+    else if (fixmoves == 2)
+      cout << "CPOS ";
     else
       cout << "CPOS ";
   } else {
-    if (fixmoves)
+    if (fixmoves == 1)
       cout << "Move noname" << endl;
+    else if (fixmoves == 2)
+      cout << "Solved" << endl;
     else
       cout << "Scramble noname" << endl;
   }
@@ -316,7 +320,7 @@ void emitmp(const puzdef &pd, setval p, const char *, int fixmoves) {
       cout << endl;
       if (sd.omod > 1) {
         cout << "  ";
-        if (fixmoves) {
+        if (fixmoves == 1) {
           for (int i = 0; i < n; i++)
             if (a[i + n] >= sd.omod)
               error("! moves don't support orientation ? yet");
@@ -355,6 +359,9 @@ static struct emitmovecmd : cmd {
 } registeremitmove;
 void emitposition(const puzdef &pd, setval p, const char *s) {
   emitmp(pd, p, s, 0);
+}
+void emitsolved(const puzdef &pd, setval p, const char *s) {
+  emitmp(pd, p, s, 2);
 }
 static struct emitposcmd : cmd {
   emitposcmd()

@@ -26,6 +26,7 @@ void symsit(const puzdef &pd, setval p, const char *s);
 void orderit(const puzdef &pd, setval p, const char *s);
 void emitmove(const puzdef &pd, setval p, const char *s);
 void emitposition(const puzdef &pd, setval p, const char *s);
+void emitsolved(const puzdef &pd, setval p, const char *s);
 void showrandompos(const puzdef &pd);
 void processlines(const puzdef &pd,
                   function<void(const puzdef &, setval, const char *)> f);
