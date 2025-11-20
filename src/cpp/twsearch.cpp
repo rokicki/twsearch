@@ -12,6 +12,7 @@
 #include "readksolve.h"
 #include "rotations.h"
 #include "solve.h"
+#include "subgroup.h"
 #include "test.h"
 #include "threads.h"
 #include "util.h"
@@ -203,6 +204,8 @@ puzdef makepuzdef(istream *f) {
   doinit();
   puzdef pd = readdef(f);
   filtermovelist(pd, legalmovelist);
+  if (subgroupmovelist != 0)
+    runsubgroup(pd);
   if (nocorners)
     pd.addoptionssum("nocorners");
   if (nocenters)
