@@ -18,7 +18,7 @@ BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/pruneio.cpp \
    src/cpp/puzdef.cpp src/cpp/readksolve.cpp src/cpp/rotations.cpp \
    src/cpp/solve.cpp src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
-   src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp
+   src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp subgroup.cpp
 
 EXTRASOURCE = src/cpp/antipode.cpp \
    src/cpp/coset.cpp src/cpp/descsets.cpp \
@@ -35,7 +35,7 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o \
-   build/cpp/cmds.o build/cpp/beamsearch.o \
+   build/cpp/cmds.o build/cpp/beamsearch.o build/cpp/subgroup.o \
    build/cpp/totalvar.o build/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
@@ -44,7 +44,7 @@ HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h \
-   src/cpp/totalvar.h
+   src/cpp/totalvar.h src/cpp/subgroup.h
 
 build/cpp:
 	mkdir -p build/cpp
