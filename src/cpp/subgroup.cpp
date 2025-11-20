@@ -100,6 +100,7 @@ void runsubgroup(puzdef &pd) {
           sd.wildo = 1;
           pd.wildo = 1;
           pd.caninvert = 0;
+          pd.doubleprobe = 0;
         }
         for (int k = j; k < n; k++) {
           int hits = 0;
@@ -122,6 +123,7 @@ void runsubgroup(puzdef &pd) {
       sd.uniq = 0;
       pd.uniq = 0;
       pd.caninvert = 0;
+      pd.doubleprobe = 0;
       sd.pparity = 0;
       sd.cnts.resize(nv);
       for (int k = 0; k < nv; k++)
