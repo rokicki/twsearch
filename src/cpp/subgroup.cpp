@@ -15,7 +15,13 @@ using namespace std;
 const char *subgroupmovelist;
 struct subgroupmovelistopt : stringopt {
   subgroupmovelistopt()
-      : stringopt("--subgroupmoves", "Target subgroup moves.",
+      : stringopt("--subgroupmoves",
+  "Target subgroup moves.  This changes the solved position\n"
+  "from the one in the provided tws file by chasing orbits and\n"
+  "using identical pieces and orientation wildcards, to make the\n"
+  "target subgroup be that given by the moves listed.  This will\n"
+  "not always work correctly if the subgroup has nontrivial\n"
+  "structure, like the squares group on the 3x3x3.",
                   &subgroupmovelist) {}
 } subgroupmovelistoptinst;
 /*
