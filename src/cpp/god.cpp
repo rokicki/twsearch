@@ -876,6 +876,18 @@ void mqsort(void *beg, ll numel, int looseper, ll sz) {
   case 8:
     tmqsort((array<loosetype, 8> *)beg, numel);
     break;
+  case 9:
+    tmqsort((array<loosetype, 9> *)beg, numel);
+    break;
+  case 10:
+    tmqsort((array<loosetype, 10> *)beg, numel);
+    break;
+  case 11:
+    tmqsort((array<loosetype, 11> *)beg, numel);
+    break;
+  case 12:
+    tmqsort((array<loosetype, 12> *)beg, numel);
+    break;
   default:
     qsortlooseper = looseper;
     qsort(beg, numel, sz, qsortcompare);
