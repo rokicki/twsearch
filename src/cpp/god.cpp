@@ -762,7 +762,7 @@ void dotwobitgod3(puzdef &pd) {
   levcnts[1] = 1;
   for (int rd = 0;; rd++) {
     totset += bitsset;
-    cout << "Dist " << rd << " " << bitsset << " " << totset << " in "
+    cout << "Dist " << rd << " cnt " << bitsset << " tot " << totset << " in "
          << duration() << endl;
     int rdv = (rd % 3) + 1;
     int wrv = (rdv % 3) + 1;
