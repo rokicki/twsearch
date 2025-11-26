@@ -106,12 +106,14 @@ void runsubgroup(puzdef &pd) {
           int hits = 0;
           for (int m = 0; m < sd.omod; m++)
             if (reach[j][k * sd.omod + m])
-              hits = 1;
+              hits = m + 1;
           if (hits) {
             remap[k] = nv;
             pd.solved.dat[sd.off + k] = nv;
             if (enablewo)
               pd.solved.dat[sd.off + k + n] = 2 * sd.omod;
+            else
+              pd.solved.dat[sd.off + k + n] = hits - 1;
           }
         }
         nv++;
