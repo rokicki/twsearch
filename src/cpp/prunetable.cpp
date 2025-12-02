@@ -49,7 +49,8 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
   while (initmoves > 1) {
     int mv = initmoves % nmoves;
     pd.mul(posns[sp], pd.moves[mv].pos, posns[sp + 1]);
-    if (!pd.legalstate(posns[sp + 1]))
+    if (!pd.legalstate(posns[sp + 1]) ||
+        pd.comparepos(posns[sp], posns[sp + 1]) == 0)
       return 0;
     st = canonnext[st][pd.moves[mv].cs];
     sp++;
@@ -125,7 +126,8 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
     if ((mask >> mv.cs) & 1)
       continue;
     pd.mul(posns[sp], mv.pos, posns[sp + 1]);
-    if (!pd.legalstate(posns[sp + 1]))
+    if (!pd.legalstate(posns[sp + 1]) ||
+        pd.comparepos(posns[sp], posns[sp + 1]) == 0)
       continue;
     r += filltable(pd, pt, togo - 1, sp + 1, ns[mv.cs]);
   }

@@ -226,7 +226,8 @@ downstack:
   if ((mask >> mv.cs) & 1)
     goto downstack;
   pd.mul(posns[sp], mv.pos, posns[sp + 1]);
-  if (!pd.legalstate(posns[sp + 1]))
+  if (!pd.legalstate(posns[sp + 1]) ||
+      pd.comparepos(posns[sp], posns[sp + 1]) == 0)
     goto downstack;
   movehist[sp] = m;
   solvestates.push_back({st, mi, mask, skipbase});
@@ -246,7 +247,8 @@ int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
   while (initmoves > 1) {
     int mv = initmoves % nmoves;
     pd.mul(posns[sp], pd.moves[mv].pos, posns[sp + 1]);
-    if (!pd.legalstate(posns[sp + 1])) {
+    if (!pd.legalstate(posns[sp + 1]) ||
+        pd.comparepos(posns[sp], posns[sp + 1]) == 0) {
       return 0;
     }
     movehist[sp] = mv;

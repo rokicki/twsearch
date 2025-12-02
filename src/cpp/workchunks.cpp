@@ -47,7 +47,7 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
             if ((mask >> pd.moves[mv].cs) & 1)
               continue;
             pd.mul(p1, pd.moves[mv].pos, p2);
-            if (!pd.legalstate(p2))
+            if (!pd.legalstate(p2) || pd.comparepos(p1, p2) == 0)
               continue;
             slowmodm2(pd, p2, p3);
             int h = fasthash(pd.totsize, p3) % hashmod;
