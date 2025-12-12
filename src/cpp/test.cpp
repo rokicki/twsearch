@@ -120,7 +120,7 @@ void solvetest(puzdef &pd, int scramblemoves, generatingset *gs) {
   stacksetval p1(pd), p2(pd);
   pd.assignpos(p1, pd.solved);
   prunetable pt(pd, maxmem);
-  while (1) {
+  for (int tr = 0; tr < 1000; tr++) {
     solve(pd, pt, p1, gs);
     for (ll i = 0; i < scramblemoves; i++) {
       while (1) {

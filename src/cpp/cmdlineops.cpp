@@ -211,7 +211,7 @@ static struct mergecmd : cmd {
 } registermerge;
 void symsit(const puzdef &pd, setval p, const char *s) {
   stacksetval p2(pd);
-  int symval = slowmodm(pd, p, p2);
+  int symval = slowmodm2(pd, p, p2);
   cout << s << ": " << symval << endl;
 }
 static struct symscmd : cmd {
