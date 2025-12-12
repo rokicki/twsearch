@@ -103,7 +103,7 @@ static struct wrongcmd : cmd {
 } registerwrong;
 void uniqitsymm(const puzdef &pd, setval p, const char *s) {
   stacksetval pw(pd);
-  slowmodmip(pd, p, pw);
+  slowmodm2(pd, p, pw);
   uniqwork.resize(looseper);
   loosepack(pd, pw, &uniqwork[0]);
   if (uniqseen.find(uniqwork) == uniqseen.end()) {
