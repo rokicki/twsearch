@@ -168,11 +168,6 @@ void calcrotations(puzdef &pd) {
   cout << "Rotations tested." << endl ;
   */
 }
-void showpos(const puzdef &pd, const setval s) {
-  for (int i = 0; i < pd.totsize; i++)
-    cout << " " << (int)s.dat[i];
-  cout << endl;
-}
 /*
  *   Need to be able to do premoves, but in general *positions* don't
  *   permit premoves.  However, *rotations* of *normal* puzzles should
