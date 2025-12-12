@@ -4,7 +4,6 @@
 #include "cmds.h"
 #include "index.h"
 #include "parsemoves.h"
-#include "rotations.h" // for slowmodmip
 #include "solve.h"
 #include "util.h"
 #include <algorithm>
