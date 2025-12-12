@@ -63,6 +63,7 @@ void reseteverything() {
   omitsets.clear();
   omitoris.clear();
   omitperms.clear();
+  relabelsets.clear();
   setsmustexist.clear();
   solutionsfound = 0;
   solutionsneeded = 1;
@@ -456,6 +457,19 @@ static struct omitorisopt : specialopt {
     setsmustexist.insert(**argv);
   }
 } registeromitorisopt;
+
+static struct relabelopt : specialopt {
+  relabelopt()
+      : specialopt(
+            "--relabel",
+            "setname  Reduce the following set permutation by relabeling.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    relabelsets.insert(**argv);
+    setsmustexist.insert(**argv);
+  }
+} registerrelabelopt;
 
 static struct nowriteopt : specialopt {
   nowriteopt() : specialopt("--nowrite", "Do not write pruning tables.") {}

@@ -32,7 +32,7 @@ struct setdef {
   string name;
   uchar omod;
   int pbits, obits, pibits, psum;
-  bool dense, uniq, pparity, oparity, wildo;
+  bool dense, uniq, pparity, oparity, wildo, relabel;
   double logstates;
   unsigned long long llperms, llords, llstates;
   vector<int> cnts; // only not empty when not unique.
@@ -40,8 +40,9 @@ struct setdef {
   // only not empty when values not 1..x (or 0..x for new format)
   setdef()
       : size(0), off(0), name(), omod(0), pbits(0), obits(0), pibits(0),
-        psum(0), uniq(1), pparity(0), oparity(0), wildo(0), logstates(0),
-        llperms(0), llords(0), llstates(0), cnts(), pack(), unpack() {}
+        psum(0), uniq(1), pparity(0), oparity(0), wildo(0), relabel(0),
+        logstates(0), llperms(0), llords(0), llstates(0), cnts(), pack(),
+        unpack() {}
   void mulp(const uchar *ap, const uchar *bp, uchar *cp) const {
     for (int j = 0; j < size; j++)
       cp[j] = ap[bp[j]];
@@ -182,20 +183,47 @@ struct puzdef {
     const uchar *bp = b.dat;
     const uchar *cp = c.dat;
     uchar *dp = d.dat;
+    uchar remap[256];
     memset(dp, 0, totsize);
     for (int i = 0; i < (int)setdefs.size(); i++) {
       const setdef &sd = setdefs[i];
       int n = sd.size;
-      if (sd.omod > 1) {
-        uchar *moda = gmoda[sd.omod];
-        for (int j = 0; j < n; j++) {
-          dp[j] = ap[bp[cp[j]]];
-          dp[j + n] = moda[ap[bp[cp[j]] + n] + moda[bp[cp[j] + n] + cp[j + n]]];
+      if (sd.relabel) {
+        for (int j = 0; j < n; j++)
+          remap[j] = 255;
+        int nextval = 0;
+        if (sd.omod > 1) {
+          uchar *moda = gmoda[sd.omod];
+          for (int j = 0; j < n; j++) {
+            int nv = bp[cp[j]];
+            if (remap[nv] == 255)
+              remap[nv] = nextval++;
+            dp[j] = remap[nv];
+            dp[j + n] =
+                moda[ap[bp[cp[j]] + n] + moda[bp[cp[j] + n] + cp[j + n]]];
+          }
+        } else {
+          for (int j = 0; j < n; j++) {
+            int nv = bp[cp[j]];
+            if (remap[nv] == 255)
+              remap[nv] = nextval++;
+            dp[j] = remap[nv];
+            dp[j + n] = 0;
+          }
         }
       } else {
-        for (int j = 0; j < n; j++) {
-          dp[j] = ap[bp[cp[j]]];
-          dp[j + n] = 0;
+        if (sd.omod > 1) {
+          uchar *moda = gmoda[sd.omod];
+          for (int j = 0; j < n; j++) {
+            dp[j] = ap[bp[cp[j]]];
+            dp[j + n] =
+                moda[ap[bp[cp[j]] + n] + moda[bp[cp[j] + n] + cp[j + n]]];
+          }
+        } else {
+          for (int j = 0; j < n; j++) {
+            dp[j] = ap[bp[cp[j]]];
+            dp[j + n] = 0;
+          }
         }
       }
       ap += 2 * n;
@@ -267,19 +295,40 @@ struct puzdef {
     const uchar *bp = b.dat;
     const uchar *cp = c.dat;
     uchar *dp = d.dat;
+    uchar remap[256];
     int r = 0;
     for (int i = 0; i < (int)setdefs.size(); i++) {
       const setdef &sd = setdefs[i];
       int n = sd.size;
-      for (int j = 0; j < n; j++) {
-        int nv = ap[bp[cp[j]]];
-        if (r > 0)
-          dp[j] = nv;
-        else if (nv > dp[j])
-          return 1;
-        else if (nv < dp[j]) {
-          r = 1;
-          dp[j] = nv;
+      if (sd.relabel) {
+        for (int j = 0; j < n; j++)
+          remap[j] = 255;
+        int nextval = 0;
+        for (int j = 0; j < n; j++) {
+          int nv = bp[cp[j]];
+          if (remap[nv] == 255)
+            remap[nv] = nextval++;
+          nv = remap[nv];
+          if (r > 0)
+            dp[j] = nv;
+          else if (nv > dp[j])
+            return 1;
+          else if (nv < dp[j]) {
+            r = 1;
+            dp[j] = nv;
+          }
+        }
+      } else {
+        for (int j = 0; j < n; j++) {
+          int nv = ap[bp[cp[j]]];
+          if (r > 0)
+            dp[j] = nv;
+          else if (nv > dp[j])
+            return 1;
+          else if (nv < dp[j]) {
+            r = 1;
+            dp[j] = nv;
+          }
         }
       }
       ap += n;

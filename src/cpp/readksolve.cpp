@@ -2,7 +2,7 @@
 #include "parsemoves.h"
 #include <iostream>
 int nocorners, nocenters, noedges, ignoreori, distinguishall;
-set<string> omitsets, omitperms, omitoris, setsmustexist;
+set<string> omitsets, omitperms, omitoris, relabelsets, setsmustexist;
 static int lineno;
 void inerror(const string s, const string x = "") {
   if (lineno)
@@ -519,6 +519,8 @@ puzdef readdef(istream *f) {
       sd.uniq = 1;
       sd.dense = 1;
       sd.off = pz.totsize;
+      if (relabelsets.find(sd.name) != relabelsets.end())
+        sd.relabel = 1;
       pz.setdefs.push_back(sd);
       pz.totsize += 2 * sd.size;
       if (gmoda[sd.omod] == 0) {

@@ -76,7 +76,7 @@ void calcrotinvmap(puzdef &pd) {
 void calcrotations(puzdef &pd) {
   if (disablesymmetry)
     return;
-  stacksetval pw(pd);
+  stacksetval pw(pd), p1(pd);
   vector<moove> &q = pd.rotgroup;
   set<vector<uchar>> seen;
   seen.insert(setvaltovec(pd, pd.id));
@@ -126,7 +126,8 @@ void calcrotations(puzdef &pd) {
       }
     }
     for (int j = 0; good && j < (int)pd.moves.size(); j++) {
-      pd.rotconjugate(q[pd.rotinv[i]].pos, pd.moves[j].pos, q[i].pos, pw);
+      pd.mul(q[pd.rotinv[i]].pos, pd.moves[j].pos, p1);
+      pd.mul(p1, q[i].pos, pw);
       int found = -1;
       for (int k = 0; k < (int)pd.moves.size(); k++) {
         if (pd.comparepos(pw, pd.moves[k].pos) == 0) {
@@ -179,7 +180,19 @@ void calcrotations(puzdef &pd) {
  */
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   int cnt = 1;
-  if (pd.rotgroup.size() <= 64) {
+  // if we relabel the first setdef, we can't use the magic speedup code.
+  if (pd.setdefs[0].relabel) {
+    pd.rotconjugate(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2);
+    for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
+      int t = pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2);
+      if (t <= 0) {
+        if (t < 0) {
+          cnt = 1;
+        } else
+          cnt++;
+      }
+    }
+  } else if (pd.rotgroup.size() <= 64) {
     ull lobits = pd.lowsymmbits(p1);
     int g = ffsll(lobits) - 1;
     pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
@@ -243,7 +256,18 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
     cnt = 1 | MODINV_BACKWARD;
   } else
     cnt |= MODINV_FORWARD;
-  if (pd.rotgroup.size() <= 64) {
+  // in theory this should never happen . . .
+  if (pd.setdefs[0].relabel) {
+    for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
+      int t = pd.rotconjugatecmp(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
+      if (t <= 0) {
+        if (t < 0) {
+          cnt = 1 | MODINV_BACKWARD;
+        } else
+          cnt = (cnt + 1) | MODINV_BACKWARD;
+      }
+    }
+  } else if (pd.rotgroup.size() <= 64) {
     ull lobits = pd.lowsymmbits(pt);
     int g = 0;
     lobits &= ~(1LL << g);
