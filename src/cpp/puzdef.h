@@ -176,7 +176,8 @@ struct puzdef {
       cp += 2 * n;
     }
   }
-  void mul3(const setval a, const setval b, const setval c, setval d) const {
+  void rotconjugate(const setval a, const setval b, const setval c,
+                    setval d) const {
     const uchar *ap = a.dat;
     const uchar *bp = b.dat;
     const uchar *cp = c.dat;
@@ -257,9 +258,11 @@ struct puzdef {
     }
     return r;
   }
-  // does a multiplication and a comparison at the same time.
-  // c must be initialized already.
-  int mulcmp3(const setval a, const setval b, const setval c, setval d) const {
+  // Conjugate and compare by a rotation.  Also manages piece relabeling.
+  // The a setval is a piece value map, not a permutation, if the puzzle
+  // has identical pieces.
+  int rotconjugatecmp(const setval a, const setval b, const setval c,
+                      setval d) const {
     const uchar *ap = a.dat;
     const uchar *bp = b.dat;
     const uchar *cp = c.dat;
@@ -296,6 +299,9 @@ struct puzdef {
             dp[j] = nv;
           }
         }
+      } else {
+        for (int j = 0; j < n; j++)
+          dp[j] = 0;
       }
       ap += n;
       bp += n;
