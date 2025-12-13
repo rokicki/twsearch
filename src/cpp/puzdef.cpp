@@ -299,3 +299,38 @@ int puzdef::defaultstart() const {
   }
   return 1;
 }
+int puzdef::equivrelabel(const setval a, const setval b) const {
+  const uchar *ap = a.dat;
+  const uchar *bp = b.dat;
+  uchar remapa[256];
+  uchar remapb[256];
+  for (int i = 0; i < (int)setdefs.size(); i++) {
+    const setdef &sd = setdefs[i];
+    int n = sd.size;
+    if (sd.relabel) {
+      int nextval = 0;
+      for (int j = 0; j < n; j++) {
+        remapa[j] = 255;
+        remapb[j] = 255;
+      }
+      for (int j = 0; j < n; j++) {
+        if (ap[j + n] != bp[j + n])
+          return 0;
+        if (remapa[ap[j]] != remapb[bp[j]])
+          return 0;
+        if (remapa[ap[j]] == 255) {
+          remapa[ap[j]] = nextval;
+          remapb[bp[j]] = nextval;
+          nextval++;
+        }
+      }
+    } else {
+      for (int j = 0; j < 2 * n; j++)
+        if (ap[j] != bp[j])
+          return 0;
+    }
+    ap += 2 * n;
+    bp += 2 * n;
+  }
+  return 1;
+}

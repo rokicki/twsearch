@@ -70,7 +70,8 @@ int microthread::possibsolution(const puzdef &pd) {
   if (callback) {
     return callback(posns[sp], movehist, d, tid);
   }
-  if (pd.comparepos(posns[sp], pd.solved) == 0) {
+  if (pd.comparepos(posns[sp], pd.solved) == 0 ||
+      pd.equivrelabel(posns[sp], pd.solved)) {
     int r = 1;
     get_global_lock();
     solutionsfound++;

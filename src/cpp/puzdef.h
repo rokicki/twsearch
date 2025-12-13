@@ -136,6 +136,7 @@ struct puzdef {
   int comparepos(const setval a, const setval b) const {
     return memcmp(a.dat, b.dat, totsize);
   }
+  int equivrelabel(const setval a, const setval b) const;
   int canpackdense() const { return dense; }
   int invertible() const { return caninvert; }
   int invertiblelookups() const { return doubleprobe; }
