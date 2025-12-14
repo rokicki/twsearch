@@ -60,6 +60,21 @@ struct llopt : cmd {
   virtual int ismaincmd() { return 0; }
   ll *var;
 };
+struct doubopt : cmd {
+  doubopt(const char *opt, const char *docs, double *v)
+      : cmd(opt, docs), var(v) {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    char *endptr = 0;
+    *var = strtod(**argv, &endptr);
+    if (***argv == 0 || *endptr != 0)
+      error("! bad double argument");
+  }
+  virtual void docommand(puzdef &) { error("! bad docommand"); }
+  virtual int ismaincmd() { return 0; }
+  double *var;
+};
 struct stringopt : cmd {
   stringopt(const char *opt, const char *docs, const char **v)
       : cmd(opt, docs), var(v) {}

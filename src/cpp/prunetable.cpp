@@ -1,9 +1,15 @@
 #include "prunetable.h"
 #include "city.h"
+#include "cmds.h"
 #include <iostream>
 #include <set>
 int writeprunetables = 1; // default is auto
 int startprunedepth = 3;
+double fillpref = 1;
+static doubopt fillprefopt(
+    "--fillpref",
+    "float If greater than 1, prefer filling table, else prefer searching.\n",
+    &fillpref);
 ull fasthash(int n, const setval sv) {
   return CityHash64((const char *)sv.dat, n);
 }
@@ -244,8 +250,9 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
   double prediction = 0;
   if (ptotpop != 0)
     prediction = totpop * (double)totpop / ptotpop;
-  if ((ignorelookup == 0 && lookupcnt < 3 * fillcnt) || baseval > 100 ||
-      prediction > size || (pd.logstates <= 50 && prediction > pd.llstates))
+  if ((ignorelookup == 0 && lookupcnt < 3 * fillpref * fillcnt) ||
+      baseval > 100 || prediction > size ||
+      (pd.logstates <= 50 && prediction > pd.llstates))
     return;
   if (wval == 2) {
     ull longcnt = (size + 31) >> 5;
