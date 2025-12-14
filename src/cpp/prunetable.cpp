@@ -250,7 +250,7 @@ void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
   double prediction = 0;
   if (ptotpop != 0)
     prediction = totpop * (double)totpop / ptotpop;
-  if ((ignorelookup == 0 && lookupcnt < 3 * fillpref * fillcnt) ||
+  if ((ignorelookup == 0 && lookupcnt * fillpref < 3 * fillcnt) ||
       baseval > 100 || prediction > size ||
       (pd.logstates <= 50 && prediction > pd.llstates))
     return;
