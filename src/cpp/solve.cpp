@@ -70,8 +70,7 @@ int microthread::possibsolution(const puzdef &pd) {
   if (callback) {
     return callback(posns[sp], movehist, d, tid);
   }
-  if (pd.comparepos(posns[sp], pd.solved) == 0 ||
-      pd.equivrelabel(posns[sp], pd.solved)) {
+  if (pd.equivpos(posns[sp], pd.solved)) {
     int r = 1;
     get_global_lock();
     solutionsfound++;
@@ -171,7 +170,7 @@ int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
              pd.comparepos(posns[sp], pd.solved) == 0) {
     v = 0;
   } else if (v == 0 && togo > 0 && noearlysolutions &&
-             pd.comparepos(posns[sp], pd.solved) == 0) {
+             pd.equivpos(posns[sp], pd.solved)) {
     v = 0;
   } else if (togo == 0) {
     v = possibsolution(pd);
