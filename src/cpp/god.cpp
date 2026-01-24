@@ -1216,7 +1216,7 @@ void doarraygod2(const puzdef &pd) {
 ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
   int symoff = basebits / (sizeof(loosetype) * 8);
   loosetype symbit = (1LL << (basebits & ((sizeof(loosetype) * 8) - 1)));
-  int rots = pd.rotgroup.size();
+  int rots = pd.rotgroup.size() * pd.rotgroup.size();
   if (pd.invertible())
     rots *= 2;
   ull r = cnt * rots;
@@ -1230,6 +1230,7 @@ ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt, vector<int> *rotmul) {
       else
         sym = slowmodm2(pd, p1, p2);
       if ((*rotmul)[sym] == 0 || (*rotmul)[sym] > rots) {
+ cout << "Got a count of " << sym << " from " << rots << endl ;
         error("! bad symmetry calculation");
       }
       r += (*rotmul)[sym] - rots;
@@ -1269,7 +1270,7 @@ static void *docswork(void *o) {
  *   of states represented by these, unpacking the symmetry.
  */
 ull calcsymseen(const puzdef &pd, loosetype *p, ull cnt) {
-  int rots = pd.rotgroup.size();
+  int rots = pd.rotgroup.size()*pd.rotgroup.size();
   if (pd.invertible())
     rots *= 2;
   vector<int> rotmul(rots + 1);
@@ -1314,11 +1315,7 @@ void doarraygodsymm(const puzdef &pd) {
   int sym = slowmodm2(pd, p2, p1);
   loosepack(pd, p1, mem, 0, 1 + (sym > 1));
   cnts.clear();
-  cnts.push_back(1);
   scnts.clear();
-  scnts.push_back(1);
-  ull tot = 1;
-  ull stot = 1;
   lim = mem + memneeded / (sizeof(loosetype) * looseper) * looseper;
   reader = mem;
   writer = mem + looseper;
@@ -1327,6 +1324,19 @@ void doarraygodsymm(const puzdef &pd) {
   int usesym = 1;
   if (pd.invertible())
     usesym++;
+  int rots = pd.rotgroup.size()*pd.rotgroup.size();
+  if (pd.invertible())
+    rots *= 2;
+  vector<int> rotmul(rots + 1);
+  for (int i = 1; i * i <= rots; i++)
+    if (rots % i == 0) {
+      rotmul[i] = rots / i;
+      rotmul[rots / i] = i;
+    }
+  ull stot = calcsymseen(pd, reader, 1, &rotmul);
+  ull tot = 1;
+  cnts.push_back(1);
+  scnts.push_back(stot);
   for (int d = 0;; d++) {
     cout << "Dist " << d << " cnt " << cnts[d] << " tot " << tot << " scnt "
          << scnts[d] << " stot " << stot << " in " << duration() << endl

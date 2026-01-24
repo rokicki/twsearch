@@ -179,47 +179,32 @@ void calcrotations(puzdef &pd) {
  *   (so omod should be 1 unless the setdef is uniq.)
  */
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
-  int cnt = 1;
+  int cnt = 0;
   // if we relabel the first setdef, we can't use the magic speedup code.
   if (pd.setdefs[0].relabel) {
-    pd.rotconjugate(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2);
-    for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2);
-      if (t <= 0) {
-        if (t < 0) {
-          cnt = 1;
-        } else
-          cnt++;
-      }
-    }
-  } else if (pd.rotgroup.size() <= 64) {
-    ull lobits = pd.lowsymmbits(p1);
-    int g = ffsll(lobits) - 1;
-    pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
-    lobits &= ~(1LL << g);
-    while (lobits) {
-      g = ffsll(lobits) - 1;
-      lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
-      if (t <= 0) {
-        if (t < 0) {
-          cnt = 1;
-        } else
-          cnt++;
+    p2.dat[0] = 255;
+    for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
+      for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
+        int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, p1, pd.rotgroup[m2].pos, p2);
+        if (t <= 0) {
+          if (t < 0) {
+            cnt = 1;
+          } else
+            cnt++;
+        }
       }
     }
   } else {
-    int g = pd.lowsymmguess(p1);
-    pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
-    for (int m = g + 1; m < (int)pd.rotgroup.size(); m++) {
-      if (p2.dat[0] != pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
-        continue;
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2);
-      if (t <= 0) {
-        if (t < 0) {
-          cnt = 1;
-        } else
-          cnt++;
+    p2.dat[0] = 255;
+    for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
+      for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
+        int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, p1, pd.rotgroup[m2].pos, p2);
+        if (t <= 0) {
+          if (t < 0) {
+            cnt = 1;
+          } else
+            cnt++;
+        }
       }
     }
   }
@@ -247,48 +232,11 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
   int cnt = slowmodm2(pd, p1, p2);
   if (!pd.invertible())
     error("! not an invertible puzzle");
-  pd.inv(p2, pt);
-  int delta = pd.comparepos(pt, p2);
-  if (delta == 0)
-    return (2 * cnt) | MODINV_BOTH;
-  if (delta < 0) {
-    pd.assignpos(p2, pt);
-    cnt = 1 | MODINV_BACKWARD;
-  } else
-    cnt |= MODINV_FORWARD;
-  // in theory this should never happen . . .
-  if (pd.setdefs[0].relabel) {
-    for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
-      if (t <= 0) {
-        if (t < 0) {
-          cnt = 1 | MODINV_BACKWARD;
-        } else
-          cnt = (cnt + 1) | MODINV_BACKWARD;
-      }
-    }
-  } else if (pd.rotgroup.size() <= 64) {
-    ull lobits = pd.lowsymmbits(pt);
-    int g = 0;
-    lobits &= ~(1LL << g);
-    while (lobits) {
-      g = ffsll(lobits) - 1;
-      lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
-      if (t <= 0) {
-        if (t < 0) {
-          cnt = 1 | MODINV_BACKWARD;
-        } else {
-          cnt = (cnt + 1) | MODINV_BACKWARD;
-        }
-      }
-    }
-  } else {
-    int g = 0;
-    for (int m = g + 1; m < (int)pd.rotgroup.size(); m++) {
-      if (p2.dat[0] < pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
-        continue;
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
+  cnt |= MODINV_FORWARD;
+  pd.inv(p1, pt);
+  for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
+    for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
+      int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, pt, pd.rotgroup[m2].pos, p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;
