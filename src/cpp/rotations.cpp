@@ -151,6 +151,45 @@ void calcrotations(puzdef &pd) {
   calcrotinvmap(pd);
   if (quiet == 0)
     cout << "Rotation group size is " << q.size() << endl;
+  /*
+   *   For double rotations, we have O(symgroupsize^2) potential
+   *   reductions (not really conjugations) because we permit all
+   *   transformations g p h for g, h in symmgroup.  But we only
+   *   do this if the first set permits it.  We define permitting
+   *   as the first set must have a unique g for each h that
+   *   is minimal within the first two elements.  This requirement
+   *   should be pretty easy to meet (although there are some
+   *   conditions under which it won't be met).  Since the first
+   *   two are calculated essentially with p'[i] = g[p[h[i]]],
+   *   for a given p and h we can get x1=p[h[0]] and x2=p[h[1]];
+   *   these should be two distinct values.  We then use these two
+   *   values and find the *single* g that has the minimal
+   *   g[x1], g[x2] value.  We know this is the only g that can be
+   *   minimal.  In order to do this lookup, we create the relevant
+   *   array here.
+   */
+  if (!pd.setdefs[0].uniq)
+    error("! can't run this version unless first set perm is unique") ;
+  int fsn = pd.setdefs[0].size ;
+  if (pd.rotgroup.size() > 63)
+    error("! can't run this version with a rotation group size > 60") ;
+  pd.doublerot.resize(fsn*fsn, 0) ;
+  for (int i=0; i<fsn; i++)
+    for (int j=0; j<fsn; j++)
+      if (i != j) {
+        int lowv = 1000000 ;
+        ull lowm = 0 ;
+        for (int m=0; m<(int)pd.rotgroup.size(); m++) {
+          int v2 = pd.rotgroup[m].pos.dat[i] * fsn + pd.rotgroup[m].pos.dat[j];
+          if (v2 < lowv) {
+            lowm = 1LL << m;
+            lowv = v2 ;
+          } else if (v2 == lowv) {
+            lowm |= 1LL << m;
+          }
+        }
+        pd.doublerot[i*fsn+j] = lowm;
+      }
   // test that for a random p,
   //  solved * (rotinv * p) == rotinvmap * (solved * p)
   /*
@@ -182,10 +221,11 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   int cnt = 0;
   // if we relabel the first setdef, we can't use the magic speedup code.
   if (pd.setdefs[0].relabel) {
+    error("! no relabeling of first def in this version") ;
     p2.dat[0] = 255;
     for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
       for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
-        int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, p1, pd.rotgroup[m2].pos, p2);
+        int t = pd.rotconjugatecmp(pd.rotgroup[m2].pos, p1, pd.rotgroup[m].pos, p2);
         if (t <= 0) {
           if (t < 0) {
             cnt = 1;
@@ -195,10 +235,16 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
       }
     }
   } else {
+    int fsn = pd.setdefs[0].size ;
     p2.dat[0] = 255;
     for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
-      for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
-        int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, p1, pd.rotgroup[m2].pos, p2);
+      int x1 = p1.dat[pd.rotgroup[m].pos.dat[0]];
+      int x2 = p1.dat[pd.rotgroup[m].pos.dat[1]];
+      ull m2m = pd.doublerot[x1*fsn+x2];
+      while (m2m) {
+        int m2 = ffsll(m2m)-1;
+        m2m &= ~(1LL << m2);
+        int t = pd.rotconjugatecmp(pd.rotgroup[m2].pos, p1, pd.rotgroup[m].pos, p2);
         if (t <= 0) {
           if (t < 0) {
             cnt = 1;
@@ -234,9 +280,15 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
     error("! not an invertible puzzle");
   cnt |= MODINV_FORWARD;
   pd.inv(p1, pt);
+  int fsn = pd.setdefs[0].size ;
   for (int m = 0; m < (int)pd.rotgroup.size(); m++) {
-    for (int m2 = 0; m2 < (int)pd.rotgroup.size(); m2++) {
-      int t = pd.rotconjugatecmp(pd.rotgroup[m].pos, pt, pd.rotgroup[m2].pos, p2);
+    int x1 = p1.dat[pd.rotgroup[m].pos.dat[0]];
+    int x2 = p1.dat[pd.rotgroup[m].pos.dat[1]];
+    ull m2m = pd.doublerot[x1*fsn+x2];
+    while (m2m) {
+      int m2 = ffsll(m2m)-1;
+      m2m &= ~(1LL << m2);
+      int t = pd.rotconjugatecmp(pd.rotgroup[m2].pos, pt, pd.rotgroup[m].pos, p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;

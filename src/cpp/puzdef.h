@@ -121,6 +121,7 @@ struct puzdef {
       rotgroup;
   vector<movealias> moveseqs;
   vector<allocsetval> rotinvmap;
+  vector<ull> doublerot;
   vector<int> basemoveorders, baserotorders;
   vector<int> rotinv;
   vector<ull> commutes;
