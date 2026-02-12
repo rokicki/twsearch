@@ -38,6 +38,8 @@ void processlines3(
 void processlines4(
     const puzdef &pd,
     function<void(const puzdef &, vector<int> &v, const char *)> f);
+void processlines5(const puzdef &pd,
+                   function<void(const puzdef &, setval, const char *)> f);
 extern int compact;
 #define CMDLINEOPS_H
 #endif

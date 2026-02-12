@@ -56,5 +56,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p,
           generatingset *gs = 0);
 void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
              generatingset *gs = 0);
+void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
+               generatingset *gs, const char *s);
 #define SOLVE_H
 #endif

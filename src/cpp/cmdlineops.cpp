@@ -54,6 +54,19 @@ static struct solvecmd : cmd {
     });
   };
 } registersolve;
+static struct solvep2cmd : cmd {
+  solvep2cmd()
+      : cmd("-p2",
+            "Run a last phase in a multiphase search on the input.  Like -s.")
+            {}
+  virtual void docommand(puzdef &pd) {
+    prunetable pt(pd, maxmem);
+    string emptys;
+    processlines5(pd, [&](const puzdef &pd, setval p, const char *s) {
+      solveitp2(pd, pt, emptys, p, gs, s);
+    });
+  };
+} registerp2;
 vector<loosetype> uniqwork;
 set<vector<loosetype>> uniqseen;
 void uniqit(const puzdef &pd, setval p, const char *s) {
@@ -446,5 +459,19 @@ void processlines4(
     vector<int> moveid = parsemoveorrotationlist(pd, s.c_str());
     globalinputmovecount = moveid.size();
     f(pd, moveid, s.c_str());
+  }
+}
+void processlines5(const puzdef &pd,
+                  function<void(const puzdef &, setval, const char *)> f) {
+  string s;
+  stacksetval p1(pd);
+  while (getline(cin, s)) {
+    pd.assignpos(p1, pd.solved);
+    vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
+    //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
+    globalinputmovecount = movelist.size();
+    for (int i = 0; i < (int)movelist.size(); i++)
+      domove(pd, p1, movelist[i]);
+    f(pd, p1, s.c_str());
   }
 }

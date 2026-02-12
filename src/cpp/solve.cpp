@@ -399,3 +399,31 @@ void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
   }
   solve(pd, pt, p, gs);
 }
+string prevkey ;
+static int bestsofar ;
+void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
+               generatingset *gs, const char *s) {
+  if (quiet == 0) {
+    if (scramblename.size())
+      cout << "Solving " << scramblename << endl << flush;
+    else
+      cout << "Solving" << endl << flush;
+  }
+  string newkey ;
+  while (*s && (*s != ' ' || s[1] != ' '))
+    newkey.push_back(*s++) ;
+  if (prevkey != newkey) {
+    prevkey = newkey ;
+    bestsofar = 1000000 ;
+  }
+  int omax = maxdepth;
+  int gooddepth = bestsofar - globalinputmovecount - 1;
+  if (maxdepth > gooddepth) {
+    maxdepth = gooddepth;
+  }
+  int r = solve(pd, pt, p, gs);
+  if (r >= 0) {
+    bestsofar = globalinputmovecount + r;
+  }
+  maxdepth = omax;
+}
