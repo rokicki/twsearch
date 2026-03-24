@@ -399,8 +399,8 @@ void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
   }
   solve(pd, pt, p, gs);
 }
-string prevkey ;
-static int bestsofar ;
+string prevkey;
+static int bestsofar;
 void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
                generatingset *gs, const char *s) {
   if (quiet == 0) {
@@ -409,12 +409,12 @@ void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
     else
       cout << "Solving" << endl << flush;
   }
-  string newkey ;
+  string newkey;
   while (*s && (*s != ' ' || s[1] != ' '))
-    newkey.push_back(*s++) ;
+    newkey.push_back(*s++);
   if (prevkey != newkey) {
-    prevkey = newkey ;
-    bestsofar = 1000000 ;
+    prevkey = newkey;
+    bestsofar = 1000000;
   }
   int omax = maxdepth;
   int gooddepth = bestsofar - globalinputmovecount - 1;

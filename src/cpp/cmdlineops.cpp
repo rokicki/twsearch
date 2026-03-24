@@ -57,8 +57,8 @@ static struct solvecmd : cmd {
 static struct solvep2cmd : cmd {
   solvep2cmd()
       : cmd("-p2",
-            "Run a last phase in a multiphase search on the input.  Like -s.")
-            {}
+            "Run a last phase in a multiphase search on the input.  Like -s.") {
+  }
   virtual void docommand(puzdef &pd) {
     prunetable pt(pd, maxmem);
     string emptys;
@@ -462,7 +462,7 @@ void processlines4(
   }
 }
 void processlines5(const puzdef &pd,
-                  function<void(const puzdef &, setval, const char *)> f) {
+                   function<void(const puzdef &, setval, const char *)> f) {
   string s;
   stacksetval p1(pd);
   while (getline(cin, s)) {
