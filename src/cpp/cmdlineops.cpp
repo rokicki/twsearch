@@ -74,9 +74,7 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   }
 }
 bool is_multiphase() { return !multiphase_movesets.empty(); }
-void multiphase_solveit(puzdef &pd, setval &p) {
-  if (g_def_file == nullptr)
-    error("! --multiphase: puzzle file path not available");
+static vector<phasespec> make_phase_specs() {
   int n = (int)multiphase_movesets.size();
   // N --multiphase args create N+1 phases:
   //   Phase 0 (implicit): all moves, targets subgroup of movesets[0]
@@ -88,12 +86,21 @@ void multiphase_solveit(puzdef &pd, setval &p) {
   for (int i = 0; i < nphases; i++) {
     phasespec spec;
     spec.movelist = (i == 0) ? nullptr : multiphase_movesets[i - 1].c_str();
-    spec.subgroupmoves =
-        (i < n) ? multiphase_movesets[i].c_str() : nullptr;
+    spec.subgroupmoves = (i < n) ? multiphase_movesets[i].c_str() : nullptr;
     spec.maxmem = maxmem;
     specs.push_back(spec);
   }
-  multiphase_solve(string(g_def_file), specs, p, pd.totsize);
+  return specs;
+}
+multiphase_state *multiphase_prepare_from_opts() {
+  if (g_def_file == nullptr)
+    error("! --multiphase: puzzle file path not available");
+  return multiphase_prepare(string(g_def_file), make_phase_specs());
+}
+void multiphase_solveit(puzdef &pd, setval &p) {
+  multiphase_state *st = multiphase_prepare_from_opts();
+  multiphase_solve_one(st, p, pd.totsize);
+  multiphase_destroy(st);
 }
 static struct solvecmd : cmd {
   solvecmd()
@@ -106,11 +113,19 @@ static struct solvecmd : cmd {
     g_opts.onlyimprovements = (argv[0][0][2] == 'i');
   }
   virtual void docommand(puzdef &pd) {
-    prunetable pt(pd, maxmem);
-    string emptys;
-    processlines(pd, [&](const puzdef &pd, setval p, const char *) {
-      solveit(pd, pt, emptys, p, gs);
-    });
+    if (!is_multiphase()) {
+      prunetable pt(pd, maxmem);
+      string emptys;
+      processlines(pd, [&](const puzdef &pd, setval p, const char *) {
+        solveit(pd, pt, emptys, p, gs);
+      });
+    } else {
+      multiphase_state *st = multiphase_prepare_from_opts();
+      processlines(pd, [&](const puzdef &, setval p, const char *) {
+        multiphase_solve_one(st, p, pd.totsize);
+      });
+      multiphase_destroy(st);
+    }
   };
 } registersolve;
 static struct solvep2cmd : cmd {

@@ -31,18 +31,35 @@ struct phasespec {
 };
 
 /*
- *   Run an N-phase solve.
- *
- *   twsfile — path to the .tws puzzle-definition file (read once per phase).
- *   specs   — one entry per phase; phase 0 gets the full scramble, phase N-1
- *             produces the final move sequence.
- *   start   — the scrambled position expressed in specs[0]'s puzzle encoding.
- *   totsize — pd.totsize for start (needed to copy the position bytes).
- *
- *   Returns the total move count of the best complete solution found,
- *   or -1 if no solution was found.
- *
- *   Solutions are printed to cout as they are found (shortest first).
+ *   Opaque handle to a set of pre-built phases (prunetables + puzdef).
+ *   Build once with multiphase_prepare(), solve many positions with
+ *   multiphase_solve_one(), then free with multiphase_destroy().
+ */
+struct multiphase_state;
+
+/*
+ *   Build all phase prunetables.  Expensive — call once, reuse for many
+ *   positions.  Returns a heap-allocated handle; caller must eventually
+ *   pass it to multiphase_destroy().
+ */
+multiphase_state *multiphase_prepare(const std::string &twsfile,
+                                     const std::vector<phasespec> &specs);
+
+/*
+ *   Solve one position using pre-built phases.  Thread-safe with respect
+ *   to the prunetables (each call re-spawns the pipeline worker threads).
+ *   Returns the best total move count, or -1 if no solution was found.
+ */
+int multiphase_solve_one(multiphase_state *st, const setval &start,
+                         int totsize);
+
+/*
+ *   Free a handle returned by multiphase_prepare().
+ */
+void multiphase_destroy(multiphase_state *st);
+
+/*
+ *   Convenience: prepare + solve_one + destroy.  Equivalent to the old API.
  */
 int multiphase_solve(const std::string &twsfile,
                      const std::vector<phasespec> &specs, const setval &start,

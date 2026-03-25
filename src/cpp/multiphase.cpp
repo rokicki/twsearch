@@ -78,6 +78,13 @@ struct phaseworker {
     queue_cv.notify_all();
   }
 
+  // Reset queue state between successive solves (prunetable is kept).
+  void reset() {
+    lock_guard<mutex> lk(queue_mutex);
+    work_queue.clear();
+    input_done = false;
+  }
+
   // Thread body: pull work items and solve them until input is exhausted.
   void run();
 };
@@ -248,11 +255,20 @@ static puzdef build_phase_puzdef(const string &twsfile, const phasespec &spec,
 // ---------------------------------------------------------------------------
 // Public entry point.
 // ---------------------------------------------------------------------------
-int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
-                     const setval &start, int totsize) {
+// ---------------------------------------------------------------------------
+// multiphase_state: holds pre-built phases for repeated solving.
+// ---------------------------------------------------------------------------
+struct multiphase_state {
+  vector<unique_ptr<phaseworker>> phases;
+  atomic<int> best_total{INT_MAX};
+  int totsize = 0;
+};
+
+multiphase_state *multiphase_prepare(const string &twsfile,
+                                     const vector<phasespec> &specs) {
   int n = (int)specs.size();
   if (n == 0)
-    return -1;
+    return nullptr;
 
   // Derive a base name from the puzzle file path (strip dirs and extension).
   string basename;
@@ -269,29 +285,22 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     }
   }
 
-  // Shared best total (starts at INT_MAX so any solution improves it).
-  atomic<int> best_total(INT_MAX);
-
-  // Build all phases sequentially (prunetable construction is not thread-safe
-  // across independent instances because of global thread-slot usage during
-  // fill; build them one at a time then run them concurrently).
-  vector<unique_ptr<phaseworker>> phases;
-  phases.reserve(n);
+  auto *st = new multiphase_state();
+  st->phases.reserve(n);
 
   // Divide threads evenly across phases.
   int threads_per_phase = max(1, numthreads / n);
 
+  // Build all phases sequentially (prunetable construction is not thread-safe
+  // across independent instances; build one at a time, run concurrently).
   for (int i = 0; i < n; i++) {
     auto pw = make_unique<phaseworker>();
     pw->phase_idx = i;
     pw->total_phases = n;
-    pw->best_total = &best_total;
+    pw->best_total = &st->best_total;
     pw->pd = build_phase_puzdef(twsfile, specs[i], basename, i);
 
-    // Thread-pool slice for this phase.  Each phase gets its own contiguous
-    // slice of the global p_thread[] array so concurrent fills and solves
-    // don't race on thread handles.  When numthreads < n (more phases than
-    // threads), some phases share indices but still get at least 1 thread.
+    // Thread-pool slice for this phase.
     int tbase = i * threads_per_phase;
     int tcount = (i == n - 1) ? max(1, numthreads - tbase)
                                : threads_per_phase;
@@ -301,40 +310,63 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     pw->base_opts.solutionsneeded = g_opts.solutionsneeded;
     pw->base_opts.phase_id = i;
 
-    // Memory for this phase's pruning table.
     ull mem = specs[i].maxmem;
     pw->pt = make_unique<prunetable>(pw->pd, mem, i);
-    // Tell the prunetable which p_thread[] slots to use for fill workers,
-    // matching the same slice used by solve() for this phase.
     pw->pt->thread_base = tbase;
     pw->pt->thread_count = tcount;
 
-    phases.push_back(std::move(pw));
+    st->phases.push_back(std::move(pw));
   }
 
   // Link the chain.
   for (int i = 0; i < n - 1; i++)
-    phases[i]->next = phases[i + 1].get();
+    st->phases[i]->next = st->phases[i + 1].get();
+
+  return st;
+}
+
+int multiphase_solve_one(multiphase_state *st, const setval &start,
+                         int totsize) {
+  if (!st || st->phases.empty())
+    return -1;
+  int n = (int)st->phases.size();
+
+  // Reset state for this solve.
+  st->best_total.store(INT_MAX, memory_order_relaxed);
+  for (auto &pw : st->phases)
+    pw->reset();
 
   // Start each phase's worker thread.
   vector<thread> threads;
   threads.reserve(n);
   for (int i = 0; i < n; i++)
-    threads.emplace_back([&phases, i] { phases[i]->run(); });
+    threads.emplace_back([&st, i] { st->phases[i]->run(); });
 
   // Enqueue the starting position into phase 0 and mark its input done.
   {
     phasework pw;
     pw.state.assign(start.dat, start.dat + totsize);
     pw.depth_so_far = 0;
-    phases[0]->enqueue(std::move(pw));
+    st->phases[0]->enqueue(std::move(pw));
   }
-  phases[0]->signal_input_done();
+  st->phases[0]->signal_input_done();
 
   // Wait for all phases to finish.
   for (auto &t : threads)
     t.join();
 
-  int bt = best_total.load();
+  int bt = st->best_total.load();
   return (bt == INT_MAX) ? -1 : bt;
+}
+
+void multiphase_destroy(multiphase_state *st) { delete st; }
+
+int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
+                     const setval &start, int totsize) {
+  multiphase_state *st = multiphase_prepare(twsfile, specs);
+  if (!st)
+    return -1;
+  int result = multiphase_solve_one(st, start, totsize);
+  multiphase_destroy(st);
+  return result;
 }

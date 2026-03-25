@@ -1,5 +1,6 @@
 #ifndef CMDLINEOPS_H
 #include "generatingset.h"
+#include "multiphase.h"
 #include "prunetable.h"
 #include "puzdef.h"
 #include "twsearch.h"
@@ -14,6 +15,8 @@
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs);
 // Returns true if --multiphase was specified.
 bool is_multiphase();
+// Build multiphase phases from command-line options (call once, reuse).
+multiphase_state *multiphase_prepare_from_opts();
 // Run a multiphase solve for an already-computed start position.
 void multiphase_solveit(puzdef &pd, setval &p);
 extern vector<loosetype> uniqwork;

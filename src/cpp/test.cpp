@@ -1,5 +1,6 @@
 #include "test.h"
 #include "cmds.h"
+#include "cmdlineops.h"
 #include "generatingset.h"
 #include "prunetable.h"
 #include "solve.h"
@@ -119,16 +120,33 @@ void timingtest(puzdef &pd) {
 void solvetest(puzdef &pd, int scramblemoves, generatingset *gs) {
   stacksetval p1(pd), p2(pd);
   pd.assignpos(p1, pd.solved);
-  prunetable pt(pd, maxmem);
-  for (int tr = 0;; tr++) {
-    solve(pd, pt, p1, gs);
-    for (ll i = 0; i < scramblemoves; i++) {
-      while (1) {
-        int rmv = myrand(pd.moves.size());
-        pd.mul(p1, pd.moves[rmv].pos, p2);
-        if (pd.legalstate(p2)) {
-          pd.assignpos(p1, p2);
-          break;
+  if (!is_multiphase()) {
+    prunetable pt(pd, maxmem);
+    for (int tr = 0;; tr++) {
+      solve(pd, pt, p1, gs);
+      for (ll i = 0; i < scramblemoves; i++) {
+        while (1) {
+          int rmv = myrand(pd.moves.size());
+          pd.mul(p1, pd.moves[rmv].pos, p2);
+          if (pd.legalstate(p2)) {
+            pd.assignpos(p1, p2);
+            break;
+          }
+        }
+      }
+    }
+  } else {
+    multiphase_state *st = multiphase_prepare_from_opts();
+    for (int tr = 0;; tr++) {
+      multiphase_solve_one(st, p1, pd.totsize);
+      for (ll i = 0; i < scramblemoves; i++) {
+        while (1) {
+          int rmv = myrand(pd.moves.size());
+          pd.mul(p1, pd.moves[rmv].pos, p2);
+          if (pd.legalstate(p2)) {
+            pd.assignpos(p1, p2);
+            break;
+          }
         }
       }
     }
