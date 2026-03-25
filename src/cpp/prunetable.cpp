@@ -147,8 +147,9 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
  *   We do this with a right shift, then a multiply, then another
  *   right shift, always staying 2^64 bytes.
  */
-prunetable::prunetable(const puzdef &pd, ull maxmem)
+prunetable::prunetable(const puzdef &pd, ull maxmem, int phase_id_)
     : fillworkers(new fillworker[MAXTHREADS]) {
+  phase_id = phase_id_;
   pdp = &pd;
   totsize = pd.totsize;
   ull bytesize = 2048;
@@ -181,15 +182,15 @@ prunetable::prunetable(const puzdef &pd, ull maxmem)
   while ((size >> shardshift) > MEMSHARDS)
     shardshift++;
   if (quiet == 0)
-    cout << log_prefix << "For memsize " << maxmem << " sh1 " << shift1
-         << " mul " << memmul << " sh2 " << shift2 << " shardshift "
-         << shardshift << endl;
+    cout << log_prefix(phase_id) << "For memsize " << maxmem << " sh1 "
+         << shift1 << " mul " << memmul << " sh2 " << shift2
+         << " shardshift " << shardshift << endl;
   totpop = 0;
   ptotpop = 0;
   baseval = 0;
   wval = 0;
   if (quiet == 0)
-    cout << log_prefix << "Trying to allocate "
+    cout << log_prefix(phase_id) << "Trying to allocate "
          << (CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) << endl;
   amem = mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1);
   if (mem == 0)
@@ -208,7 +209,7 @@ prunetable::prunetable(const puzdef &pd, ull maxmem)
     dtabs[i] = 0;
   if (!readpt(pd)) {
     if (quiet == 0)
-      cout << log_prefix << "Initializing memory in " << duration()
+      cout << log_prefix(phase_id) << "Initializing memory in " << duration()
            << endl << flush;
     baseval = 1;
     filltable(pd, 0);
@@ -227,7 +228,8 @@ void prunetable::filltable(const puzdef &pd, int d) {
   wbval = min(d, 14);
   ll ofillcnt = fillcnt;
   if (quiet == 0)
-    cout << log_prefix << "Filling depth " << d << " val " << wval << endl;
+    cout << log_prefix(phase_id) << "Filling depth " << d << " val " << wval
+         << endl;
   workchunks = makeworkchunks(pd, d, pd.solved);
   workat = 0;
   int max_threads = (thread_count > 0) ? thread_count : numthreads;
@@ -248,7 +250,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
   if (quiet == 0) {
     double dur = duration();
     double rate = (fillcnt - ofillcnt) / dur / 1e6;
-    cout << log_prefix << "Filled depth " << d << " val " << wval
+    cout << log_prefix(phase_id) << "Filled depth " << d << " val " << wval
          << " saw " << popped << " (" << (fillcnt - ofillcnt) << ") in " << dur
          << " rate " << rate << endl;
   }

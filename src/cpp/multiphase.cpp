@@ -226,7 +226,7 @@ void phaseworker::run() {
 // per-phase move filter and subgroup transformation.
 // ---------------------------------------------------------------------------
 static puzdef build_phase_puzdef(const string &twsfile, const phasespec &spec,
-                                 const string &basename) {
+                                 const string &basename, int phase_id) {
   ifstream f(twsfile);
   if (f.fail())
     error("! multiphase: could not open puzzle file ", twsfile.c_str());
@@ -238,10 +238,10 @@ static puzdef build_phase_puzdef(const string &twsfile, const phasespec &spec,
   if (spec.subgroupmoves)
     runsubgroup(pd, spec.subgroupmoves);
   if (pd.baserotations.size())
-    calcrotations(pd);
-  calculatesizes(pd);
-  calclooseper(pd);
-  makecanonstates(pd);
+    calcrotations(pd, phase_id);
+  calculatesizes(pd, phase_id);
+  calclooseper(pd, phase_id);
+  makecanonstates(pd, phase_id);
   return pd;
 }
 
@@ -286,8 +286,7 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     pw->phase_idx = i;
     pw->total_phases = n;
     pw->best_total = &best_total;
-    log_prefix = "Phase " + to_string(i + 1) + ": ";
-    pw->pd = build_phase_puzdef(twsfile, specs[i], basename);
+    pw->pd = build_phase_puzdef(twsfile, specs[i], basename, i);
 
     // Thread-pool slice for this phase.  Each phase gets its own contiguous
     // slice of the global p_thread[] array so concurrent fills and solves
@@ -300,10 +299,11 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     pw->base_opts.thread_count = tcount;
     pw->base_opts.noearlysolutions = 1;
     pw->base_opts.solutionsneeded = g_opts.solutionsneeded;
+    pw->base_opts.phase_id = i;
 
     // Memory for this phase's pruning table.
     ull mem = specs[i].maxmem;
-    pw->pt = make_unique<prunetable>(pw->pd, mem);
+    pw->pt = make_unique<prunetable>(pw->pd, mem, i);
     // Tell the prunetable which p_thread[] slots to use for fill workers,
     // matching the same slice used by solve() for this phase.
     pw->pt->thread_base = tbase;
@@ -311,7 +311,6 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
 
     phases.push_back(std::move(pw));
   }
-  log_prefix = "";
 
   // Link the chain.
   for (int i = 0; i < n - 1; i++)

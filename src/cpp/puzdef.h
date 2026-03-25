@@ -427,7 +427,7 @@ inline allocsetval &allocsetval::operator=(allocsetval &&v) {
   sz = v.sz;
   return *this;
 }
-void calculatesizes(puzdef &pd);
+void calculatesizes(puzdef &pd, int phase_id = -1);
 void domove(const puzdef &pd, setval p, setval pos, setval pt);
 void domove(const puzdef &pd, setval p, setval pos);
 void domove(const puzdef &pd, setval p, int mv);

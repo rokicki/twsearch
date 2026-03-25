@@ -189,7 +189,7 @@ void puzdef::inv(const setval a, setval b) const {
     bp += 2 * n;
   }
 }
-void calculatesizes(puzdef &pd) {
+void calculatesizes(puzdef &pd, int phase_id) {
   ull gllstates = 1;
   double glogstates = 0;
   dllstates = 1;
@@ -254,15 +254,15 @@ void calculatesizes(puzdef &pd) {
   pd.logstates = glogstates;
   if (glogstates < 64) {
     if (quiet == 0)
-      cout << log_prefix << "State size is " << gllstates << " log2 "
+      cout << log_prefix(phase_id) << "State size is " << gllstates << " log2 "
            << glogstates << endl;
   } else {
     double log10v = glogstates / log2(10);
     double expo = floor(log10v);
     double mant = pow(10., log10v - expo);
     if (quiet == 0)
-      cout << log_prefix << "State size is about " << mant << " x 10^" << expo
-           << " log2 " << glogstates << endl;
+      cout << log_prefix(phase_id) << "State size is about " << mant
+           << " x 10^" << expo << " log2 " << glogstates << endl;
   }
 }
 void domove(const puzdef &pd, setval p, setval pos, setval pt) {

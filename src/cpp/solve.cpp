@@ -370,15 +370,14 @@ int solve(const puzdef &pd, prunetable &pt, const setval p,
     if (verbose) {
       if (verbose > 1 || dur > 1) {
         if (totextra == 0) {
-          cout << log_prefix << "Depth " << d << " in " << dur << " lookups "
-               << totlookups - lastlookups << " rate " << rate << endl
-               << flush;
+          cout << log_prefix(ctx_.opts.phase_id) << "Depth " << d << " in "
+               << dur << " lookups " << totlookups - lastlookups << " rate "
+               << rate << endl << flush;
         } else {
-          cout << log_prefix << "Depth " << d << " in " << dur << " probes "
-               << totlookups - lastlookups << " nodes "
+          cout << log_prefix(ctx_.opts.phase_id) << "Depth " << d << " in "
+               << dur << " probes " << totlookups - lastlookups << " nodes "
                << totlookups - lastlookups - totextra + lastextra << " rate "
-               << rate << endl
-               << flush;
+               << rate << endl << flush;
         }
       }
     }

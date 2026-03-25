@@ -91,7 +91,7 @@ struct prunetable {
       pthread_mutex_init(&memshards[i].mutex, NULL);
 #endif
   }
-  prunetable(const puzdef &pd, ull maxmem);
+  prunetable(const puzdef &pd, ull maxmem, int phase_id_ = -1);
   prunetable(const prunetable &) = delete;
   prunetable(prunetable &&) noexcept = delete;
   prunetable &operator=(const prunetable &) = delete;
@@ -169,6 +169,7 @@ struct prunetable {
   int wval, wbval;
   int thread_base = 0;  // first p_thread[] slot used by filltable
   int thread_count = 0; // number of threads for fill (0 = use numthreads)
+  int phase_id = -1;    // passed to log_prefix() for output lines
   uchar codewidths[544];
   ull codevals[544];
   decompinfo *dtabs[7];

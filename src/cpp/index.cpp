@@ -306,7 +306,7 @@ ull denseunpack_ordered(const puzdef &pd, ull v, setval pos) {
   }
   return r;
 }
-void calclooseper(const puzdef &pd) {
+void calclooseper(const puzdef &pd, int phase_id) {
   // don't do this more than once.
   if (looseper)
     return;
@@ -338,7 +338,7 @@ void calclooseper(const puzdef &pd) {
     usehashenc += 256;
   }
   if (quiet == 0)
-    cout << log_prefix << "Requiring " << bits << " bits "
+    cout << log_prefix(phase_id) << "Requiring " << bits << " bits "
          << looseper * sizeof(loosetype) << " bytes per entry; "
          << (looseiper * sizeof(loosetype)) << " from identity." << endl;
 }

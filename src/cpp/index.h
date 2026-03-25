@@ -8,7 +8,7 @@
  */
 extern vector<pair<ull, int>> parts;
 extern int looseper, looseiper, basebits, usehashenc;
-void calclooseper(const puzdef &pd);
+void calclooseper(const puzdef &pd, int phase_id = -1);
 ull permtoindex(const uchar *perm, int n);
 void indextoperm(uchar *perm, ull ind, int n);
 ull permtoindex2(const uchar *perm, int n);

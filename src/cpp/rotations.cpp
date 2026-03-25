@@ -74,7 +74,7 @@ void calcrotinvmap(puzdef &pd) {
       error("! internal error");
   }
 }
-void calcrotations(puzdef &pd) {
+void calcrotations(puzdef &pd, int phase_id) {
   if (disablesymmetry)
     return;
   stacksetval pw(pd), p1(pd);
@@ -151,7 +151,8 @@ void calcrotations(puzdef &pd) {
   calcrotinvs(pd);
   calcrotinvmap(pd);
   if (quiet == 0)
-    cout << log_prefix << "Rotation group size is " << q.size() << endl;
+    cout << log_prefix(phase_id) << "Rotation group size is " << q.size()
+         << endl;
   // test that for a random p,
   //  solved * (rotinv * p) == rotinvmap * (solved * p)
   /*

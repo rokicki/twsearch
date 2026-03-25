@@ -1,6 +1,6 @@
 #ifndef ROTATIONS_H
 #include "puzdef.h"
-void calcrotations(puzdef &pd);
+void calcrotations(puzdef &pd, int phase_id = -1);
 int slowmodm2(const puzdef &, const setval, setval);
 const int MODINV_FORWARD = 1 << 24;
 const int MODINV_BACKWARD = 2 * MODINV_FORWARD;

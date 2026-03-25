@@ -12,7 +12,7 @@ using namespace std;
  *   you can see how effective each strategy is for a given puzzle, and
  *   from that decide which to use.
  */
-void makecanonstates(puzdef &pd);
+void makecanonstates(puzdef &pd, int phase_id = -1);
 extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq);
 extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq);
 extern int ccount, canonlim;

@@ -7,7 +7,7 @@
 #include <unordered_set>
 static vector<allocsetval> posns;
 static vector<int> movehist;
-void makecanonstates(puzdef &pd) {
+void makecanonstates(puzdef &pd, int phase_id) {
   int nbase = pd.basemoves.size();
   if (quarter) { // rewrite base
     int at = 1;
@@ -146,7 +146,7 @@ void makecanonstates(puzdef &pd) {
     pd.canonnext.push_back(nextstate);
   }
   if (quiet == 0)
-    cout << log_prefix << "Found " << statecount
+    cout << log_prefix(phase_id) << "Found " << statecount
          << " canonical move states." << endl;
   /*
     for (int i=0; i<(int)pd.canonnext.size(); i++) {

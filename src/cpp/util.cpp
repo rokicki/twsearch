@@ -14,7 +14,11 @@ int verbose;
 ll maxmem;
 int quarter;
 int quiet;
-string log_prefix;
+string log_prefix(int phase_id) {
+  if (phase_id < 0)
+    return "";
+  return "Phase " + to_string(phase_id + 1) + ": ";
+}
 double walltime() {
 #ifdef _WIN64
   return GetTickCount() / 1000.0;
