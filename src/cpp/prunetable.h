@@ -169,6 +169,7 @@ struct prunetable {
   int wval, wbval;
   int thread_base = 0;  // first p_thread[] slot used by filltable
   int thread_count = 0; // number of threads for fill (0 = use numthreads)
+  int phase_id = -1;    // >= 0 during multiphase: prefixes output "Phase N: "
   uchar codewidths[544];
   ull codevals[544];
   decompinfo *dtabs[7];

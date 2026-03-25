@@ -369,6 +369,8 @@ int solve(const puzdef &pd, prunetable &pt, const setval p,
     double rate = (totlookups - lastlookups - totextra + lastextra) / dur / 1e6;
     if (verbose) {
       if (verbose > 1 || dur > 1) {
+        if (ctx_.opts.phase_id >= 0)
+          cout << "Phase " << ctx_.opts.phase_id + 1 << ": ";
         if (totextra == 0) {
           cout << "Depth " << d << " in " << dur << " lookups "
                << totlookups - lastlookups << " rate " << rate << endl

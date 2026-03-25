@@ -1,13 +1,24 @@
 TWSEARCH_VERSION=v0.0.0
 
-.PHONY: build-cpp
-build-cpp: build/bin/twsearch
+# Build variant: release (default) or asan
+BUILD ?= release
 
 # MAKEFLAGS += -j
-# CXXFLAGS = -fsanitize=address -fsanitize=undefined -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
-CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
+ifeq ($(BUILD),asan)
+  CXXFLAGS = -fsanitize=address,undefined -O1 -fno-omit-frame-pointer \
+      -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
+  LDFLAGS = -lpthread -fsanitize=address,undefined
+  BUILDDIR = build-asan
+else
+  CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic \
+      -std=c++20 -g -Wsign-compare
+  LDFLAGS = -lpthread
+  BUILDDIR = build
+endif
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
-LDFLAGS = -lpthread
+
+.PHONY: build-cpp
+build-cpp: $(BUILDDIR)/bin/twsearch
 
 # TODO: why does this always trigger rebuilds when using as a target dependency?
 CPP_MAKEFILE = Makefile/cpp.Makefile
@@ -28,16 +39,39 @@ EXTRASOURCE = src/cpp/antipode.cpp \
 
 CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
-OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
-   build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
-   build/cpp/index.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/pruneio.o build/cpp/puzdef.o \
-   build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
-   build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
-   build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
-   build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o \
-   build/cpp/cmds.o build/cpp/beamsearch.o build/cpp/subgroup.o \
-   build/cpp/totalvar.o build/cpp/multiphase.o \
-   build/cpp/vendor/cityhash/city.o
+OBJ = \
+   $(BUILDDIR)/cpp/antipode.o \
+   $(BUILDDIR)/cpp/canon.o \
+   $(BUILDDIR)/cpp/cmdlineops.o \
+   $(BUILDDIR)/cpp/filtermoves.o \
+   $(BUILDDIR)/cpp/findalgo.o \
+   $(BUILDDIR)/cpp/generatingset.o \
+   $(BUILDDIR)/cpp/god.o \
+   $(BUILDDIR)/cpp/index.o \
+   $(BUILDDIR)/cpp/parsemoves.o \
+   $(BUILDDIR)/cpp/prunetable.o \
+   $(BUILDDIR)/cpp/pruneio.o \
+   $(BUILDDIR)/cpp/puzdef.o \
+   $(BUILDDIR)/cpp/readksolve.o \
+   $(BUILDDIR)/cpp/solve.o \
+   $(BUILDDIR)/cpp/test.o \
+   $(BUILDDIR)/cpp/threads.o \
+   $(BUILDDIR)/cpp/twsearch.o \
+   $(BUILDDIR)/cpp/util.o \
+   $(BUILDDIR)/cpp/workchunks.o \
+   $(BUILDDIR)/cpp/rotations.o \
+   $(BUILDDIR)/cpp/orderedgs.o \
+   $(BUILDDIR)/cpp/coset.o \
+   $(BUILDDIR)/cpp/descsets.o \
+   $(BUILDDIR)/cpp/ordertree.o \
+   $(BUILDDIR)/cpp/unrotate.o \
+   $(BUILDDIR)/cpp/shorten.o \
+   $(BUILDDIR)/cpp/cmds.o \
+   $(BUILDDIR)/cpp/beamsearch.o \
+   $(BUILDDIR)/cpp/subgroup.o \
+   $(BUILDDIR)/cpp/totalvar.o \
+   $(BUILDDIR)/cpp/multiphase.o \
+   $(BUILDDIR)/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
@@ -47,23 +81,30 @@ HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h \
    src/cpp/totalvar.h src/cpp/subgroup.h src/cpp/multiphase.h
 
-build/cpp:
-	mkdir -p build/cpp
+$(BUILDDIR)/cpp:
+	mkdir -p $(BUILDDIR)/cpp
 
-build/cpp/%.o: src/cpp/%.cpp Makefiles/cpp.Makefile $(HSOURCE) | build/cpp
-	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
+$(BUILDDIR)/cpp/%.o: src/cpp/%.cpp Makefiles/cpp.Makefile $(HSOURCE) \
+    | $(BUILDDIR)/cpp
+	$(CXX) -I./src/cpp/vendor/cityhash/src \
+	    -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/cpp/vendor/cityhash:
-	mkdir -p build/cpp/vendor/cityhash
+$(BUILDDIR)/cpp/vendor/cityhash:
+	mkdir -p $(BUILDDIR)/cpp/vendor/cityhash
 
-build/cpp/vendor/cityhash/%.o: src/cpp/vendor/cityhash/src/%.cc Makefiles/cpp.Makefile | build/cpp/vendor/cityhash
-	$(CXX) -I./src/cpp/vendor/cityhash/src -c $(CXXFLAGS) $(FLAGS) $< -o $@
+$(BUILDDIR)/cpp/vendor/cityhash/%.o: \
+    src/cpp/vendor/cityhash/src/%.cc \
+    Makefiles/cpp.Makefile \
+    | $(BUILDDIR)/cpp/vendor/cityhash
+	$(CXX) -I./src/cpp/vendor/cityhash/src \
+	    -c $(CXXFLAGS) $(FLAGS) $< -o $@
 
-build/bin/:
-	mkdir -p build/bin/
+$(BUILDDIR)/bin/:
+	mkdir -p $(BUILDDIR)/bin/
 
-build/bin/twsearch: $(OBJ) Makefiles/cpp.Makefile | build/bin/
-	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
+$(BUILDDIR)/bin/twsearch: $(OBJ) Makefiles/cpp.Makefile \
+    | $(BUILDDIR)/bin/
+	$(CXX) $(CXXFLAGS) -o $(BUILDDIR)/bin/twsearch $(OBJ) $(LDFLAGS)
 
 .PHONY: lint-cpp
 lint-cpp:
@@ -75,12 +116,12 @@ format-cpp:
 
 .PHONY: cpp-clean
 cpp-clean:
-	rm -rf ./build
+	rm -rf ./$(BUILDDIR)
 
 # C++ and `twsearch-cpp-wrapper` testing
 
 .PHONY: test-cpp-cli
-test-cpp-cli: build/bin/twsearch
+test-cpp-cli: $(BUILDDIR)/bin/twsearch
 	cargo run --package twsearch-cpp-wrapper \
 		--example test-cpp-cli
 

@@ -299,6 +299,7 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     pw->base_opts.thread_count = tcount;
     pw->base_opts.noearlysolutions = 1;
     pw->base_opts.solutionsneeded = g_opts.solutionsneeded;
+    pw->base_opts.phase_id = i;
 
     // Memory for this phase's pruning table.
     ull mem = specs[i].maxmem;
@@ -307,6 +308,7 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     // matching the same slice used by solve() for this phase.
     pw->pt->thread_base = tbase;
     pw->pt->thread_count = tcount;
+    pw->pt->phase_id = i;
 
     phases.push_back(std::move(pw));
   }

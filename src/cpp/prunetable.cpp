@@ -223,8 +223,11 @@ void prunetable::filltable(const puzdef &pd, int d) {
   popped = 0;
   wbval = min(d, 14);
   ll ofillcnt = fillcnt;
-  if (quiet == 0)
-    cout << "Filling depth " << d << " val " << wval << flush;
+  if (quiet == 0) {
+    if (phase_id >= 0)
+      cout << "Phase " << phase_id + 1 << ": ";
+    cout << "Filling depth " << d << " val " << wval << endl;
+  }
   workchunks = makeworkchunks(pd, d, pd.solved);
   workat = 0;
   int max_threads = (thread_count > 0) ? thread_count : numthreads;
@@ -245,9 +248,11 @@ void prunetable::filltable(const puzdef &pd, int d) {
   if (quiet == 0) {
     double dur = duration();
     double rate = (fillcnt - ofillcnt) / dur / 1e6;
-    cout << " saw " << popped << " (" << (fillcnt - ofillcnt) << ") in " << dur
-         << " rate " << rate << endl
-         << flush;
+    if (phase_id >= 0)
+      cout << "Phase " << phase_id + 1 << ": ";
+    cout << "Filled depth " << d << " val " << wval
+         << " saw " << popped << " (" << (fillcnt - ofillcnt) << ") in " << dur
+         << " rate " << rate << endl;
   }
   ptotpop = totpop;
   totpop += popped;

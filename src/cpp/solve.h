@@ -40,6 +40,7 @@ struct solveoptions {
   // If true, suppresses checkextend() calls inside solve().  Used by
   // concurrent multiphase solvers to avoid thread-slot collisions.
   int no_checkextend = 0;
+  int phase_id = -1;    // >= 0 during multiphase: prefixes output "Phase N: "
   std::function<int(setval &, const vector<int> &, int, int)> callback;
   std::function<int(int)> flushback;
 };
