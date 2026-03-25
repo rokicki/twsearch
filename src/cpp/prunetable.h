@@ -91,7 +91,7 @@ struct prunetable {
       pthread_mutex_init(&memshards[i].mutex, NULL);
 #endif
   }
-  prunetable(const puzdef &pd, ull maxmem);
+  prunetable(const puzdef &pd, ull maxmem, int phase_id_ = -1);
   prunetable(const prunetable &) = delete;
   prunetable(prunetable &&) noexcept = delete;
   prunetable &operator=(const prunetable &) = delete;

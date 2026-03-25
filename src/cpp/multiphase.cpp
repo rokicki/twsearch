@@ -303,12 +303,11 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
 
     // Memory for this phase's pruning table.
     ull mem = specs[i].maxmem;
-    pw->pt = make_unique<prunetable>(pw->pd, mem);
+    pw->pt = make_unique<prunetable>(pw->pd, mem, i);
     // Tell the prunetable which p_thread[] slots to use for fill workers,
     // matching the same slice used by solve() for this phase.
     pw->pt->thread_base = tbase;
     pw->pt->thread_count = tcount;
-    pw->pt->phase_id = i;
 
     phases.push_back(std::move(pw));
   }

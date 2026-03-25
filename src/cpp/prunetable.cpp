@@ -147,8 +147,9 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
  *   We do this with a right shift, then a multiply, then another
  *   right shift, always staying 2^64 bytes.
  */
-prunetable::prunetable(const puzdef &pd, ull maxmem)
+prunetable::prunetable(const puzdef &pd, ull maxmem, int phase_id_)
     : fillworkers(new fillworker[MAXTHREADS]) {
+  phase_id = phase_id_;
   pdp = &pd;
   totsize = pd.totsize;
   ull bytesize = 2048;
