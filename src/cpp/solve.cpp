@@ -1,37 +1,22 @@
 #include "solve.h"
 #include "cmdlineops.h"
 #include <iostream>
-ll solutionsfound = 0;
-ll solutionsneeded = 1;
-int noearlysolutions;
-int onlyimprovements;
-int alloptimal;
-int phase2;
-int optmindepth;
-string lastsolution;
-int globalinputmovecount;
-int didprepass;
-int requesteduthreading = 4;
-int workinguthreading = 0;
-solveworker solveworkers[MAXTHREADS];
-int (*callback)(setval &pos, const vector<int> &moves, int d, int id);
-int (*flushback)(int d);
-static vector<vector<int>> randomized;
-// TODO: these next two need to be put into a solve-specific object if we
-// ever want to support multiple concurrent solves (such as in a
-// multi-phase solver).
-static vector<ull> workchunks;
-vector<workerparam> workerparams;
-static int workat;
+solveoptions g_opts;
 void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
                                int id),
                       int (*g)(int)) {
-  callback = f;
-  flushback = g;
+  g_opts.callback = f;
+  g_opts.flushback = g;
 }
+struct solvethreadparam {
+  workerparam *wp;
+  solvecontext *ctx;
+};
 void *threadworker(void *o) {
-  workerparam *wp = (workerparam *)o;
-  solveworkers[wp->tid].solveiter(wp->pd, wp->pt, solveworkers[wp->tid].p);
+  solvethreadparam *sp = (solvethreadparam *)o;
+  int tid = sp->wp->tid;
+  sp->ctx->workers[tid].solveiter(sp->wp->pd, sp->wp->pt,
+                                  sp->ctx->workers[tid].p);
   return 0;
 }
 void microthread::init(const puzdef &pd, int d_, int tid_, const setval p_) {
@@ -55,7 +40,8 @@ void microthread::init(const puzdef &pd, int d_, int tid_, const setval p_) {
   lookups = 0;
   extraprobes = 0;
 }
-void solveworker::init(int d_, int tid_, const setval p_) {
+void solveworker::init(int d_, int tid_, const setval p_, solvecontext *ctx_) {
+  ctx = ctx_;
   checkincrement = 10000 + myrand(10000);
   checktarget = checkincrement;
   d = d_;
@@ -63,28 +49,25 @@ void solveworker::init(int d_, int tid_, const setval p_) {
   p = p_;
   rover = 0;
 }
-int satisfiedsolutioncount() {
-  return alloptimal == 0 && solutionsfound >= solutionsneeded;
-}
 int microthread::possibsolution(const puzdef &pd) {
-  if (callback) {
-    return callback(posns[sp], movehist, d, tid);
+  if (ctx->opts.callback) {
+    return ctx->opts.callback(posns[sp], movehist, d, tid);
   }
   if (pd.equivpos(posns[sp], pd.solved)) {
     int r = 1;
     get_global_lock();
-    solutionsfound++;
-    lastsolution.clear();
+    ctx->solutionsfound++;
+    ctx->lastsolution.clear();
     if (d == 0) // allow null solution to trigger
       cout << " ";
     for (int i = 0; i < d; i++) {
       cout << " " << pd.moves[movehist[i]].name;
       if (i > 0)
-        lastsolution += " ";
-      lastsolution += pd.moves[movehist[i]].name;
+        ctx->lastsolution += " ";
+      ctx->lastsolution += pd.moves[movehist[i]].name;
     }
     cout << endl << flush;
-    if (!satisfiedsolutioncount())
+    if (!ctx->satisfied())
       r = 0;
     release_global_lock();
     return r;
@@ -96,9 +79,9 @@ int microthread::getwork(const puzdef &pd, prunetable &pt) {
     int w = -1;
     int finished = 0;
     get_global_lock();
-    finished = satisfiedsolutioncount();
-    if (workat < (int)workchunks.size())
-      w = workat++;
+    finished = ctx->satisfied();
+    if (ctx->workat < (int)ctx->workchunks.size())
+      w = ctx->workat++;
     release_global_lock();
     if (finished || w < 0) {
       this->finished = 1;
@@ -110,7 +93,8 @@ int microthread::getwork(const puzdef &pd, prunetable &pt) {
 }
 int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
   int active = 0;
-  for (int uid = 0; uid < workinguthreading; uid++) {
+  for (int uid = 0; uid < ctx->workinguthreading; uid++) {
+    uthr[uid].ctx = ctx;
     uthr[uid].init(pd, d, tid, p);
     uthr[uid].finished = 0;
     if (uthr[uid].getwork(pd, pt)) {
@@ -121,7 +105,7 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
   }
   for (ll checkcnt = 0; active; checkcnt++) {
     int uid = rover++;
-    if (rover >= workinguthreading)
+    if (rover >= ctx->workinguthreading)
       rover = 0;
     if (uthr[uid].finished)
       continue;
@@ -141,7 +125,7 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     if (checkcnt > checktarget) {
       int finished = 0;
       get_global_lock();
-      finished = satisfiedsolutioncount();
+      finished = ctx->satisfied();
       checkincrement += checkincrement / 100;
       checktarget = checkcnt + checkincrement;
       release_global_lock();
@@ -166,10 +150,10 @@ int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
   ull mask, skipbase;
   if (v > togo) {
     v = togo - v + 1;
-  } else if (v == 0 && togo == 1 && didprepass &&
+  } else if (v == 0 && togo == 1 && ctx->opts.didprepass &&
              pd.comparepos(posns[sp], pd.solved) == 0) {
     v = 0;
-  } else if (v == 0 && togo > 0 && noearlysolutions &&
+  } else if (v == 0 && togo > 0 && ctx->opts.noearlysolutions &&
              pd.equivpos(posns[sp], pd.solved)) {
     v = 0;
   } else if (togo == 0) {
@@ -206,7 +190,7 @@ upstack:
     goto upstack;
   if (v < 0) {
     if (!quarter && v == -1) {
-      m = randomstart ? randomized[togo][mi] : mi;
+      m = ctx->opts.randomstart ? ctx->randomized[togo][mi] : mi;
       if (pd.moves[m].base < 64)
         skipbase |= 1LL << pd.moves[m].base;
     } else {
@@ -219,7 +203,7 @@ downstack:
     v = 0;
     goto upstack;
   }
-  m = randomstart ? randomized[togo][mi] : mi;
+  m = ctx->opts.randomstart ? ctx->randomized[togo][mi] : mi;
   const moove &mv = pd.moves[m];
   if (!quarter && mv.base < 64 && ((skipbase >> mv.base) & 1))
     goto downstack;
@@ -238,7 +222,7 @@ downstack:
   return 3;
 }
 int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
-  ull initmoves = workchunks[w];
+  ull initmoves = ctx->workchunks[w];
   int nmoves = pd.moves.size();
   sp = 0;
   st = 0;
@@ -261,9 +245,10 @@ int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
   innersetup(pt);
   return 1;
 }
-int maxdepth = 1000000000;
 int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
-  solutionsfound = solutionsneeded;
+  solvecontext ctx_;
+  ctx_.opts = g_opts;
+  ctx_.solutionsfound = ctx_.opts.solutionsneeded;
   if (gs) {
     stacksetval solinv(pd), premul(pd);
     if (!pd.invertible())
@@ -271,7 +256,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     pd.inv(pd.solved, solinv);
     pd.mul(solinv, p, premul);
     if (!gs->resolve(premul)) {
-      if (!phase2)
+      if (!ctx_.opts.phase2)
         cout << "Ignoring unsolvable position." << endl;
       return -1;
     }
@@ -281,21 +266,21 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   ull totlookups = 0;
   ull totextra = 0;
   int initd = pt.lookup(p, &looktmp);
-  solutionsfound = 0;
+  ctx_.solutionsfound = 0;
   int hid = 0;
-  randomized.clear();
+  ctx_.randomized.clear();
   ull lastlookups = 0;
   ull lastextra = 0;
   pt.checkextend(pd); // fill table up a bit more if needed
-  for (int d = initd; d <= maxdepth; d++) {
+  for (int d = initd; d <= ctx_.opts.maxdepth; d++) {
     lastlookups = totlookups;
     lastextra = totextra;
-    if (alloptimal && solutionsfound > 0)
+    if (ctx_.opts.alloptimal && ctx_.solutionsfound > 0)
       break;
-    if (randomstart) {
-      while ((int)randomized.size() <= d) {
-        randomized.push_back({});
-        vector<int> &r = randomized[randomized.size() - 1];
+    if (ctx_.opts.randomstart) {
+      while ((int)ctx_.randomized.size() <= d) {
+        ctx_.randomized.push_back({});
+        vector<int> &r = ctx_.randomized[ctx_.randomized.size() - 1];
         for (int i = 0; i < (int)pd.moves.size(); i++)
           r.push_back(i);
         for (int i = 0; i < (int)r.size(); i++) {
@@ -304,57 +289,62 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
         }
       }
     }
-    if (onlyimprovements && d >= globalinputmovecount)
+    if (ctx_.opts.onlyimprovements && d >= ctx_.opts.globalinputmovecount)
       break;
-    if (d < optmindepth)
+    if (d < ctx_.opts.optmindepth)
       continue;
     hid = d;
     if (d - initd > 1) {
-      workchunks = makeworkchunks(pd, d, p, requesteduthreading);
+      ctx_.workchunks =
+          makeworkchunks(pd, d, p, ctx_.opts.requesteduthreading);
     } else {
-      workchunks = makeworkchunks(pd, 0, p, requesteduthreading);
+      ctx_.workchunks =
+          makeworkchunks(pd, 0, p, ctx_.opts.requesteduthreading);
     }
-    workat = 0;
-    int wthreads = setupthreads(pd, pt, workchunks, workerparams);
-    workinguthreading =
-        min(requesteduthreading,
-            (int)(workchunks.size() + numthreads - 1) / numthreads);
+    ctx_.workat = 0;
+    int wthreads = setupthreads(pd, pt, ctx_.workchunks, ctx_.workerparams);
+    ctx_.workinguthreading =
+        min(ctx_.opts.requesteduthreading,
+            (int)(ctx_.workchunks.size() + numthreads - 1) / numthreads);
     for (int t = 0; t < wthreads; t++)
-      solveworkers[t].init(d, t, p);
+      ctx_.workers[t].init(d, t, p, &ctx_);
+    vector<solvethreadparam> solveparams;
+    for (int i = 0; i < wthreads; i++)
+      solveparams.push_back({&ctx_.workerparams[i], &ctx_});
 #ifdef USE_PTHREADS
     for (int i = 1; i < wthreads; i++)
-      spawn_thread(i, threadworker, &(workerparams[i]));
-    threadworker((void *)&workerparams[0]);
+      spawn_thread(i, threadworker, &solveparams[i]);
+    threadworker(&solveparams[0]);
     for (int i = 1; i < wthreads; i++)
       join_thread(i);
 #else
-    threadworker((void *)&workerparams[0]);
+    threadworker(&solveparams[0]);
 #endif
     for (int i = 0; i < wthreads; i++) {
       ll thr_totlookups = 0;
       ll thr_totextra = 0;
-      for (int j = 0; j < workinguthreading; j++) {
-        thr_totlookups += solveworkers[i].uthr[j].lookups;
-        thr_totextra += solveworkers[i].uthr[j].extraprobes;
-        solveworkers[i].uthr[j].lookups = 0;
-        solveworkers[i].uthr[j].extraprobes = 0;
+      for (int j = 0; j < ctx_.workinguthreading; j++) {
+        thr_totlookups += ctx_.workers[i].uthr[j].lookups;
+        thr_totextra += ctx_.workers[i].uthr[j].extraprobes;
+        ctx_.workers[i].uthr[j].lookups = 0;
+        ctx_.workers[i].uthr[j].extraprobes = 0;
       }
       totlookups += thr_totlookups;
       totextra += thr_totextra;
       pt.addlookups(thr_totlookups);
     }
-    if (alloptimal ? (solutionsfound > 0) : satisfiedsolutioncount()) {
+    if (ctx_.opts.alloptimal ? (ctx_.solutionsfound > 0) : ctx_.satisfied()) {
       duration();
       double actualtime = start - starttime;
       if (totextra == 0) {
-        cout << "Found " << solutionsfound << " solution"
-             << (solutionsfound != 1 ? "s" : "") << " max depth " << d
+        cout << "Found " << ctx_.solutionsfound << " solution"
+             << (ctx_.solutionsfound != 1 ? "s" : "") << " max depth " << d
              << " lookups " << totlookups << " in " << actualtime << " rate "
              << (totlookups / actualtime / 1e6) << endl
              << flush;
       } else {
-        cout << "Found " << solutionsfound << " solution"
-             << (solutionsfound != 1 ? "s" : "") << " max depth " << d
+        cout << "Found " << ctx_.solutionsfound << " solution"
+             << (ctx_.solutionsfound != 1 ? "s" : "") << " max depth " << d
              << " probes " << totlookups << " nodes " << totlookups - totextra
              << " in " << actualtime << " rate "
              << (totlookups / actualtime / 1e6) << endl
@@ -379,13 +369,14 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
         }
       }
     }
-    if (flushback)
-      if (flushback(d))
+    if (ctx_.opts.flushback)
+      if (ctx_.opts.flushback(d))
         break;
-    if (d != maxdepth && (alloptimal == 0 || solutionsfound == 0))
+    if (d != ctx_.opts.maxdepth &&
+        (ctx_.opts.alloptimal == 0 || ctx_.solutionsfound == 0))
       pt.checkextend(pd); // fill table up a bit more if needed
   }
-  if (!phase2 && callback == 0)
+  if (!ctx_.opts.phase2 && ctx_.opts.callback == nullptr)
     cout << "No solution found in " << hid << endl << flush;
   return -1;
 }
@@ -416,14 +407,14 @@ void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
     prevkey = newkey;
     bestsofar = 1000000;
   }
-  int omax = maxdepth;
-  int gooddepth = bestsofar - globalinputmovecount - 1;
-  if (maxdepth > gooddepth) {
-    maxdepth = gooddepth;
+  int omax = g_opts.maxdepth;
+  int gooddepth = bestsofar - g_opts.globalinputmovecount - 1;
+  if (g_opts.maxdepth > gooddepth) {
+    g_opts.maxdepth = gooddepth;
   }
   int r = solve(pd, pt, p, gs);
   if (r >= 0) {
-    bestsofar = globalinputmovecount + r;
+    bestsofar = g_opts.globalinputmovecount + r;
   }
-  maxdepth = omax;
+  g_opts.maxdepth = omax;
 }

@@ -65,22 +65,21 @@ void reseteverything() {
   omitperms.clear();
   relabelsets.clear();
   setsmustexist.clear();
-  solutionsfound = 0;
-  solutionsneeded = 1;
-  noearlysolutions = 0;
-  optmindepth = 0;
-  onlyimprovements = 0;
-  randomstart = 0;
-  alloptimal = 0;
+  g_opts.solutionsneeded = 1;
+  g_opts.noearlysolutions = 0;
+  g_opts.optmindepth = 0;
+  g_opts.onlyimprovements = 0;
+  g_opts.randomstart = 0;
+  g_opts.alloptimal = 0;
   disablesymmetry = 0;
-  maxdepth = 1000000000;
-  didprepass = 0;
+  g_opts.maxdepth = 1000000000;
+  g_opts.didprepass = 0;
 #ifdef USE_PTHREADS
   numthreads = min((unsigned int)MAXTHREADS, thread::hardware_concurrency());
 #else
   numthreads = 1;
 #endif
-  requesteduthreading = 4;
+  g_opts.requesteduthreading = 4;
   verbose = 1;
   start = walltime();
   quarter = 0;
@@ -122,12 +121,13 @@ static boolopt boolopts[] = {
     {"--distinguishall",
      "Override distinguishable pieces (use the superpuzzle).", &distinguishall},
     {"--noearlysolutions",
-     "Emit any solutions whose prefix is also a solution.", &noearlysolutions},
+     "Emit any solutions whose prefix is also a solution.",
+     &g_opts.noearlysolutions},
     {"--checkbeforesolve",
      "Check each position for solvability using generating\n"
      "set before attempting to solve.",
      &checkbeforesolve},
-    {"--randomstart", "Randomize move order when solving.", &randomstart},
+    {"--randomstart", "Randomize move order when solving.", &g_opts.randomstart},
     {"-q", "Use only minimal (quarter) turns.", &quarter},
     {"-H", "Use 128-bit hash instead of full state for God's number searches.",
      &usehashenc},
@@ -135,7 +135,7 @@ static boolopt boolopts[] = {
      "Find all optimal solutions.  If puzzle has rotations\n"
      "and is reduced by symmetry, the set of solutions will also be\n"
      "reduced by that symmetry.",
-     &alloptimal},
+     &g_opts.alloptimal},
     {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
 };
 static intopt intopts[] = {
@@ -144,7 +144,7 @@ static intopt intopts[] = {
      0, 100},
     {"-t", "num  Use this many threads.", &numthreads, 1, MAXTHREADS},
     {"--microthreads", "num  Use this many microthreads on each thread.",
-     &requesteduthreading, 1, MAXMICROTHREADING},
+     &g_opts.requesteduthreading, 1, MAXMICROTHREADING},
     {"--orientationgroup",
      "num  Treat adjacent piece groups of this size as\n"
      "orientations.",
@@ -152,8 +152,10 @@ static intopt intopts[] = {
     {"--startprunedepth",
      "num  Initial depth for pruning tables (default is 3).", &startprunedepth,
      0, 100},
-    {"--mindepth", "num  Minimum depth for searches.", &optmindepth, 0, 1000},
-    {"--maxdepth", "num  Maximum depth for searches.", &maxdepth, 0, 1000},
+    {"--mindepth", "num  Minimum depth for searches.", &g_opts.optmindepth, 0,
+     1000},
+    {"--maxdepth", "num  Maximum depth for searches.", &g_opts.maxdepth, 0,
+     1000},
     {"-R", "num  Seed for random number generator.", &seed, -2000000000,
      2000000000},
 };
@@ -162,7 +164,7 @@ static llopt solcountopt(
     "num  Number of solutions to generate.  If puzzle has rotations\n"
     "and is reduced by symmetry, the set of solutions will also be\n"
     "reduced by that symmetry.",
-    &solutionsneeded);
+    &g_opts.solutionsneeded);
 /*
  *   Can be called multiple times at the start.
  */

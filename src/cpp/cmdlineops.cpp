@@ -44,7 +44,7 @@ static struct solvecmd : cmd {
             "for\n"
             "improvements in total solution length.") {}
   virtual void parse_args(int *, const char ***argv) {
-    onlyimprovements = (argv[0][0][2] == 'i');
+    g_opts.onlyimprovements = (argv[0][0][2] == 'i');
   }
   virtual void docommand(puzdef &pd) {
     prunetable pt(pd, maxmem);
@@ -417,7 +417,7 @@ void processlines(const puzdef &pd,
     pd.assignpos(p1, pd.solved);
     vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
     //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
+    g_opts.globalinputmovecount = movelist.size();
     for (int i = 0; i < (int)movelist.size(); i++)
       domove(pd, p1, movelist[i]);
     f(pd, p1, s.c_str());
@@ -431,7 +431,7 @@ void processlines2(const puzdef &pd,
     pd.assignpos(p1, pd.id);
     vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
     //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
+    g_opts.globalinputmovecount = movelist.size();
     for (int i = 0; i < (int)movelist.size(); i++)
       domove(pd, p1, movelist[i]);
     f(pd, p1, s.c_str());
@@ -445,7 +445,7 @@ void processlines3(
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
     vector<int> moveid = parsemovelist(pd, s.c_str());
-    globalinputmovecount = moveid.size();
+    g_opts.globalinputmovecount = moveid.size();
     f(pd, moveid, s.c_str());
   }
 }
@@ -457,7 +457,7 @@ void processlines4(
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
     vector<int> moveid = parsemoveorrotationlist(pd, s.c_str());
-    globalinputmovecount = moveid.size();
+    g_opts.globalinputmovecount = moveid.size();
     f(pd, moveid, s.c_str());
   }
 }
@@ -469,7 +469,7 @@ void processlines5(const puzdef &pd,
     pd.assignpos(p1, pd.solved);
     vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
     //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
+    g_opts.globalinputmovecount = movelist.size();
     for (int i = 0; i < (int)movelist.size(); i++)
       domove(pd, p1, movelist[i]);
     f(pd, p1, s.c_str());

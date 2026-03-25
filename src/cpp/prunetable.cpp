@@ -73,7 +73,7 @@ ull fillworker::fillflush(prunetable &pt, int shard) {
   fillbuf &fb = fillbufs[shard];
   if (fb.nchunks > 0) {
 #ifdef USE_PTHREADS
-    pthread_mutex_lock(&(memshards[shard].mutex));
+    pthread_mutex_lock(&(pt.memshards[shard].mutex));
 #endif
     wfillcnt += fb.nchunks;
     for (int i = 0; i < fb.nchunks; i++) {
@@ -86,7 +86,7 @@ ull fillworker::fillflush(prunetable &pt, int shard) {
       }
     }
 #ifdef USE_PTHREADS
-    pthread_mutex_unlock(&(memshards[shard].mutex));
+    pthread_mutex_unlock(&(pt.memshards[shard].mutex));
 #endif
     fb.nchunks = 0;
   }
@@ -197,6 +197,10 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   lookupcnt = 0;
   fillcnt = 0;
   justread = 0;
+#ifdef USE_PTHREADS
+  for (int i = 0; i < MEMSHARDS; i++)
+    pthread_mutex_init(&memshards[i].mutex, NULL);
+#endif
   for (int i = 0; i < 7; i++)
     dtabs[i] = 0;
   if (!readpt(pd)) {

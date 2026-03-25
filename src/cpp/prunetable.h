@@ -87,6 +87,10 @@ struct prunetable {
     mem = 0;
     for (int i = 0; i < 7; i++)
       dtabs[i] = 0;
+#ifdef USE_PTHREADS
+    for (int i = 0; i < MEMSHARDS; i++)
+      pthread_mutex_init(&memshards[i].mutex, NULL);
+#endif
   }
   prunetable(const puzdef &pd, ull maxmem);
   prunetable(const prunetable &) = delete;
@@ -138,6 +142,10 @@ struct prunetable {
         free(dtabs[i]);
         dtabs[i] = 0;
       }
+#ifdef USE_PTHREADS
+    for (int i = 0; i < MEMSHARDS; i++)
+      pthread_mutex_destroy(&memshards[i].mutex);
+#endif
   }
   // if someone set options that affect the hash, we add a suffix to the
   // data file name to reflect this.
@@ -167,6 +175,7 @@ struct prunetable {
   vector<ull> workchunks;
   vector<workerparam> workerparams;
   int workat;
+  memshard memshards[MEMSHARDS];
 };
 #define PRUNETABLE_H
 #endif

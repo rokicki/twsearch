@@ -8,7 +8,6 @@ int numthreads = 1;
 pthread_mutex_t mmutex;
 pthread_t p_thread[MAXTHREADS];
 #endif
-memshard memshards[MEMSHARDS];
 void init_mutex() {
 #ifdef USE_PTHREADS
   pthread_mutex_init(&mmutex, NULL);
@@ -34,7 +33,5 @@ void join_thread(int i) { pthread_join(p_thread[i], 0); }
 void init_threads() {
 #ifdef USE_PTHREADS
   init_mutex();
-  for (int i = 0; i < MEMSHARDS; i++)
-    pthread_mutex_init(&(memshards[i].mutex), NULL);
 #endif
 }

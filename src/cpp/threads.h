@@ -35,7 +35,6 @@ struct memshard {
 #endif
   char pad[256];
 };
-extern memshard memshards[MEMSHARDS];
 void init_threads();
 #ifdef USE_PTHREADS
 extern pthread_mutex_t mmutex;

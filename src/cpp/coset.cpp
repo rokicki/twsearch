@@ -157,7 +157,7 @@ void showcosetantipodes() {
     }
 }
 int prepass(int d) {
-  didprepass = 1;
+  g_opts.didprepass = 1;
   if (solcnt >= cosetsize)
     return 1;
   if (solcnt == 0)
