@@ -290,6 +290,72 @@ The fix clamps the last phase's count: `max(1, numthreads - tbase)`.
 
 ---
 
+## Fix: null-pointer dereference setting `pt->phase_id` before construction
+
+In the phase-building loop, `pw->pt->phase_id = i` was written before
+`pw->pt` was constructed via `make_unique<prunetable>(...)`.  The assignment
+dereferenced a null `unique_ptr`, causing a SIGSEGV caught by AddressSanitizer
+as a UBSan "member access within null pointer" error.
+
+The fix moves the assignment to after the `make_unique` call.  AddressSanitizer
+(`make BUILD=asan`) is now wired into the build system (see below) and was used
+to diagnose this bug.
+
+---
+
+## Build system: `BUILD=asan` variant
+
+The Makefile now supports two build variants selected by the `BUILD` variable:
+
+```
+make              # release build → build/bin/twsearch   (-O3)
+make BUILD=asan   # sanitized build → build-asan/bin/twsearch (-O1 -fsanitize=address,undefined)
+```
+
+All object files and the final binary go into `build/` or `build-asan/`
+respectively, so both variants can coexist without a clean.  `make clean`
+removes only the directory for the current `BUILD` variant.
+
+---
+
+## Output: phase-prefixed log lines
+
+When running a multiphase solve, output lines from different phases are
+interleaved.  To make the output readable, every informational `cout` line that
+is gated on `quiet == 0` is now prefixed with `"Phase N: "` when it is emitted
+in the context of a multiphase phase.
+
+A pure helper function `log_prefix(int phase_id)` in `util.h`/`util.cpp`
+returns `"Phase N: "` when `phase_id >= 0` and `""` otherwise.  Each output
+call site receives `phase_id` explicitly — there is no global or thread-local
+state — so concurrent phases running in separate threads each carry their own
+identifier independently.
+
+The phase identifier is threaded through:
+
+| Site | How |
+|---|---|
+| `calculatesizes()` | new `phase_id` parameter (default -1) |
+| `calclooseper()` | new `phase_id` parameter (default -1) |
+| `makecanonstates()` | new `phase_id` parameter (default -1) |
+| `calcrotations()` | new `phase_id` parameter (default -1) |
+| `prunetable` constructor and `filltable()` | `phase_id` field set at construction |
+| `solve()` Depth lines | `solveoptions::phase_id` field |
+
+`multiphase_solve()` passes the loop index `i` to `build_phase_puzdef()`,
+which forwards it to all four setup functions, and also passes it to the
+`prunetable` constructor and sets `base_opts.phase_id`.
+
+Lines covered: `Rotation group size`, `State size`, `Requiring`, `Found N
+canonical move states`, `For memsize`, `Trying to allocate`, `Initializing
+memory`, `Filling depth`, `Filled depth`, `Depth`.
+
+The `Solved`/`EDGE`/…/`End` block emitted by `runsubgroup` after orbit
+relabelling is now suppressed unless `verbose > 1` (it was previously shown at
+`verbose > 0`).
+
+---
+
 ## Command-line interface
 
 The new `--multiphase moveset` option (repeatable) adds one moveset to the
