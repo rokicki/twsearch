@@ -90,7 +90,7 @@ void multiphase_solveit(puzdef &pd, setval &p) {
     spec.movelist = (i == 0) ? nullptr : multiphase_movesets[i - 1].c_str();
     spec.subgroupmoves =
         (i < n) ? multiphase_movesets[i].c_str() : nullptr;
-    spec.maxmem = maxmem / nphases;
+    spec.maxmem = maxmem;
     specs.push_back(spec);
   }
   multiphase_solve(string(g_def_file), specs, p, pd.totsize);

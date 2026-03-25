@@ -124,11 +124,18 @@ void phaseworker::run() {
       pd.mul(pd.solved, ws, orbit_start);
     }
 
+    // Count of solutions forwarded to the next phase (or improvements printed
+    // for the last phase).  Non-last phases stop once this reaches the limit
+    // set by base_opts.solutionsneeded (from the -c command-line option).
+    // The last phase has no such cap and keeps searching for improvements.
+    ll solutions_sent = 0;
+    ll phase_limit = is_last ? (1LL << 30) : base_opts.solutionsneeded;
+
     // Callback: called by solve() at every depth-limit leaf.
     // We only act on it if the position actually matches the phase target.
-    opts.callback = [this, &work, is_last, totsize](
-                        setval &pos, const vector<int> &movehist, int d,
-                        int /*tid*/) -> int {
+    opts.callback = [this, &work, is_last, totsize, &solutions_sent,
+                     phase_limit](setval &pos, const vector<int> &movehist,
+                                  int d, int /*tid*/) -> int {
       // Filter: only proceed if we've reached the target state.
       if (!pd.equivpos(pos, pd.solved))
         return 0;
@@ -154,41 +161,49 @@ void phaseworker::run() {
               full += ' ';
             full += phase_moves;
             cout << " " << full << endl << flush;
+            solutions_sent++;
           }
           release_global_lock();
         }
       } else {
-        // Only enqueue if there's still room for the remaining phases.
-        int remaining_after = total_phases - phase_idx - 2;
-        if (total + remaining_after < best_total->load(memory_order_relaxed)) {
-          // Reconstruct the original-space position (piece values 0..n-1)
-          // by re-applying the movehist to work.state.  This preserves the
-          // full puzzle state so the next phase can hash it correctly.
-          vector<uchar> orig(totsize), temp(totsize);
-          memcpy(orig.data(), work.state.data(), totsize);
-          for (int i = 0; i < d; i++) {
-            setval sv, st;
-            sv.dat = orig.data();
-            st.dat = temp.data();
-            pd.mul(sv, pd.moves[movehist[i]].pos, st);
-            memcpy(orig.data(), temp.data(), totsize);
+        // Forward up to phase_limit solutions to the next phase.
+        if (solutions_sent < phase_limit) {
+          int remaining_after = total_phases - phase_idx - 2;
+          if (total + remaining_after < best_total->load(memory_order_relaxed)) {
+            // Reconstruct the original-space position (piece values 0..n-1)
+            // by re-applying the movehist to work.state.  This preserves the
+            // full puzzle state so the next phase can hash it correctly.
+            vector<uchar> orig(totsize), temp(totsize);
+            memcpy(orig.data(), work.state.data(), totsize);
+            for (int i = 0; i < d; i++) {
+              setval sv, st;
+              sv.dat = orig.data();
+              st.dat = temp.data();
+              pd.mul(sv, pd.moves[movehist[i]].pos, st);
+              memcpy(orig.data(), temp.data(), totsize);
+            }
+            phasework pw;
+            pw.state.assign(orig.begin(), orig.end());
+            pw.depth_so_far = total;
+            pw.moves_so_far = work.moves_so_far;
+            if (!pw.moves_so_far.empty() && !phase_moves.empty())
+              pw.moves_so_far += ' ';
+            pw.moves_so_far += phase_moves;
+            next->enqueue(std::move(pw));
+            solutions_sent++;
           }
-          phasework pw;
-          pw.state.assign(orig.begin(), orig.end());
-          pw.depth_so_far = total;
-          pw.moves_so_far = work.moves_so_far;
-          if (!pw.moves_so_far.empty() && !phase_moves.empty())
-            pw.moves_so_far += ' ';
-          pw.moves_so_far += phase_moves;
-          next->enqueue(std::move(pw));
         }
       }
       return 0; // keep searching (flushback controls termination)
     };
 
-    // Flushback: called after each depth level with no solution.
-    // Return 1 to stop if going one level deeper can't improve best_total.
-    opts.flushback = [this, &work](int d) -> int {
+    // Flushback: called after each depth level.
+    // For non-last phases: stop once we've forwarded phase_limit solutions.
+    // Always stop when going one level deeper can't improve best_total.
+    opts.flushback = [this, &work, &solutions_sent, phase_limit,
+                      is_last](int d) -> int {
+      if (!is_last && solutions_sent >= phase_limit)
+        return 1;
       int remaining_phases_after = total_phases - phase_idx - 1;
       return work.depth_so_far + d + 1 + remaining_phases_after >=
              best_total->load(memory_order_relaxed);
@@ -273,12 +288,17 @@ int multiphase_solve(const string &twsfile, const vector<phasespec> &specs,
     pw->best_total = &best_total;
     pw->pd = build_phase_puzdef(twsfile, specs[i], basename);
 
-    // Thread-pool slice for this phase.
+    // Thread-pool slice for this phase.  Each phase gets its own contiguous
+    // slice of the global p_thread[] array so concurrent fills and solves
+    // don't race on thread handles.  When numthreads < n (more phases than
+    // threads), some phases share indices but still get at least 1 thread.
     int tbase = i * threads_per_phase;
-    int tcount = (i == n - 1) ? (numthreads - i * threads_per_phase)
+    int tcount = (i == n - 1) ? max(1, numthreads - tbase)
                                : threads_per_phase;
     pw->base_opts.thread_base = tbase;
     pw->base_opts.thread_count = tcount;
+    pw->base_opts.noearlysolutions = 1;
+    pw->base_opts.solutionsneeded = g_opts.solutionsneeded;
 
     // Memory for this phase's pruning table.
     ull mem = specs[i].maxmem;
