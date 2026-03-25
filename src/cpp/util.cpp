@@ -14,6 +14,7 @@ int verbose;
 ll maxmem;
 int quarter;
 int quiet;
+string log_prefix;
 double walltime() {
 #ifdef _WIN64
   return GetTickCount() / 1000.0;

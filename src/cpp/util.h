@@ -52,6 +52,7 @@ extern double start;
 extern int quarter;
 extern ll maxmem;
 extern int quiet;
+extern string log_prefix; // set to "Phase N: " during multiphase, else ""
 // `create_dirs` indicates whether to create the folder hierarchy containing the
 // resulting filename. This is only necessary when you want to write to the
 // file.  The return value of this function should always end in a forward

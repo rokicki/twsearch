@@ -146,7 +146,8 @@ void makecanonstates(puzdef &pd) {
     pd.canonnext.push_back(nextstate);
   }
   if (quiet == 0)
-    cout << "Found " << statecount << " canonical move states." << endl;
+    cout << log_prefix << "Found " << statecount
+         << " canonical move states." << endl;
   /*
     for (int i=0; i<(int)pd.canonnext.size(); i++) {
        cout << i << " " << hex << pd.canonmask[i] << dec ;

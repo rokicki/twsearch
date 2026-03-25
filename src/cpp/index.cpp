@@ -1,5 +1,6 @@
 #include "index.h"
 #include "city.h"
+#include "util.h"
 #include <iostream>
 int looseper, looseiper, basebits, usehashenc;
 vector<pair<ull, int>> parts;
@@ -337,9 +338,9 @@ void calclooseper(const puzdef &pd) {
     usehashenc += 256;
   }
   if (quiet == 0)
-    cout << "Requiring " << bits << " bits " << looseper * sizeof(loosetype)
-         << " bytes per entry; " << (looseiper * sizeof(loosetype))
-         << " from identity." << endl;
+    cout << log_prefix << "Requiring " << bits << " bits "
+         << looseper * sizeof(loosetype) << " bytes per entry; "
+         << (looseiper * sizeof(loosetype)) << " from identity." << endl;
 }
 void loosepack(const puzdef &pd, setval pos, loosetype *w, int fromid,
                int sym) {

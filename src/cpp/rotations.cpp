@@ -1,5 +1,6 @@
 #include "rotations.h"
 #include "index.h"
+#include "util.h"
 #include <iostream>
 #include <map>
 #include <set>
@@ -150,7 +151,7 @@ void calcrotations(puzdef &pd) {
   calcrotinvs(pd);
   calcrotinvmap(pd);
   if (quiet == 0)
-    cout << "Rotation group size is " << q.size() << endl;
+    cout << log_prefix << "Rotation group size is " << q.size() << endl;
   // test that for a random p,
   //  solved * (rotinv * p) == rotinvmap * (solved * p)
   /*
