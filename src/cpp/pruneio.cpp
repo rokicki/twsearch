@@ -2,6 +2,7 @@
 #include "prunetable.h"
 #include <fstream>
 #include <iostream>
+#include <mutex>
 #include <set>
 #define USECOMPRESSION
 #ifdef USECOMPRESSION
@@ -278,6 +279,7 @@ void prunetable::readblock(ull *mem, ull explongcnt, istream *inf) {
     error("! I/O error while reading block");
   ioqueue.queueunpackwork(mem, longcnt, buf, bytecnt);
 }
+static std::mutex pt_io_mutex;
 static ll bytecnts[272];
 struct cntparam {
   ll s, e;
@@ -312,6 +314,7 @@ void *cntthreadworker(void *o) {
   return 0;
 }
 void prunetable::writept(const puzdef &pd) {
+  std::lock_guard<std::mutex> lk(pt_io_mutex);
   // only write the table if at least 1 in 700 elements has a value
   if (writeprunetables == 0 || justread ||
       (writeprunetables != 2 && fillcnt < size / 700))
@@ -452,6 +455,7 @@ void prunetable::writept(const puzdef &pd) {
     cout << "written in " << duration() << endl << flush;
 }
 int prunetable::readpt(const puzdef &pd) {
+  std::lock_guard<std::mutex> lk(pt_io_mutex);
 #ifdef USECOMPRESSION
   for (int i = 0; i < 272; i++) {
     codewidths[i] = 0;
