@@ -7,6 +7,6 @@
  */
 extern int randomstart;
 vector<ull> makeworkchunks(const puzdef &pd, int d, const setval symmreduce,
-                           int microthreadcounts = 1);
+                           int microthreadcounts = 1, int nodedupe = 0);
 #define WORKCHUNKS_H
 #endif

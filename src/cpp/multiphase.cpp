@@ -312,6 +312,7 @@ multiphase_state *multiphase_prepare(const string &twsfile,
     pw->base_opts.thread_count = tcount;
     pw->base_opts.noearlysolutions = 1;
     pw->base_opts.solutionsneeded = g_opts.solutionsneeded;
+    pw->base_opts.nodedupe = (i < n - 1) ? 1 : g_opts.nodedupe;
     pw->base_opts.phase_id = i;
 
     ull mem = specs[i].maxmem;

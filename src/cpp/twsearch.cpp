@@ -138,6 +138,10 @@ static boolopt boolopts[] = {
      "reduced by that symmetry.",
      &g_opts.alloptimal},
     {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
+    {"--nodedupe",
+     "Do not eliminate work chunks that lead to the same state,"
+     " possibly under symmetry.",
+     &g_opts.nodedupe},
 };
 static intopt intopts[] = {
     {"--newcanon",

@@ -303,11 +303,11 @@ int solve(const puzdef &pd, prunetable &pt, const setval p,
       continue;
     hid = d;
     if (d - initd > 1) {
-      ctx_.workchunks =
-          makeworkchunks(pd, d, p, ctx_.opts.requesteduthreading);
+      ctx_.workchunks = makeworkchunks(pd, d, p,
+          ctx_.opts.requesteduthreading, ctx_.opts.nodedupe);
     } else {
-      ctx_.workchunks =
-          makeworkchunks(pd, 0, p, ctx_.opts.requesteduthreading);
+      ctx_.workchunks = makeworkchunks(pd, 0, p,
+          ctx_.opts.requesteduthreading, ctx_.opts.nodedupe);
     }
     ctx_.workat = 0;
     int wthreads = setupthreads(pd, pt, ctx_.workchunks, ctx_.workerparams);
