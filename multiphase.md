@@ -173,8 +173,9 @@ For each work item, the phase worker:
 3. Calls `solve()` with the phase's own `solveoptions`, using a `callback` and
    a `flushback` hook to control iteration.
 
-The `flushback` hook stops the IDA* loop as soon as going one level deeper
-cannot improve `best_total`.
+The `flushback` hook stops the IDA* loop as soon as:
+- a non-last phase has forwarded its solution quota (see below), or
+- going one level deeper cannot improve `best_total`.
 
 The `callback` hook is called at every depth-limit leaf where the position
 matches the phase's target (`pd.equivpos(pos, pd.solved)`).  For intermediate
@@ -183,6 +184,32 @@ against the item's original-space state), builds a new `phasework` item, and
 enqueues it to the next phase — but only if `total + remaining_phases <
 best_total`.  For the last phase it updates `best_total` under the global lock
 and prints the complete solution.
+
+### Solution quota per phase (`-c` option)
+
+Each intermediate phase maintains a `solutions_sent` counter.  It stops
+forwarding work to the next phase once `solutions_sent` reaches
+`base_opts.solutionsneeded`, which is copied from `g_opts.solutionsneeded` (set
+by the `-c` command-line option, default 1).  The flushback returns immediately
+once the quota is met.
+
+With `-c 1` (the default) each intermediate phase forwards exactly one candidate
+to the next — the shortest IDA* solution it finds.  This produces behaviour
+equivalent to the sequential shell script `mmsolve.pl` and runs in roughly the
+same time (~1.7 s for the nine-phase megaminx example vs 1.2 s sequentially).
+
+With `-c N` for N > 1, each intermediate phase forwards up to N candidates
+before stopping, giving later phases more paths to explore and potentially
+finding a shorter total solution at the cost of additional search time.
+
+The last phase is never capped: it keeps searching for improvements until the
+standard depth bound (`depth_so_far + d + 1 >= best_total`) prevents progress.
+
+### `noearlysolutions` set on all phases
+
+Each phase's `base_opts.noearlysolutions` is forced to 1.  This suppresses
+sub-optimal solutions at the current IDA* depth level, keeping the pipeline
+clean: only minimum-depth solutions for each phase are forwarded or printed.
 
 ### Orbit-space vs. original-space
 
@@ -237,11 +264,41 @@ eliminating the collision without any `no_checkextend` suppression.
 
 ---
 
+## Fix: memory budget per phase
+
+The original `cmdlineops.cpp` allocated `maxmem / nphases` bytes to each
+phase's pruning table, giving each of N phases only 1/N of the available
+memory.  With nine megaminx phases this left each table with roughly 111 MB
+instead of 1 GB, producing extremely shallow pruning tables and very slow IDA*
+searches.
+
+The fix is simple: each phase now receives the full `maxmem` budget.  Pruning
+tables for different phases are independent objects (each `phaseworker` owns
+one), so they do not compete for the same allocation.
+
+---
+
+## Fix: negative thread count for last phase
+
+With more phases than threads (e.g. 9 phases, 1 thread), the expression
+`numthreads - i * threads_per_phase` for the last phase could go negative,
+producing a negative `thread_count`.  Both `solve()` and `filltable()` use
+`min(wthreads, thread_count)`, so a negative value caused an empty work vector
+and an immediate crash when the worker tried to index `solveparams[0]`.
+
+The fix clamps the last phase's count: `max(1, numthreads - tbase)`.
+
+---
+
 ## Command-line interface
 
 The new `--multiphase moveset` option (repeatable) adds one moveset to the
 phase pipeline.  N uses create N+1 phases.  It is paired with `--scramblealg`
 (to give the scramble on the command line) or a scramble file.
+
+The `-c N` option (solutions needed) controls how many candidate states each
+intermediate phase forwards to the next.  The default of 1 gives fast greedy
+behaviour; higher values trade time for solution quality.
 
 Example — Kociemba-style two-phase solve of a 3×3×3 scramble:
 
@@ -253,3 +310,18 @@ This builds:
 - Phase 0: all moves, reduces to the G1 subgroup (positions reachable by
   U, D, R2, L2, F2, B2).
 - Phase 1: G1 moves only, solves to the fully solved position.
+
+Example — nine-phase megaminx solve with up to 5 candidates per phase:
+
+```
+twsearch -M 1000 --nowrite -c 5 \
+  --multiphase R,U,F,L,BR,BL,FR,FL,DR \
+  --multiphase R,U,F,L,BR,BL,FR,FL \
+  --multiphase R,U,F,L,BR,BL,FR \
+  --multiphase R,U,F,L,BR,BL \
+  --multiphase R,U,F,L,BR \
+  --multiphase R,U,F,L \
+  --multiphase R,U,F \
+  --multiphase R,U \
+  --scramblealg "..." megaminx.tws
+```
