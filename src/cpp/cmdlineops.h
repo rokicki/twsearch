@@ -12,6 +12,10 @@
  *   streaming a sequence of positions through various operations.
  */
 void solvecmdline(puzdef &pd, const char *scr, generatingset *gs);
+// Returns true if --multiphase was specified.
+bool is_multiphase();
+// Run a multiphase solve for an already-computed start position.
+void multiphase_solveit(puzdef &pd, setval &p);
 extern vector<loosetype> uniqwork;
 extern set<vector<loosetype>> uniqseen;
 void uniqit(const puzdef &pd, setval p, const char *s);

@@ -5,8 +5,6 @@
 #include <iostream>
 #include <map>
 #include <unordered_set>
-vector<ull> canonmask;
-vector<vector<int>> canonnext;
 static vector<allocsetval> posns;
 static vector<int> movehist;
 void makecanonstates(puzdef &pd) {
@@ -78,8 +76,8 @@ void makecanonstates(puzdef &pd) {
   statebits.push_back(firststate);
   int qg = 0;
   int statecount = 1;
-  canonmask.clear();
-  canonnext.clear();
+  pd.canonmask.clear();
+  pd.canonnext.clear();
   while (qg < (int)statebits.size()) {
     vector<int> nextstate(nbase);
     for (int i = 0; i < nbase; i++)
@@ -88,18 +86,18 @@ void makecanonstates(puzdef &pd) {
     ull stateb = get<0>(statev);
     int prevm = get<1>(statev);
     int prevcnt = get<2>(statev);
-    canonmask.push_back(quarter ? 1 : 0);
+    pd.canonmask.push_back(quarter ? 1 : 0);
     int fromst = qg++;
     int ms = 0;
     for (int m = 0; m < nbase; m++) {
       // if there's a greater move in the state that commutes with this
       // move m, we can't move m.
       if ((stateb & commutes[m]) >> (m + 1)) {
-        canonmask[fromst] |= 1LL << m;
+        pd.canonmask[fromst] |= 1LL << m;
         continue;
       }
       if (!quarter && (((stateb >> m) & 1) != 0)) {
-        canonmask[fromst] |= 1LL << m;
+        pd.canonmask[fromst] |= 1LL << m;
         continue;
       }
       ull nstb = (stateb & commutes[m]) | (1LL << m);
@@ -116,7 +114,7 @@ void makecanonstates(puzdef &pd) {
       int thiscnt = 0;
       if (quarter) {
         if (m == 0) {
-          canonmask[fromst] |= 1LL << m;
+          pd.canonmask[fromst] |= 1LL << m;
           continue;
         }
         while (pd.moves[ms].cs != m)
@@ -124,13 +122,13 @@ void makecanonstates(puzdef &pd) {
         // don't do opposing moves in a row
         if (prevm >= 0 && ms != prevm &&
             pd.moves[ms].base == pd.moves[prevm].base) {
-          canonmask[fromst] |= 1LL << m;
+          pd.canonmask[fromst] |= 1LL << m;
           continue;
         }
         if (ms == prevm) {
           if (2 * (prevcnt + 1) + (pd.moves[ms].twist != 1) >
               pd.basemoveorders[pd.moves[ms].base]) {
-            canonmask[fromst] |= 1LL << m;
+            pd.canonmask[fromst] |= 1LL << m;
             continue;
           }
         }
@@ -145,15 +143,15 @@ void makecanonstates(puzdef &pd) {
       int nextst = statemap[nsi];
       nextstate[m] = nextst;
     }
-    canonnext.push_back(nextstate);
+    pd.canonnext.push_back(nextstate);
   }
   if (quiet == 0)
     cout << "Found " << statecount << " canonical move states." << endl;
   /*
-    for (int i=0; i<(int)canonnext.size(); i++) {
-       cout << i << " " << hex << canonmask[i] << dec ;
+    for (int i=0; i<(int)pd.canonnext.size(); i++) {
+       cout << i << " " << hex << pd.canonmask[i] << dec ;
        for (int j=0; j<nbase; j++)
-          cout << " " << canonnext[i][j] ;
+          cout << " " << pd.canonnext[i][j] ;
        cout << endl ;
     }
   */
@@ -165,7 +163,7 @@ unordered_set<vector<loosetype>, hashvector<loosetype>> ccseen;
 vector<int> ccnextstate;
 int ccstalloc = 0;
 int ccnbase = 0;
-int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
+int recurcanonstates2(puzdef &pd, int togo, ull moveset, int sp) {
   if (togo == 0) {
     loosepack(pd, posns[sp], ccenc.data(), 1);
     if (ccseen.find(ccenc) == ccseen.end()) {
@@ -192,11 +190,12 @@ int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
   }
   int cs = statemap[moveset];
   if (togo > 1) {
-    if ((int)canonmask.size() <= cs) {
-      cout << "Size of canonmask " << canonmask.size() << " cs " << cs << endl;
+    if ((int)pd.canonmask.size() <= cs) {
+      cout << "Size of canonmask " << pd.canonmask.size() << " cs " << cs
+           << endl;
       error("! canonmask not large enough");
     }
-    oldmask = canonmask[cs];
+    oldmask = pd.canonmask[cs];
   }
   for (int i = 0; i < (int)pd.moves.size(); i++) {
     if ((oldmask >> pd.moves[i].cs) & 1)
@@ -215,8 +214,8 @@ int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
      << endl ; for (int i=0; i<(int)ccnextstate.size(); i++) cout << " " <<
      ccnextstate[i] ; cout << endl ;
      */
-    canonmask.push_back(newmask);
-    canonnext.push_back(ccnextstate);
+    pd.canonmask.push_back(newmask);
+    pd.canonnext.push_back(ccnextstate);
   }
   return 1;
 }
@@ -254,11 +253,11 @@ void makecanonstates2(puzdef &pd) {
   ccnextstate[0] = -1;
   for (int j = 0; j < ccnbase; j++)
     ccnextstate[j] = -1;
-  canonmask.clear();
-  canonnext.clear();
+  pd.canonmask.clear();
+  pd.canonnext.clear();
   for (int d = 0; d <= ccount + 1; d++)
     recurcanonstates2(pd, d, 1, 0);
-  cout << "Canonical states: " << canonmask.size() << endl;
+  cout << "Canonical states: " << pd.canonmask.size() << endl;
   freeContainer(statemap);
   freeContainer(ccseen);
 }
@@ -270,8 +269,8 @@ void showseqs(const puzdef &pd, int togo, int st) {
     cout << endl;
     return;
   }
-  ull mask = canonmask[st];
-  const vector<int> &ns = canonnext[st];
+  ull mask = pd.canonmask[st];
+  const vector<int> &ns = pd.canonnext[st];
   for (int i = 0; i < (int)pd.moves.size(); i++) {
     const moove &mv = pd.moves[i];
     if ((mask >> mv.cs) & 1)
@@ -355,14 +354,14 @@ vector<int> canonicalize(const puzdef &pd, vector<int> mvseq) {
   int cst = 0;
   for (int i = 0; i < (int)r.size(); i++) {
     const moove &mv = pd.moves[r[i]];
-    if ((canonmask[cst] >> mv.cs) & 1)
+    if ((pd.canonmask[cst] >> mv.cs) & 1)
       error("! bad move in canonicalized.");
-    cst = canonnext[cst][mv.cs];
+    cst = pd.canonnext[cst][mv.cs];
   }
   return r;
 }
 void showcanon(const puzdef &pd, int show) {
-  int nstates = canonmask.size();
+  int nstates = pd.canonmask.size();
   vector<vector<double>> counts;
   vector<double> zeros(nstates);
   counts.push_back(zeros);
@@ -391,11 +390,11 @@ void showcanon(const puzdef &pd, int show) {
     if (sum == 0) // || gsum > 1e54)
       break;
     for (int st = 0; st < nstates; st++) {
-      ull mask = canonmask[st];
+      ull mask = pd.canonmask[st];
       for (int m = 0; m < (int)pd.moves.size(); m++) {
         if ((mask >> pd.moves[m].cs) & 1)
           continue;
-        counts[d + 1][canonnext[st][pd.moves[m].cs]] += counts[d][st];
+        counts[d + 1][pd.canonnext[st][pd.moves[m].cs]] += counts[d][st];
       }
     }
   }

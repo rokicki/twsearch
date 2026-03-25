@@ -28,14 +28,14 @@ struct subgroupmovelistopt : stringopt {
  *   This patches up the solved state for the subgroup defined by the
  *   given move set.
  */
-void runsubgroup(puzdef &pd) {
+void runsubgroup(puzdef &pd, const char *movelist) {
   if (!pd.invertible())
     error("! puzzle must be invertible to solve to a subgroup");
   /* parse the move list. */
-  auto moves = parsemovelist(pd, subgroupmovelist);
+  auto moves = parsemovelist(pd, movelist);
   stacksetval osolved(pd), nsolved(pd);
   pd.addoptionssum("subgroup");
-  pd.addoptionssum(subgroupmovelist);
+  pd.addoptionssum(movelist);
   pd.assignpos(osolved, pd.solved);
   vector<allocsetval> q;
   q.push_back(allocsetval(pd, pd.id));
@@ -149,3 +149,4 @@ void runsubgroup(puzdef &pd) {
   if (verbose)
     emitsolved(pd, pd.solved, 0);
 }
+void runsubgroup(puzdef &pd) { runsubgroup(pd, subgroupmovelist); }

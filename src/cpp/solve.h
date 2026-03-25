@@ -4,6 +4,7 @@
 #include "prunetable.h"
 #include "puzdef.h"
 #include "threads.h"
+#include <functional>
 /*
  *   Routines to use iterated depth-first searching to solve a particular
  *   position (and the required code to distribute the work across
@@ -33,8 +34,14 @@ struct solveoptions {
   int didprepass = 0;
   int randomstart = 0;
   int globalinputmovecount = 0;
-  int (*callback)(setval &, const vector<int> &, int, int) = nullptr;
-  int (*flushback)(int) = nullptr;
+  // Thread pool slice for concurrent phases (0/0 = use all threads).
+  int thread_base = 0;
+  int thread_count = 0;
+  // If true, suppresses checkextend() calls inside solve().  Used by
+  // concurrent multiphase solvers to avoid thread-slot collisions.
+  int no_checkextend = 0;
+  std::function<int(setval &, const vector<int> &, int, int)> callback;
+  std::function<int(int)> flushback;
 };
 extern solveoptions g_opts;
 
@@ -85,11 +92,15 @@ struct solvecontext {
 
   // Per-solve infrastructure (single-writer before threads start)
   int workinguthreading;
+  int thread_base; // first thread index in the global p_thread[] pool
+  int thread_count; // number of threads allocated to this solve
   solveworker workers[MAXTHREADS];
   vector<workerparam> workerparams;
   vector<vector<int>> randomized;
 
-  solvecontext() : solutionsfound(0), workat(0), workinguthreading(0) {}
+  solvecontext()
+      : solutionsfound(0), workat(0), workinguthreading(0), thread_base(0),
+        thread_count(0) {}
 
   solvecontext(const solvecontext &) = delete;
   solvecontext &operator=(const solvecontext &) = delete;
@@ -99,10 +110,16 @@ struct solvecontext {
   }
 };
 
-void setsolvecallback(int (*)(setval &, const vector<int> &, int, int),
-                      int (*)(int));
+void setsolvecallback(
+    std::function<int(setval &, const vector<int> &, int, int)> cb,
+    std::function<int(int)> fb);
+// Primary entry: snapshots g_opts into the context.
 int solve(const puzdef &pd, prunetable &pt, const setval p,
           generatingset *gs = 0);
+// Concurrent-safe entry: uses the provided opts directly (does not touch
+// g_opts), so concurrent callers can each have independent option sets.
+int solve(const puzdef &pd, prunetable &pt, const setval p,
+          const solveoptions &opts, generatingset *gs = 0);
 void solveit(const puzdef &pd, prunetable &pt, string scramblename, setval &p,
              generatingset *gs = 0);
 void solveitp2(const puzdef &pd, prunetable &pt, string scramblename, setval &p,

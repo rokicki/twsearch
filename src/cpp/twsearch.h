@@ -11,6 +11,7 @@ extern void processargs(int &argc, argvtype &argv, int includecmds);
 extern puzdef makepuzdef(istream *f);
 extern puzdef makepuzdef(string s);
 extern void reseteverything();
+extern const char *g_def_file; // path to the puzzle definition file
 void processscrambles(istream *f, puzdef &pd, prunetable &pt,
                       generatingset *gs);
 int main_search(const char *def_file, const char *scramble_file);

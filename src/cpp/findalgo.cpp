@@ -73,8 +73,8 @@ struct algo1worker {
     }
     int nmp = mp + 1;
     int sm = (mp < 0 ? 0 : movehist[mp]);
-    ull mask = canonmask[st];
-    const vector<int> &ns = canonnext[st];
+    ull mask = pd.canonmask[st];
+    const vector<int> &ns = pd.canonnext[st];
     for (int m = sm; m < (int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m];
       if ((mask >> mv.cs) & 1) {
@@ -152,8 +152,8 @@ struct algo2worker {
     }
     int nmp = mp + 1;
     int sm = (mp < 0 ? 0 : movehist[mp]);
-    ull mask = canonmask[st];
-    const vector<int> &ns = canonnext[st];
+    ull mask = pd.canonmask[st];
+    const vector<int> &ns = pd.canonnext[st];
     for (int m = sm; m < (int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m];
       if ((mask >> mv.cs) & 1) {
@@ -221,8 +221,8 @@ struct algo3worker {
       release_global_lock();
       return;
     }
-    ull mask = canonmask[st];
-    const vector<int> &ns = canonnext[st];
+    ull mask = pd.canonmask[st];
+    const vector<int> &ns = pd.canonnext[st];
     for (int m = 0; m < (int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m];
       if ((mask >> mv.cs) & 1)
@@ -239,8 +239,8 @@ struct algo3worker {
       recurfindalgo3b(pd, b, sp + 2, 0, sp);
       return;
     }
-    ull mask = canonmask[st];
-    const vector<int> &ns = canonnext[st];
+    ull mask = pd.canonmask[st];
+    const vector<int> &ns = pd.canonnext[st];
     for (int m = 0; m < (int)pd.moves.size(); m++) {
       const moove &mv = pd.moves[m];
       if ((mask >> mv.cs) & 1)

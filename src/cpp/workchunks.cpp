@@ -34,7 +34,7 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
           int st = workstates[i];
-          ull mask = canonmask[st];
+          ull mask = pd.canonmask[st];
           ull t = pmv;
           pd.assignpos(p1, symmreduce);
           while (t > 1) {
@@ -59,7 +59,7 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
               }
             if (isnew) {
               wc2.push_back(pmv + (nmoves + mv - 1) * mul);
-              ws2.push_back(canonnext[st][pd.moves[mv].cs]);
+              ws2.push_back(pd.canonnext[st][pd.moves[mv].cs]);
               if (seensize < (int)seen.size()) {
                 pd.assignpos(seen[seensize], p3);
               } else {
@@ -75,8 +75,8 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
           int st = workstates[i];
-          ull mask = canonmask[st];
-          const vector<int> &ns = canonnext[st];
+          ull mask = pd.canonmask[st];
+          const vector<int> &ns = pd.canonnext[st];
           for (int mv = 0; mv < nmoves; mv++)
             if (0 == ((mask >> pd.moves[mv].cs) & 1)) {
               wc2.push_back(pmv + (nmoves + mv - 1) * mul);

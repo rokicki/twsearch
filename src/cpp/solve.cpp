@@ -2,11 +2,11 @@
 #include "cmdlineops.h"
 #include <iostream>
 solveoptions g_opts;
-void setsolvecallback(int (*f)(setval &pos, const vector<int> &moves, int d,
-                               int id),
-                      int (*g)(int)) {
-  g_opts.callback = f;
-  g_opts.flushback = g;
+void setsolvecallback(
+    std::function<int(setval &, const vector<int> &, int, int)> cb,
+    std::function<int(int)> fb) {
+  g_opts.callback = std::move(cb);
+  g_opts.flushback = std::move(fb);
 }
 struct solvethreadparam {
   workerparam *wp;
@@ -168,7 +168,7 @@ int microthread::innerfetch(const puzdef &pd, prunetable &pt) {
     pd.inv(posns[sp], *invtmp);
     return 3;
   } else {
-    mask = canonmask[st];
+    mask = pd.canonmask[st];
     skipbase = 0;
     mi = -1;
     goto downstack;
@@ -217,7 +217,7 @@ downstack:
   solvestates.push_back({st, mi, mask, skipbase});
   togo--;
   sp++;
-  st = canonnext[st][mv.cs];
+  st = pd.canonnext[st][mv.cs];
   invflag = 0;
   return 3;
 }
@@ -236,7 +236,7 @@ int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
       return 0;
     }
     movehist[sp] = mv;
-    st = canonnext[st][pd.moves[mv].cs];
+    st = pd.canonnext[st][pd.moves[mv].cs];
     sp++;
     togo--;
     initmoves /= nmoves;
@@ -245,9 +245,14 @@ int microthread::solvestart(const puzdef &pd, prunetable &pt, int w) {
   innersetup(pt);
   return 1;
 }
-int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
+int solve(const puzdef &pd, prunetable &pt, const setval p,
+          generatingset *gs) {
+  return solve(pd, pt, p, g_opts, gs);
+}
+int solve(const puzdef &pd, prunetable &pt, const setval p,
+          const solveoptions &opts, generatingset *gs) {
   solvecontext ctx_;
-  ctx_.opts = g_opts;
+  ctx_.opts = opts;
   ctx_.solutionsfound = ctx_.opts.solutionsneeded;
   if (gs) {
     stacksetval solinv(pd), premul(pd);
@@ -271,7 +276,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   ctx_.randomized.clear();
   ull lastlookups = 0;
   ull lastextra = 0;
-  pt.checkextend(pd); // fill table up a bit more if needed
+  ctx_.thread_base = ctx_.opts.thread_base;
+  ctx_.thread_count = ctx_.opts.thread_count;
+  if (!ctx_.opts.no_checkextend)
+    pt.checkextend(pd); // fill table up a bit more if needed
   for (int d = initd; d <= ctx_.opts.maxdepth; d++) {
     lastlookups = totlookups;
     lastextra = totextra;
@@ -303,9 +311,14 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     }
     ctx_.workat = 0;
     int wthreads = setupthreads(pd, pt, ctx_.workchunks, ctx_.workerparams);
+    if (ctx_.thread_count == 0) {
+      wthreads = min(wthreads, numthreads);
+    } else {
+      wthreads = min(wthreads, ctx_.thread_count);
+    }
     ctx_.workinguthreading =
         min(ctx_.opts.requesteduthreading,
-            (int)(ctx_.workchunks.size() + numthreads - 1) / numthreads);
+            (int)(ctx_.workchunks.size() + wthreads - 1) / wthreads);
     for (int t = 0; t < wthreads; t++)
       ctx_.workers[t].init(d, t, p, &ctx_);
     vector<solvethreadparam> solveparams;
@@ -313,10 +326,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
       solveparams.push_back({&ctx_.workerparams[i], &ctx_});
 #ifdef USE_PTHREADS
     for (int i = 1; i < wthreads; i++)
-      spawn_thread(i, threadworker, &solveparams[i]);
+      spawn_thread(ctx_.thread_base + i, threadworker, &solveparams[i]);
     threadworker(&solveparams[0]);
     for (int i = 1; i < wthreads; i++)
-      join_thread(i);
+      join_thread(ctx_.thread_base + i);
 #else
     threadworker(&solveparams[0]);
 #endif
@@ -372,7 +385,7 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
     if (ctx_.opts.flushback)
       if (ctx_.opts.flushback(d))
         break;
-    if (d != ctx_.opts.maxdepth &&
+    if (!ctx_.opts.no_checkextend && d != ctx_.opts.maxdepth &&
         (ctx_.opts.alloptimal == 0 || ctx_.solutionsfound == 0))
       pt.checkextend(pd); // fill table up a bit more if needed
   }

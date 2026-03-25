@@ -24,8 +24,8 @@ void recurorder(const puzdef &pd, int togo, int sp, int st, int mp) {
     }
     return;
   }
-  ull mask = canonmask[st];
-  const vector<int> &ns = canonnext[st];
+  ull mask = pd.canonmask[st];
+  const vector<int> &ns = pd.canonnext[st];
   int nmp = mp + rotateequiv;
   int sm = (mp < 0 ? 0 : movehist[mp]);
   for (int m = sm; m < (int)pd.moves.size(); m++) {

@@ -33,6 +33,7 @@ int optmaxdepth = 0;
 int verbosecanon;
 cmd *requestedcmd, *cmdhead;
 const char *legalmovelist = 0;
+const char *g_def_file = nullptr; // puzzle file path; set by main_search
 static int initialized = 0;
 int seed = 0;
 void reseteverything() {
@@ -309,6 +310,13 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
   string scramblename;
   ull checksum = 0;
   stacksetval p1(pd);
+  // Dispatch: multiphase if phases were given, else single-phase via pt.
+  auto dispatch = [&](setval &p) {
+    if (is_multiphase())
+      multiphase_solveit(pd, p);
+    else
+      solveit(pd, pt, scramblename, p, gs);
+  };
   while (1) {
     vector<string> toks = getline(f, checksum);
     if (toks.size() == 0)
@@ -321,7 +329,7 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
       allocsetval p =
           readposition(pd, 'S', f, checksum,
                        toks[0] == "ScrambleState" || toks[0] == "StartState");
-      solveit(pd, pt, scramblename, p, gs);
+      dispatch(p);
     } else if (toks[0] == "ScrambleAlg") {
       expect(toks, 2);
       scramblename = toks[1];
@@ -335,12 +343,12 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
         for (int i = 0; i < (int)toks.size(); i++)
           domove(pd, p1, findmove_generously(pd, toks[i]));
       }
-      solveit(pd, pt, scramblename, p1, gs);
+      dispatch(p1);
     } else if (toks[0] == "CPOS") {
       expect(toks, 2);
       scramblename = "noname";
       readposition(pd, p1, toks[1]);
-      solveit(pd, pt, scramblename, p1, gs);
+      dispatch(p1);
     } else {
       error("! unsupported command in scramble file");
     }
@@ -348,11 +356,19 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
 }
 
 void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
-  prunetable pt(pd, maxmem);
-  processscrambles(f, pd, pt, gs);
+  if (is_multiphase()) {
+    // Don't build a full prunetable — multiphase builds its own per phase.
+    // Pass a default-constructed pt that is never accessed in this path.
+    prunetable pt;
+    processscrambles(f, pd, pt, gs);
+  } else {
+    prunetable pt(pd, maxmem);
+    processscrambles(f, pd, pt, gs);
+  }
 }
 
 int main_search(const char *def_file, const char *scramble_file) {
+  g_def_file = def_file;
   ifstream f;
   f.open(def_file, ifstream::in);
   if (f.fail())

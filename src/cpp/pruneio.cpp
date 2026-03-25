@@ -9,9 +9,7 @@
 #else
 #define SIGNATURE UNCOMPSIGNATURE
 #endif
-fillworker fillworkers[MAXTHREADS];
 string inputbasename;
-struct ioqueue ioqueue;
 const int UNPACKBITS = 12; // must be at least 8
 void *unpackworker(void *o) {
   ioworkitem *wi = (ioworkitem *)o;

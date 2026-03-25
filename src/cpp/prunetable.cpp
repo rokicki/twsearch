@@ -29,7 +29,7 @@ int setupthreads(const puzdef &pd, prunetable &pt, vector<ull> &workchunks,
 }
 void *fillthreadworker(void *o) {
   workerparam *wp = (workerparam *)o;
-  fillworkers[wp->tid].dowork(wp->pd, wp->pt);
+  wp->pt.fillworkers[wp->tid].dowork(wp->pd, wp->pt);
   return 0;
 }
 void fillworker::init(const puzdef &pd, int d_) {
@@ -58,7 +58,7 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
     if (!pd.legalstate(posns[sp + 1]) ||
         pd.comparepos(posns[sp], posns[sp + 1]) == 0)
       return 0;
-    st = canonnext[st][pd.moves[mv].cs];
+    st = pd.canonnext[st][pd.moves[mv].cs];
     sp++;
     togo--;
     initmoves /= nmoves;
@@ -125,8 +125,8 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
       r += fillflush(pt, shard);
     return r;
   }
-  ull mask = canonmask[st];
-  const vector<int> &ns = canonnext[st];
+  ull mask = pd.canonmask[st];
+  const vector<int> &ns = pd.canonnext[st];
   for (int m = 0; m < (int)pd.moves.size(); m++) {
     const moove &mv = pd.moves[m];
     if ((mask >> mv.cs) & 1)
@@ -147,7 +147,8 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
  *   We do this with a right shift, then a multiply, then another
  *   right shift, always staying 2^64 bytes.
  */
-prunetable::prunetable(const puzdef &pd, ull maxmem) {
+prunetable::prunetable(const puzdef &pd, ull maxmem)
+    : fillworkers(new fillworker[MAXTHREADS]) {
   pdp = &pd;
   totsize = pd.totsize;
   ull bytesize = 2048;
@@ -226,14 +227,16 @@ void prunetable::filltable(const puzdef &pd, int d) {
     cout << "Filling depth " << d << " val " << wval << flush;
   workchunks = makeworkchunks(pd, d, pd.solved);
   workat = 0;
-  int wthreads = setupthreads(pd, *this, workchunks, workerparams);
+  int max_threads = (thread_count > 0) ? thread_count : numthreads;
+  int wthreads = min(max_threads, (int)workchunks.size());
+  setupparams(pd, *this, wthreads, workerparams);
   for (int t = 0; t < wthreads; t++)
     fillworkers[t].init(pd, d);
 #ifdef USE_PTHREADS
   for (int i = 0; i < wthreads; i++)
-    spawn_thread(i, fillthreadworker, &(workerparams[i]));
+    spawn_thread(thread_base + i, fillthreadworker, &(workerparams[i]));
   for (int i = 0; i < wthreads; i++)
-    join_thread(i);
+    join_thread(thread_base + i);
 #else
   fillthreadworker((void *)&workerparams[0]);
 #endif

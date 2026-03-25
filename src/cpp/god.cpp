@@ -1158,8 +1158,8 @@ void dorecurgod(const puzdef &pd, int togo, int sp, int st) {
       writer = sortuniq(s_2, s_1, levend, writer, 1, lim, looseper);
     return;
   }
-  ull mask = canonmask[st];
-  const vector<int> &ns = canonnext[st];
+  ull mask = pd.canonmask[st];
+  const vector<int> &ns = pd.canonnext[st];
   for (int m = 0; m < (int)pd.moves.size(); m++) {
     const moove &mv = pd.moves[m];
     if ((mask >> mv.cs) & 1)

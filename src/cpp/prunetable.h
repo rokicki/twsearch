@@ -4,6 +4,7 @@
 #include "rotations.h"
 #include "threads.h"
 #include "workchunks.h"
+#include <memory>
 /*
  *   This code supports pruning tables for arbitrary puzzles.  Memory
  *   consumption is a power of two.  Each table entry is two bits.
@@ -54,7 +55,6 @@ struct fillworker {
   void dowork(const puzdef &pd, prunetable &pt);
   ull filltable(const puzdef &pd, prunetable &pt, int togo, int sp, int st);
 };
-extern fillworker fillworkers[MAXTHREADS];
 struct ioworkitem {
   char state;
   ull *mem;
@@ -76,13 +76,12 @@ struct ioqueue {
   istream *inf;
   ostream *outf;
 };
-extern struct ioqueue ioqueue;
 struct decompinfo {
   unsigned int d;
   uchar bitwidth, bytewidth;
 };
 struct prunetable {
-  prunetable() {
+  prunetable() : fillworkers(new fillworker[MAXTHREADS]) {
     amem = 0;
     mem = 0;
     for (int i = 0; i < 7; i++)
@@ -168,6 +167,8 @@ struct prunetable {
   int shardshift;
   int baseval, hibase; // 0 is less; 1 is this; 2 is this+1; 3 is >=this+2
   int wval, wbval;
+  int thread_base = 0;  // first p_thread[] slot used by filltable
+  int thread_count = 0; // number of threads for fill (0 = use numthreads)
   uchar codewidths[544];
   ull codevals[544];
   decompinfo *dtabs[7];
@@ -176,6 +177,8 @@ struct prunetable {
   vector<workerparam> workerparams;
   int workat;
   memshard memshards[MEMSHARDS];
+  std::unique_ptr<fillworker[]> fillworkers;
+  struct ioqueue ioqueue;
 };
 #define PRUNETABLE_H
 #endif

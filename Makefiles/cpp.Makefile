@@ -36,7 +36,8 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o \
    build/cpp/cmds.o build/cpp/beamsearch.o build/cpp/subgroup.o \
-   build/cpp/totalvar.o build/cpp/vendor/cityhash/city.o
+   build/cpp/totalvar.o build/cpp/multiphase.o \
+   build/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
@@ -44,7 +45,7 @@ HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h \
-   src/cpp/totalvar.h src/cpp/subgroup.h
+   src/cpp/totalvar.h src/cpp/subgroup.h src/cpp/multiphase.h
 
 build/cpp:
 	mkdir -p build/cpp

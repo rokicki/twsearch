@@ -13,8 +13,6 @@ using namespace std;
  *   from that decide which to use.
  */
 void makecanonstates(puzdef &pd);
-extern vector<ull> canonmask;
-extern vector<vector<int>> canonnext;
 extern vector<int> cancelmoves(const puzdef &pd, vector<int> mvseq);
 extern vector<int> canonicalize(const puzdef &pd, vector<int> mvseq);
 extern int ccount, canonlim;

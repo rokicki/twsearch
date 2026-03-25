@@ -124,6 +124,8 @@ struct puzdef {
   vector<int> basemoveorders, baserotorders;
   vector<int> rotinv;
   vector<ull> commutes;
+  vector<ull> canonmask;
+  vector<vector<int>> canonnext;
   int totsize;
   int ncs;
   allocsetval id;
