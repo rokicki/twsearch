@@ -146,7 +146,7 @@ void runsubgroup(puzdef &pd, const char *movelist) {
       cout << " " << (int)pd.solved.dat[i];
     cout << endl;
   }
-  if (verbose)
+  if (verbose > 1)
     emitsolved(pd, pd.solved, 0);
 }
 void runsubgroup(puzdef &pd) { runsubgroup(pd, subgroupmovelist); }
