@@ -56,8 +56,9 @@ struct phaseworker {
   deque<phasework> work_queue;
   bool input_done = false;
 
-  // Shared best-total (written atomically by last phase)
+  // Shared counters (written atomically by last phase)
   atomic<int> *best_total;
+  atomic<int> *solutions_found;
 
   // Next phase in the pipeline (nullptr for last phase)
   phaseworker *next = nullptr;
@@ -163,6 +164,7 @@ void phaseworker::run() {
           get_global_lock();
           if (total < best_total->load(memory_order_relaxed)) {
             best_total->store(total, memory_order_relaxed);
+            solutions_found->fetch_add(1, memory_order_relaxed);
             string full = work.moves_so_far;
             if (!full.empty() && !phase_moves.empty())
               full += ' ';
@@ -261,6 +263,7 @@ static puzdef build_phase_puzdef(const string &twsfile, const phasespec &spec,
 struct multiphase_state {
   vector<unique_ptr<phaseworker>> phases;
   atomic<int> best_total{INT_MAX};
+  atomic<int> solutions_found{0};
   int totsize = 0;
 };
 
@@ -298,6 +301,7 @@ multiphase_state *multiphase_prepare(const string &twsfile,
     pw->phase_idx = i;
     pw->total_phases = n;
     pw->best_total = &st->best_total;
+    pw->solutions_found = &st->solutions_found;
     pw->pd = build_phase_puzdef(twsfile, specs[i], basename, i);
 
     // Thread-pool slice for this phase.
@@ -333,8 +337,13 @@ int multiphase_solve_one(multiphase_state *st, const setval &start,
 
   // Reset state for this solve.
   st->best_total.store(INT_MAX, memory_order_relaxed);
+  st->solutions_found.store(0, memory_order_relaxed);
   for (auto &pw : st->phases)
     pw->reset();
+
+  if (quiet == 0)
+    cout << "Solving" << endl << flush;
+  double starttime = walltime();
 
   // Start each phase's worker thread.
   vector<thread> threads;
@@ -356,6 +365,15 @@ int multiphase_solve_one(multiphase_state *st, const setval &start,
     t.join();
 
   int bt = st->best_total.load();
+  int sf = st->solutions_found.load();
+  if (quiet == 0) {
+    double elapsed = walltime() - starttime;
+    if (bt == INT_MAX)
+      cout << "No solution found in " << elapsed << endl << flush;
+    else
+      cout << "Found " << sf << " solution" << (sf != 1 ? "s" : "")
+           << " max depth " << bt << " in " << elapsed << endl << flush;
+  }
   return (bt == INT_MAX) ? -1 : bt;
 }
 
