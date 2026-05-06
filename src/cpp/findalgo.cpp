@@ -6,7 +6,7 @@
 #include <iostream>
 #include <map>
 map<ll, ll> bestsofar;
-const int HIWR = 4;
+const int HIWR = 12;
 const int KEYM = 2 * HIWR + 2;
 static int algostrict;
 ll extendkey(ll k, int nwr, int npwr) {

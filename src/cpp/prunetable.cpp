@@ -220,7 +220,7 @@ void prunetable::filltable(const puzdef &pd, int d) {
   ll ofillcnt = fillcnt;
   if (quiet == 0)
     cout << "Filling depth " << d << " val " << wval << flush;
-  workchunks = makeworkchunks(pd, d, pd.solved);
+  workchunks = makeworkchunks(pd, d, pd.solved, 1, 1);
   workat = 0;
   int wthreads = setupthreads(pd, *this, workchunks, workerparams);
   for (int t = 0; t < wthreads; t++)

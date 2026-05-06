@@ -8,7 +8,7 @@ int randomstart;
 static vector<allocsetval> seen;
 static int lastsize;
 vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
-                           int microthreadcount) {
+                           int microthreadcount, int forpruning) {
   vector<int> workstates;
   vector<ull> workchunks;
   workchunks.push_back(1);
