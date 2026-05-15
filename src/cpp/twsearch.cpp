@@ -351,6 +351,8 @@ void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
 }
 
 int main_search(const char *def_file, const char *scramble_file) {
+  ios_base::sync_with_stdio(false);
+  cin.tie(NULL);
   ifstream f;
   f.open(def_file, ifstream::in);
   if (f.fail())

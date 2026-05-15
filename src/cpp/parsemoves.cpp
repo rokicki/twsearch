@@ -14,6 +14,27 @@ allocsetval findmove_generously(const puzdef &pd, const string &mvstring) {
   error("! bad move name ", mvstring);
   return allocsetval(pd, 0);
 }
+void finddomove_generously(const puzdef &pd, const string &mvstring, setval p, setval p2) {
+  const setval *x = 0;
+  for (int i = 0; i < (int)pd.moves.size(); i++)
+    if (mvstring == pd.moves[i].name) {
+      x = &pd.moves[i].pos;
+      break;
+    }
+  for (int i = 0; x == 0 && i < (int)pd.parsemoves.size(); i++)
+    if (mvstring == pd.parsemoves[i].name) {
+      x = &pd.parsemoves[i].pos;
+      break;
+    }
+  for (int i = 0; x == 0 && i < (int)pd.expandedrotations.size(); i++)
+    if (mvstring == pd.expandedrotations[i].name) {
+      x = &pd.expandedrotations[i].pos;
+      break;
+    }
+  if (x == 0)
+    error("! bad move name ", mvstring);
+  domove(pd, p, *x, p2);
+}
 int findmove(const puzdef &pd, const string &mvstring) {
   for (int i = 0; i < (int)pd.moves.size(); i++)
     if (mvstring == pd.moves[i].name)
@@ -79,6 +100,24 @@ vector<allocsetval> parsemovelist_generously(const puzdef &pd,
   if (move.size())
     movelist.push_back(findmove_generously(pd, move));
   return movelist;
+}
+void parsedomovelist_generously(const puzdef &pd, const string &scr, setval p) {
+  string move;
+  stacksetval p2(pd) ;
+  for (auto c : scr) {
+    if (c <= ' ' || c == ',') {
+      if (move.size()) {
+        finddomove_generously(pd, move, p, p2);
+        pd.assignpos(p2, p) ;
+        move.clear();
+      }
+    } else
+      move.push_back(c);
+  }
+  if (move.size()) {
+    finddomove_generously(pd, move, p, p2);
+    pd.assignpos(p2, p) ;
+  }
 }
 /*
  *   A rotation is always a grip (uppercase) followed only by 'p'.  There

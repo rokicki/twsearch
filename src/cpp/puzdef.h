@@ -426,8 +426,8 @@ inline allocsetval &allocsetval::operator=(allocsetval &&v) {
   return *this;
 }
 void calculatesizes(puzdef &pd);
-void domove(const puzdef &pd, setval p, setval pos, setval pt);
-void domove(const puzdef &pd, setval p, setval pos);
+void domove(const puzdef &pd, setval p, const setval pos, setval pt);
+void domove(const puzdef &pd, setval p, const setval pos);
 void domove(const puzdef &pd, setval p, int mv);
 void domove(const puzdef &pd, setval p, int mv, setval pt);
 #define PUZDEF_H

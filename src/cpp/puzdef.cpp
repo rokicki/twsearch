@@ -264,13 +264,13 @@ void calculatesizes(puzdef &pd) {
            << glogstates << endl;
   }
 }
-void domove(const puzdef &pd, setval p, setval pos, setval pt) {
+void domove(const puzdef &pd, setval p, const setval pos, setval pt) {
   pd.mul(p, pos, pt);
   pd.assignpos(p, pt);
   if (!pd.legalstate(p))
     warn("illegal position");
 }
-void domove(const puzdef &pd, setval p, setval pos) {
+void domove(const puzdef &pd, setval p, const setval pos) {
   stacksetval pt(pd);
   pd.mul(p, pos, pt);
   pd.assignpos(p, pt);

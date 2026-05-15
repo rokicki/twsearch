@@ -31,9 +31,7 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   pd.assignpos(p1, pd.solved);
   string noname;
   prunetable pt(pd, maxmem);
-  vector<allocsetval> movelist = parsemovelist_generously(pd, scr);
-  for (int i = 0; i < (int)movelist.size(); i++)
-    domove(pd, p1, movelist[i]);
+  parsedomovelist_generously(pd, scr, p1);
   solveit(pd, pt, noname, p1, gs);
 }
 static struct solvecmd : cmd {
@@ -415,11 +413,7 @@ void processlines(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
-    vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
-    //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
-    for (int i = 0; i < (int)movelist.size(); i++)
-      domove(pd, p1, movelist[i]);
+    parsedomovelist_generously(pd, s, p1);
     f(pd, p1, s.c_str());
   }
 }
@@ -429,11 +423,7 @@ void processlines2(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.id);
-    vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
-    //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
-    for (int i = 0; i < (int)movelist.size(); i++)
-      domove(pd, p1, movelist[i]);
+    parsedomovelist_generously(pd, s, p1);
     f(pd, p1, s.c_str());
   }
 }
@@ -467,11 +457,7 @@ void processlines5(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
-    vector<allocsetval> movelist = parsemovelist_generously(pd, s.c_str());
-    //    vector<int> moveid = parsemovelist(pd, s.c_str()) ;
-    globalinputmovecount = movelist.size();
-    for (int i = 0; i < (int)movelist.size(); i++)
-      domove(pd, p1, movelist[i]);
+    parsedomovelist_generously(pd, s, p1);
     f(pd, p1, s.c_str());
   }
 }
