@@ -9,7 +9,7 @@ If you have a C++ toolchain on your computer, you can run:
 
 ```shell
 # Check out and build the binary
-git clone https://github.com/cubing/twsearch && cd twsearch
+git clone https://github.com/rokicki/twsearch && cd twsearch
 make build
 
 # Run a search
