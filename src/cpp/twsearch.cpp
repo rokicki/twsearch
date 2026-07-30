@@ -56,6 +56,7 @@ void reseteverything() {
   origroup = 0;
   nocorners = 0;
   nocenters = 0;
+  nodeduplicatesolve = 0;
   noedges = 0;
   verbosecanon = 0;
   ignoreori = 0;
@@ -112,6 +113,8 @@ static stringopt stringopts[] = {
      &user_option_cache_dir},
 };
 static boolopt boolopts[] = {
+    {"--nodeduplicatesolve", "Don't deduplicate search tree on solves.",
+     &nodeduplicatesolve},
     {"--nocorners", "Omit any puzzle sets with recognizable corner names.",
      &nocorners},
     {"--nocenters", "Omit any puzzle sets with recognizable center names.",

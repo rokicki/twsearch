@@ -10,6 +10,7 @@ int phase2;
 int optmindepth;
 string lastsolution;
 int globalinputmovecount;
+int nodeduplicatesolve;
 int didprepass;
 int requesteduthreading = 4;
 int workinguthreading = 0;

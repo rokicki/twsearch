@@ -52,21 +52,25 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
             slowmodm2(pd, p2, p3);
             int h = fasthash(pd.totsize, p3) % hashmod;
             int isnew = 1;
-            for (int i = hashfront[h]; i >= 0; i = hashprev[i])
-              if (pd.comparepos(p3, seen[i]) == 0) {
-                isnew = 0;
-                break;
-              }
+            if (nodeduplicatesolve || forpruning) {
+              for (int i = hashfront[h]; i >= 0; i = hashprev[i])
+                if (pd.comparepos(p3, seen[i]) == 0) {
+                  isnew = 0;
+                  break;
+                }
+            }
             if (isnew) {
               wc2.push_back(pmv + (nmoves + mv - 1) * mul);
               ws2.push_back(canonnext[st][pd.moves[mv].cs]);
-              if (seensize < (int)seen.size()) {
-                pd.assignpos(seen[seensize], p3);
-              } else {
-                seen.push_back(allocsetval(pd, p3));
+              if (nodeduplicatesolve || forpruning) {
+                if (seensize < (int)seen.size()) {
+                  pd.assignpos(seen[seensize], p3);
+                } else {
+                  seen.push_back(allocsetval(pd, p3));
+                }
+                hashprev.push_back(hashfront[h]);
+                hashfront[h] = seensize;
               }
-              hashprev.push_back(hashfront[h]);
-              hashfront[h] = seensize;
               seensize++;
             }
           }
