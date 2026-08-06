@@ -121,6 +121,27 @@ struct puzdef {
       rotgroup;
   vector<movealias> moveseqs;
   vector<allocsetval> rotinvmap;
+  // rotgroupflat and rotinvmapflat are cache-friendly, contiguous copies of
+  // pd.rotgroup[m].pos and pd.rotinvmap[m], respectively (each rotgroup.size()
+  // blocks of totsize bytes, block m starting at offset m*totsize).  The
+  // per-moove allocsetvals above are each a separate heap allocation, so
+  // scanning across all m (as the symmetry reduction hot path does) chases
+  // pointers all over the heap; these flat arrays let that scan walk
+  // contiguous memory instead.  Populated once, after rotgroup/rotinvmap are
+  // finalized, by calcrotflatarrays() in rotations.cpp.
+  vector<uchar> rotgroupflat, rotinvmapflat;
+  const uchar *rotgroupptr(int m) const {
+    return rotgroupflat.data() + (size_t)m * totsize;
+  }
+  const uchar *rotinvmapptr(int m) const {
+    return rotinvmapflat.data() + (size_t)m * totsize;
+  }
+  setval rotgrouppos(int m) const {
+    return setval(const_cast<uchar *>(rotgroupptr(m)));
+  }
+  setval rotinvmappos(int m) const {
+    return setval(const_cast<uchar *>(rotinvmapptr(m)));
+  }
   vector<int> basemoveorders, baserotorders;
   vector<int> rotinv;
   vector<ull> commutes;
@@ -241,11 +262,14 @@ struct puzdef {
   int lowsymmguess(const setval b) const {
     int r = 0;
     const uchar *bp = b.dat;
-    int rv = rotinvmap[0].dat[bp[rotgroup[0].pos.dat[0]]];
+    const uchar *rgf = rotgroupflat.data();
+    const uchar *rif = rotinvmapflat.data();
+    int rv = rif[bp[rgf[0]]];
     if (rv == 0)
       return 0;
     for (int m = 1; m < (int)rotgroup.size(); m++) {
-      int t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[0]]];
+      size_t base = (size_t)m * totsize;
+      int t = rif[base + bp[rgf[base]]];
       if (t < rv) {
         r = m;
         rv = t;
@@ -260,9 +284,12 @@ struct puzdef {
   ull lowsymmbits(const setval b) const {
     ull r = 1;
     const uchar *bp = b.dat;
-    int rv = rotinvmap[0].dat[bp[rotgroup[0].pos.dat[0]]];
+    const uchar *rgf = rotgroupflat.data();
+    const uchar *rif = rotinvmapflat.data();
+    int rv = rif[bp[rgf[0]]];
     for (int m = 1; m < (int)rotgroup.size(); m++) {
-      int t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[0]]];
+      size_t base = (size_t)m * totsize;
+      int t = rif[base + bp[rgf[base]]];
       if (t < rv) {
         r = 1LL << m;
         rv = t;
@@ -274,12 +301,14 @@ struct puzdef {
         return r;
       int t = ffsll(r) - 1;
       ull r2 = 1LL << t;
-      int rv = rotinvmap[t].dat[bp[rotgroup[t].pos.dat[o]]];
+      size_t tbase = (size_t)t * totsize;
+      int rv = rif[tbase + bp[rgf[tbase + o]]];
       r &= ~(1LL << t);
       while (r) {
         int m = ffsll(r) - 1;
         r &= ~(1LL << m);
-        t = rotinvmap[m].dat[bp[rotgroup[m].pos.dat[o]]];
+        size_t base = (size_t)m * totsize;
+        t = rif[base + bp[rgf[base + o]]];
         if (t < rv) {
           r2 = 1LL << m;
           rv = t;

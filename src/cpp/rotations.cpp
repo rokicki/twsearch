@@ -1,5 +1,6 @@
 #include "rotations.h"
 #include "index.h"
+#include <cstring>
 #include <iostream>
 #include <map>
 #include <set>
@@ -71,6 +72,22 @@ void calcrotinvmap(puzdef &pd) {
     auto &rotw = pd.rotinvmap[i];
     if (rotation_ok_solved(pd, roti, rotw) == 0)
       error("! internal error");
+  }
+}
+// Copy pd.rotgroup[m].pos and pd.rotinvmap[m] (each a separate heap
+// allocation) into contiguous flat arrays, so the symmetry-reduction hot
+// path (lowsymmguess/lowsymmbits/slowmodm2/slowmodm2inv) can scan across
+// all rotations without chasing a different pointer for every one.  Must be
+// called after rotgroup and rotinvmap are both finalized.
+void calcrotflatarrays(puzdef &pd) {
+  int n = (int)pd.rotgroup.size();
+  pd.rotgroupflat.assign((size_t)n * pd.totsize, 0);
+  pd.rotinvmapflat.assign((size_t)n * pd.totsize, 0);
+  for (int m = 0; m < n; m++) {
+    memcpy(pd.rotgroupflat.data() + (size_t)m * pd.totsize,
+           pd.rotgroup[m].pos.dat, pd.totsize);
+    memcpy(pd.rotinvmapflat.data() + (size_t)m * pd.totsize,
+           pd.rotinvmap[m].dat, pd.totsize);
   }
 }
 void calcrotations(puzdef &pd) {
@@ -149,6 +166,7 @@ void calcrotations(puzdef &pd) {
   swap(q, filtered);
   calcrotinvs(pd);
   calcrotinvmap(pd);
+  calcrotflatarrays(pd);
   if (quiet == 0)
     cout << "Rotation group size is " << q.size() << endl;
   // test that for a random p,
@@ -182,9 +200,9 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   int cnt = 1;
   // if we relabel the first setdef, we can't use the magic speedup code.
   if (pd.setdefs[0].relabel) {
-    pd.rotconjugate(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2);
+    pd.rotconjugate(pd.rotinvmappos(0), p1, pd.rotgrouppos(0), p2);
     for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(m), p1, pd.rotgrouppos(m), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1;
@@ -195,12 +213,12 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   } else if (pd.rotgroup.size() <= 64) {
     ull lobits = pd.lowsymmbits(p1);
     int g = ffsll(lobits) - 1;
-    pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
+    pd.rotconjugate(pd.rotinvmappos(g), p1, pd.rotgrouppos(g), p2);
     lobits &= ~(1LL << g);
     while (lobits) {
       g = ffsll(lobits) - 1;
       lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(g), p1, pd.rotgrouppos(g), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1;
@@ -210,11 +228,11 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
     }
   } else {
     int g = pd.lowsymmguess(p1);
-    pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
+    pd.rotconjugate(pd.rotinvmappos(g), p1, pd.rotgrouppos(g), p2);
     for (int m = g + 1; m < (int)pd.rotgroup.size(); m++) {
-      if (p2.dat[0] != pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
+      if (p2.dat[0] != pd.rotinvmapptr(m)[p1.dat[pd.rotgroupptr(m)[0]]])
         continue;
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(m), p1, pd.rotgrouppos(m), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1;
@@ -259,7 +277,7 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
   // in theory this should never happen . . .
   if (pd.setdefs[0].relabel) {
     for (int m = 1; m < (int)pd.rotgroup.size(); m++) {
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(m), pt, pd.rotgrouppos(m), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;
@@ -274,7 +292,7 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
     while (lobits) {
       g = ffsll(lobits) - 1;
       lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(g), pt, pd.rotgrouppos(g), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;
@@ -286,9 +304,9 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
   } else {
     int g = 0;
     for (int m = g + 1; m < (int)pd.rotgroup.size(); m++) {
-      if (p2.dat[0] < pd.rotinvmap[m].dat[p1.dat[pd.rotgroup[m].pos.dat[0]]])
+      if (p2.dat[0] < pd.rotinvmapptr(m)[p1.dat[pd.rotgroupptr(m)[0]]])
         continue;
-      int t = pd.rotconjugatecmp(pd.rotinvmap[m], pt, pd.rotgroup[m].pos, p2);
+      int t = pd.rotconjugatecmp(pd.rotinvmappos(m), pt, pd.rotgrouppos(m), p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;
