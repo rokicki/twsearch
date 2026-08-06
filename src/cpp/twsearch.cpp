@@ -75,7 +75,8 @@ void reseteverything() {
   randomstart = 0;
   alloptimal = 0;
   disablesymmetry = 0;
-  disablejit = 0;
+  enablejit = 0;
+  jitcc = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -113,6 +114,11 @@ static stringopt stringopts[] = {
     {"--cachedir",
      "dirname  Use the specified directory to cache pruning tables.",
      &user_option_cache_dir},
+    {"--jit-cc",
+     "path  Use exactly this C compiler for --jit instead of guessing\n"
+     "($CXX, then cc/clang/gcc).  Tried alone; --jit falls back to the\n"
+     "interpreted implementation (not to guessing) if it fails.",
+     &jitcc},
 };
 static boolopt boolopts[] = {
     {"--nodeduplicatesolve", "Don't deduplicate search tree on solves.",
@@ -142,10 +148,18 @@ static boolopt boolopts[] = {
      "reduced by that symmetry.",
      &alloptimal},
     {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
-    {"--nojit",
-     "Disable JIT-compiled symmetry reduction; use the interpreted\n"
-     "implementation even when a working C compiler is available.",
-     &disablejit},
+    {"--jit",
+     "Enable JIT-compiled symmetry reduction: at puzzle load, spawn the\n"
+     "system C compiler to generate and compile specialized code for the\n"
+     "puzzle's rotation group, and use it if it checks out against the\n"
+     "interpreted implementation.  Off by default; harmless to try (falls\n"
+     "back to the interpreted implementation on any failure) but spawns a\n"
+     "compiler process and dlopen()s the result, which not every\n"
+     "environment can be assumed to support well.\n"
+     "With -v2 or higher, also print the generated C source, and (on any\n"
+     "failure to compile, dlopen, or self-check) the compiler's own\n"
+     "diagnostic output.",
+     &enablejit},
 };
 static intopt intopts[] = {
     {"--newcanon",

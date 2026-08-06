@@ -9,7 +9,8 @@
 #include <sstream>
 #include <string>
 #include <unistd.h>
-int disablejit;
+int enablejit;
+const char *jitcc;
 /*
  *   Code generation.  For a single rotation m, rotconjugate/rotconjugatecmp
  *   (see puzdef.h) walk every setdef and, for every element j in it, do
@@ -150,6 +151,17 @@ static bool trycompile(const string &cc, const string &srcpath,
                " > " + srcpath + ".log 2>&1";
   return system(cmd.c_str()) == 0;
 }
+// Print the given file's contents under a labeled banner, so a failure is
+// actually diagnosable instead of just "JIT didn't work" -- e.g. dumping
+// the failing compile command's stderr, or (with --jit-verbose) the
+// generated source itself.
+static void dumpfile(const string &label, const string &path) {
+  ifstream f(path);
+  if (!f)
+    return;
+  cout << "----- " << label << " (" << path << ") -----\n"
+       << f.rdbuf() << "----- end " << label << " -----" << endl;
+}
 static bool compileandload(const string &src, void **handle, void ***conjtable,
                            void ***conjcmptable) {
   const char *tmpdir = getenv("TMPDIR");
@@ -167,25 +179,45 @@ static bool compileandload(const string &src, void **handle, void ***conjtable,
     f << src;
   }
   close(fd);
+  if (verbose > 1)
+    dumpfile("generated JIT source", srcpath);
   string sopath = srcpath + ".so";
   bool ok = false;
-  const char *cxx = getenv("CXX");
-  if (cxx && *cxx)
-    ok = trycompile(cxx, srcpath, sopath);
-  if (!ok)
-    ok = trycompile("cc", srcpath, sopath);
-  if (!ok)
-    ok = trycompile("clang", srcpath, sopath);
-  if (!ok)
-    ok = trycompile("gcc", srcpath, sopath);
+  // An explicit --jit-cc is a deliberate choice: try only that, and don't
+  // paper over it failing by silently trying something else.  Otherwise,
+  // fall through a short list of reasonable guesses.
+  if (jitcc && *jitcc) {
+    ok = trycompile(jitcc, srcpath, sopath);
+  } else {
+    const char *cxx = getenv("CXX");
+    if (cxx && *cxx)
+      ok = trycompile(cxx, srcpath, sopath);
+    if (!ok)
+      ok = trycompile("cc", srcpath, sopath);
+    if (!ok)
+      ok = trycompile("clang", srcpath, sopath);
+    if (!ok)
+      ok = trycompile("gcc", srcpath, sopath);
+  }
   if (ok) {
     *handle = dlopen(sopath.c_str(), RTLD_NOW);
     ok = (*handle != 0);
+    if (!ok)
+      cerr << "JIT: dlopen failed: " << dlerror() << endl;
   }
   if (ok) {
     *conjtable = (void **)dlsym(*handle, "twsearch_jit_conjtable");
     *conjcmptable = (void **)dlsym(*handle, "twsearch_jit_conjcmptable");
     ok = (*conjtable != 0 && *conjcmptable != 0);
+    if (!ok)
+      cerr << "JIT: dlsym failed: " << dlerror() << endl;
+  }
+  if (!ok) {
+    // Preserve/print whatever the compiler had to say rather than just
+    // discarding it -- otherwise "JIT doesn't work here" is undiagnosable.
+    dumpfile("JIT compiler output", srcpath + ".log");
+    if (verbose <= 1) // already shown above if verbose
+      dumpfile("generated JIT source", srcpath);
   }
   unlink(srcpath.c_str());
   unlink((srcpath + ".log").c_str());
@@ -243,7 +275,7 @@ static bool selfcheck(puzdef &pd) {
 void jit_build_symmetry(puzdef &pd) {
   pd.jitconj.clear();
   pd.jitconjcmp.clear();
-  if (disablejit)
+  if (!enablejit)
     return;
   int nrot = (int)pd.rotgroup.size();
   if (nrot < 1 || nrot > 64)
