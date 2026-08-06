@@ -300,19 +300,34 @@ struct puzdef {
   // If the number of symmetry conjugations is <= 64, we can use this
   // to quickly almost always get the single lowest state.
   ull lowsymmbits(const setval b) const {
-    ull r = 1;
     const uchar *bp = b.dat;
     const uchar *rgf = rotgroupflat.data();
     const uchar *rif = rotinvmapflat.data();
+    int nrot = (int)rotgroup.size();
+    // Mandatory first round: every rotation's element-0 value.  This is
+    // the one part of the scan that always runs in full (the extension
+    // below only touches survivors, which is rare), so it dominates the
+    // guess's cost -- and per-rotation "is this new value smaller than,
+    // equal to, or bigger than the best so far" is close to a coin flip,
+    // which is exactly what branch predictors handle worst.  Writing the
+    // update as ternaries rather than if/else-if (same single pass, same
+    // number of loads, no intermediate array) lets the compiler emit
+    // unconditional compare-and-select (csel on arm64, cmov on x86)
+    // instead of data-dependent branches; verified by disassembly and
+    // by measurement (a first attempt that split this into separate
+    // find-the-min/find-the-ties passes was *slower*, despite also being
+    // branch-free, because the intermediate array added real store/load
+    // traffic that outweighed the branches it removed).
     int rv = rif[bp[rgf[0]]];
-    for (int m = 1; m < (int)rotgroup.size(); m++) {
+    ull r = 1;
+    for (int m = 1; m < nrot; m++) {
       size_t base = (size_t)m * totsize;
       int t = rif[base + bp[rgf[base]]];
-      if (t < rv) {
-        r = 1LL << m;
-        rv = t;
-      } else if (t == rv)
-        r |= (1LL << m);
+      ull bit = 1LL << m;
+      bool isless = t < rv;
+      bool iseq = t == rv;
+      rv = isless ? t : rv;
+      r = isless ? bit : (iseq ? (r | bit) : r);
     }
     for (int o = 1; o < setdefs[0].size; o++) {
       if ((r & (r - 1)) == 0)
