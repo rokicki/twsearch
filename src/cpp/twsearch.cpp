@@ -6,6 +6,7 @@
 #include "filtermoves.h"
 #include "generatingset.h"
 #include "index.h"
+#include "jit.h"
 #include "parsemoves.h"
 #include "prunetable.h"
 #include "puzdef.h"
@@ -74,6 +75,7 @@ void reseteverything() {
   randomstart = 0;
   alloptimal = 0;
   disablesymmetry = 0;
+  disablejit = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -140,6 +142,10 @@ static boolopt boolopts[] = {
      "reduced by that symmetry.",
      &alloptimal},
     {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
+    {"--nojit",
+     "Disable JIT-compiled symmetry reduction; use the interpreted\n"
+     "implementation even when a working C compiler is available.",
+     &disablejit},
 };
 static intopt intopts[] = {
     {"--newcanon",
@@ -247,6 +253,7 @@ puzdef makepuzdef(istream *f) {
   }
   if (pd.baserotations.size())
     calcrotations(pd);
+  jit_build_symmetry(pd);
   calculatesizes(pd);
   calclooseper(pd);
   if (ccount == 0)
