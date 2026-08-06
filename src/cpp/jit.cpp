@@ -1,9 +1,11 @@
 #include "jit.h"
 #include "util.h"
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <set>
 #include <sstream>
@@ -162,6 +164,11 @@ static void dumpfile(const string &label, const string &path) {
   cout << "----- " << label << " (" << path << ") -----\n"
        << f.rdbuf() << "----- end " << label << " -----" << endl;
 }
+// On failure, prints (unless quiet) a one-line reason completing the
+// "Compiling JIT . . . " line the caller already opened, then -- regardless
+// of quiet, since these are genuine diagnostics rather than routine status
+// -- dumps the compiler's own output so "JIT doesn't work here" is
+// diagnosable instead of a silent fallback.
 static bool compileandload(const string &src, void **handle, void ***conjtable,
                            void ***conjcmptable) {
   const char *tmpdir = getenv("TMPDIR");
@@ -183,6 +190,7 @@ static bool compileandload(const string &src, void **handle, void ***conjtable,
     dumpfile("generated JIT source", srcpath);
   string sopath = srcpath + ".so";
   bool ok = false;
+  string failmsg = "compile failed; using interpreted.";
   // An explicit --jit-cc is a deliberate choice: try only that, and don't
   // paper over it failing by silently trying something else.  Otherwise,
   // fall through a short list of reasonable guesses.
@@ -202,17 +210,25 @@ static bool compileandload(const string &src, void **handle, void ***conjtable,
   if (ok) {
     *handle = dlopen(sopath.c_str(), RTLD_NOW);
     ok = (*handle != 0);
-    if (!ok)
-      cerr << "JIT: dlopen failed: " << dlerror() << endl;
+    if (!ok) {
+      const char *e = dlerror();
+      failmsg = string("dlopen failed: ") + (e ? e : "unknown error") +
+                "; using interpreted.";
+    }
   }
   if (ok) {
     *conjtable = (void **)dlsym(*handle, "twsearch_jit_conjtable");
     *conjcmptable = (void **)dlsym(*handle, "twsearch_jit_conjcmptable");
     ok = (*conjtable != 0 && *conjcmptable != 0);
-    if (!ok)
-      cerr << "JIT: dlsym failed: " << dlerror() << endl;
+    if (!ok) {
+      const char *e = dlerror();
+      failmsg = string("dlsym failed: ") + (e ? e : "unknown error") +
+                "; using interpreted.";
+    }
   }
   if (!ok) {
+    if (!quiet) // finishes the "Compiling JIT . . . " line the caller opened
+      cout << failmsg << endl;
     // Preserve/print whatever the compiler had to say rather than just
     // discarding it -- otherwise "JIT doesn't work here" is undiagnosable.
     dumpfile("JIT compiler output", srcpath + ".log");
@@ -286,13 +302,19 @@ void jit_build_symmetry(puzdef &pd) {
   string src = gensource(pd);
   void *handle = 0;
   void **conjtable = 0, **conjcmptable = 0;
-  if (!compileandload(src, &handle, &conjtable, &conjcmptable)) {
-    if (!quiet)
-      cout << "JIT: no working C compiler found; using interpreted "
-              "symmetry reduction."
-           << endl;
-    return;
-  }
+  // Compiling can take several seconds for puzzles with large rotation
+  // groups (e.g. megaminx), so say something before blocking on it -- and
+  // keep the whole status (start, timing, outcome) to this one line, since
+  // compileandload() completes it itself on failure.
+  if (!quiet)
+    cout << "Compiling JIT . . . " << flush;
+  auto compilestart = chrono::steady_clock::now();
+  bool compiled = compileandload(src, &handle, &conjtable, &conjcmptable);
+  double secs =
+      chrono::duration<double>(chrono::steady_clock::now() - compilestart)
+          .count();
+  if (!compiled)
+    return; // compileandload() already finished the status line
   pd.jithandle = handle;
   pd.jitconj.resize(nrot);
   pd.jitconjcmp.resize(nrot);
@@ -302,14 +324,12 @@ void jit_build_symmetry(puzdef &pd) {
   }
   if (!selfcheck(pd)) {
     if (!quiet)
-      cout << "JIT: generated code failed self-check; using interpreted "
-              "symmetry reduction."
-           << endl;
+      cout << "self-check failed; using interpreted." << endl;
     pd.jitconj.clear();
     pd.jitconjcmp.clear();
     return;
   }
   if (!quiet)
-    cout << "JIT: compiled specialized symmetry reduction for " << nrot
-         << " rotations." << endl;
+    cout << nrot << " rotations, " << fixed << setprecision(1) << secs
+         << "s." << endl;
 }
