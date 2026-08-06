@@ -195,12 +195,18 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   } else if (pd.rotgroup.size() <= 64) {
     ull lobits = pd.lowsymmbits(p1);
     int g = ffsll(lobits) - 1;
-    pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
+    if (!pd.jitconj.empty())
+      pd.jitconj[g](p1.dat, p2.dat);
+    else
+      pd.rotconjugate(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
     lobits &= ~(1LL << g);
     while (lobits) {
       g = ffsll(lobits) - 1;
       lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
+      int t =
+          !pd.jitconjcmp.empty()
+              ? pd.jitconjcmp[g](p1.dat, p2.dat)
+              : pd.rotconjugatecmp(pd.rotinvmap[g], p1, pd.rotgroup[g].pos, p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1;
@@ -274,7 +280,10 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
     while (lobits) {
       g = ffsll(lobits) - 1;
       lobits &= ~(1LL << g);
-      int t = pd.rotconjugatecmp(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
+      int t =
+          !pd.jitconjcmp.empty()
+              ? pd.jitconjcmp[g](pt.dat, p2.dat)
+              : pd.rotconjugatecmp(pd.rotinvmap[g], pt, pd.rotgroup[g].pos, p2);
       if (t <= 0) {
         if (t < 0) {
           cnt = 1 | MODINV_BACKWARD;

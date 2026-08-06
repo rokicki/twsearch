@@ -121,6 +121,21 @@ struct puzdef {
       rotgroup;
   vector<movealias> moveseqs;
   vector<allocsetval> rotinvmap;
+  // JIT-compiled, per-rotation replacements for rotconjugate/rotconjugatecmp
+  // (see jit.cpp).  jitconj[m]/jitconjcmp[m] behave exactly like
+  // rotconjugate(rotinvmap[m], p1, rotgroup[m].pos, p2) and
+  // rotconjugatecmp(rotinvmap[m], p1, rotgroup[m].pos, p2) respectively,
+  // but with the rotation's permutation/table data compiled in as
+  // constants instead of read through pointers at run time.  Left empty
+  // (the normal case) whenever JIT compilation isn't attempted or isn't
+  // trusted; callers must always be prepared to fall back to the
+  // interpreted routines.
+  typedef void (*jitconjfn_t)(const unsigned char *, unsigned char *);
+  typedef int (*jitconjcmpfn_t)(const unsigned char *, unsigned char *);
+  vector<jitconjfn_t> jitconj;
+  vector<jitconjcmpfn_t> jitconjcmp;
+  void *jithandle = 0; // dlopen handle backing jitconj/jitconjcmp; kept
+                       // open for the process lifetime and never closed.
   vector<int> basemoveorders, baserotorders;
   vector<int> rotinv;
   vector<ull> commutes;
