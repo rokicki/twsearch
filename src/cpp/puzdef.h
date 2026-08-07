@@ -14,10 +14,17 @@ using namespace std;
  *   gain a fair bit by specializing specific cases.
  */
 extern double dllstates;
-// Quick x86-vs-arm64 A/B knob for lowsymmbits' mandatory-round codegen
-// shape (see there) -- not meant to be permanent or documented, just to
-// settle whether cmov-vs-branch is actually why it regressed on x86.
+// lowsymmbits' mandatory round (see there) has two equivalent codegen
+// shapes -- ternary/branch-free and explicit if/else -- that measured
+// oppositely on arm64 vs. an x86 box (clean win each way, not just
+// noise).  Rather than guess by #ifdef, calcrotations() times both for
+// real on whatever machine is actually running and keeps whichever
+// wins (see rotations.cpp's autotune_symmguess()); symmguessbranchy is
+// the outcome lowsymmbits() actually reads, symmguessforce{ternary,
+// branchy} (--symmguess-ternary/--symmguess-branchy) skip the timing
+// and pin it, mainly so A/B scripts can force a specific side.
 extern int symmguessbranchy;
+extern int symmguessforceternary, symmguessforcebranchy;
 /*
  *   gmoda is used to calculate orientations for a given count of
  *   orientations.  Let's say we're working on a case where there

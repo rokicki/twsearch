@@ -1,5 +1,6 @@
 #include "rotations.h"
 #include "index.h"
+#include <chrono>
 #include <cstring>
 #include <iostream>
 #include <map>
@@ -7,6 +8,7 @@
 #include <vector>
 int disablesymmetry;
 int symmguessbranchy;
+int symmguessforceternary, symmguessforcebranchy;
 // so we can use STL we wrap setvals in a vector.
 vector<uchar> setvaltovec(puzdef &pd, setval v) {
   return vector<uchar>(v.dat, v.dat + pd.totsize);
@@ -91,6 +93,73 @@ void calcrotflatarrays(puzdef &pd) {
            pd.rotinvmap[m].dat, pd.totsize);
   }
 }
+// Times lowsymmbits' two equivalent mandatory-round shapes for real, on
+// whatever CPU this process is actually running on, and sets
+// symmguessbranchy to whichever wins -- see the comment on it in
+// puzdef.h.  Uses its own local, fixed-seed RNG (not myrand()/mysrand())
+// so it never perturbs the shared random stream -R makes reproducible
+// for everything else, same reasoning as jit.cpp's selfcheck().  Must
+// run after calcrotflatarrays() (lowsymmbits needs rotgroupflat/
+// rotinvmapflat) and after pd.moves/pd.solved are populated.
+static void autotune_symmguess(puzdef &pd) {
+  if (symmguessforcebranchy) {
+    symmguessbranchy = 1;
+    return;
+  }
+  if (symmguessforceternary) {
+    symmguessbranchy = 0;
+    return;
+  }
+  int nrot = (int)pd.rotgroup.size();
+  if (nrot < 2 || pd.moves.empty()) // nothing meaningful to choose between
+    return;
+  // A real search sees an effectively endless stream of distinct
+  // positions.  Cycling through a small pool here would let the branch
+  // predictor learn its exact repeating pattern of outcomes -- tried
+  // first, and it flattered the branchy shape enough to contradict the
+  // real full-solve numbers that motivated this whole file.  So: enough
+  // genuinely distinct positions that nothing repeats anywhere in the
+  // measurement, warm-up included (CALLS for warm-up, another CALLS,
+  // never touched before, for the timed half).
+  const int CALLS = 20000;
+  const int NPOS = 2 * CALLS;
+  vector<allocsetval> samples;
+  samples.reserve(NPOS);
+  stacksetval p1(pd), tmp1(pd);
+  pd.assignpos(p1, pd.solved);
+  unsigned int localseed = 0x2545f491u;
+  for (int t = 0; t < NPOS; t++) {
+    localseed = localseed * 1103515245u + 12345u;
+    int mv = (int)((localseed >> 8) % pd.moves.size());
+    pd.mul(p1, pd.moves[mv].pos, tmp1);
+    pd.assignpos(p1, tmp1);
+    samples.emplace_back(pd, pd.solved);
+    pd.assignpos(samples.back(), p1);
+  }
+  // The volatile sink is a second, portable (no inline asm, so this still
+  // builds under MSVC/emscripten) line of defense against the optimizer
+  // folding the loop away, on top of every call now touching genuinely
+  // fresh data.
+  auto timeit = [&](bool branchy) -> double {
+    symmguessbranchy = branchy;
+    volatile ull sink = 0;
+    for (int c = 0; c < CALLS; c++) // warm-up: first half of the pool
+      sink += pd.lowsymmbits(samples[c]);
+    auto t0 = chrono::steady_clock::now();
+    for (int c = CALLS; c < NPOS; c++) // timed: second half, never seen above
+      sink += pd.lowsymmbits(samples[c]);
+    auto t1 = chrono::steady_clock::now();
+    (void)sink;
+    return chrono::duration<double>(t1 - t0).count();
+  };
+  double tternary = timeit(false);
+  double tbranchy = timeit(true);
+  symmguessbranchy = tbranchy < tternary;
+  if (verbose > 1)
+    cout << "symmguess auto-tune: ternary " << (tternary * 1e6)
+         << "us, branchy " << (tbranchy * 1e6) << "us -> using "
+         << (symmguessbranchy ? "branchy" : "ternary") << endl;
+}
 void calcrotations(puzdef &pd) {
   if (disablesymmetry)
     return;
@@ -168,6 +237,7 @@ void calcrotations(puzdef &pd) {
   calcrotinvs(pd);
   calcrotinvmap(pd);
   calcrotflatarrays(pd);
+  autotune_symmguess(pd);
   if (quiet == 0)
     cout << "Rotation group size is " << q.size() << endl;
   // test that for a random p,

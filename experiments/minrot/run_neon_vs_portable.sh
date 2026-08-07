@@ -1,14 +1,10 @@
 #!/bin/bash
-# Three-way A/B on lowsymmbits' mandatory-round codegen shape, no JIT
-# involved: --symmguess-ternary (branch-free) vs --symmguess-branchy
-# (explicit if/else) vs the default ("auto", calcrotations() timing both
-# for real at puzzle load and picking whichever wins -- see
-# autotune_symmguess() in src/cpp/rotations.cpp), on both 3x3x3 and
-# megaminx, two reps each, strictly sequential.  Originally written to
-# settle whether the branch-free rewrite (a clean win on arm64, confirmed
-# via disassembly there) was a net loss on x86 (it was, ~8%); now mainly
-# useful to confirm the auto-tuned "auto" row actually lands on the same
-# side "ternary"/"branchy" show is faster, rather than trusting it blind.
+# Focused A/B: no-jit, --jit-style 1 (portable, previous best), and
+# --jit-style 2 (neon) on both 3x3x3 and megaminx, two reps each,
+# strictly sequential.  Generalizes run_megaminx_ab.sh's mechanics (same
+# canonical WALL_SECONDS/INSTRUCTIONS/CYCLES/EXIT log lines, same
+# aggregate_megaminx_ab.py, now parameterized by --prefix) to more than
+# one puzzle in a single invocation.
 set -u
 cd "$(dirname "${BASH_SOURCE[0]}")/../.." || exit 1
 
@@ -21,8 +17,8 @@ if [ "$OS" = "Linux" ] && command -v perf >/dev/null 2>&1; then
   HAVEPERF=1
 fi
 
-declare -a LABELS=(ternary branchy auto)
-declare -a ARGS=("--symmguess-ternary" "--symmguess-branchy" "")
+declare -a LABELS=(nojit jitportable jitneon)
+declare -a ARGS=("" "--jit --jit-style 1" "--jit --jit-style 2")
 
 run_puzzle() {
   local prefix="$1" puzzle="$2" seq="$3"
@@ -71,9 +67,9 @@ run_puzzle() {
   done
 }
 
-SUMMARY="$LOGDIR/branchy_ab_summary.txt"
+SUMMARY="$LOGDIR/neon_vs_portable_summary.txt"
 {
-echo "branchy-vs-ternary A/B run started $(date)"
+echo "neon-vs-portable A/B run started $(date)"
 echo "host: $(uname -a)"
 } > "$SUMMARY"
 
