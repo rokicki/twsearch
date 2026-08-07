@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Parse the per-run megaminx A/B logs and print a summary table with
-per-config averages over the repeats.  Usage:
-  aggregate_megaminx_ab.py <logdir> <nreps> <label1> <label2> ...
+"""Parse per-run A/B logs and print a summary table with per-config
+averages over the repeats.  Usage:
+  aggregate_megaminx_ab.py <logdir> <nreps> <label1> <label2> ... [--prefix name]
+
+Log files are expected at <logdir>/<prefix>_<label>_run<rep>.log; --prefix
+defaults to "megaminx" for backward compatibility with run_megaminx_ab.sh.
 
 Reads the canonical WALL_SECONDS/INSTRUCTIONS/CYCLES/EXIT lines that
 run_megaminx_ab.sh appends to each log (platform-independent -- how those
@@ -54,7 +57,13 @@ def fmt(x, digits=2):
 def main():
     logdir = sys.argv[1]
     nreps = int(sys.argv[2])
-    labels = sys.argv[3:]
+    rest = sys.argv[3:]
+    prefix = "megaminx"
+    if "--prefix" in rest:
+        i = rest.index("--prefix")
+        prefix = rest[i + 1]
+        rest = rest[:i] + rest[i + 2:]
+    labels = rest
 
     print(f"{'config':<18} {'run':>3} {'real(s)':>10} {'instructions':>16} "
           f"{'cycles':>16} {'IPC':>6}  solution")
@@ -62,7 +71,7 @@ def main():
     for label in labels:
         results = []
         for rep in range(1, nreps + 1):
-            path = f"{logdir}/megaminx_{label}_run{rep}.log"
+            path = f"{logdir}/{prefix}_{label}_run{rep}.log"
             r = parse_log(path)
             results.append(r)
             if r is None:
