@@ -144,22 +144,50 @@ struct puzdef {
   setval rotinvmappos(int m) const {
     return setval(const_cast<uchar *>(rotinvmapptr(m)));
   }
-  // JIT-compiled, per-rotation replacements for rotconjugate/rotconjugatecmp
-  // (see jit.cpp).  jitconj[m]/jitconjcmp[m] behave exactly like
-  // rotconjugate(rotinvmap[m], p1, rotgroup[m].pos, p2) and
-  // rotconjugatecmp(rotinvmap[m], p1, rotgroup[m].pos, p2) respectively,
-  // but with the rotation's permutation/table data compiled in as
-  // constants instead of read through pointers at run time.  Left empty
-  // (the normal case) whenever JIT compilation isn't attempted or isn't
-  // trusted; callers must always be prepared to fall back to the
-  // interpreted routines (rotconjugate/rotconjugatecmp against
-  // rotgrouppos(m)/rotinvmappos(m) above).
+  // JIT-compiled replacements for rotconjugate/rotconjugatecmp (see
+  // jit.cpp), in one of two shapes depending on --jit-table:
+  //
+  //   jitconj[m]/jitconjcmp[m] (the --jit default): one function pointer
+  //   per rotation-group element, with that rotation's permutation/table
+  //   data compiled in as constants.
+  //
+  //   jitconjtable/jitconjcmptable (--jit-table): a single shared pair,
+  //   taking the rotation index m as an explicit argument and reading its
+  //   permutation/table data out of flat per-rotation arrays instead.
+  //
+  // Either way, equivalent to rotconjugate(rotinvmap[m], p1,
+  // rotgroup[m].pos, p2) and rotconjugatecmp(rotinvmap[m], p1,
+  // rotgroup[m].pos, p2) respectively.  Exactly one of the two shapes is
+  // ever populated at a time; use havejit()/jitconjcall()/jitconjcmpcall()
+  // below rather than testing/calling these directly, so callers don't
+  // need to care which shape is active.  Left empty (the normal case)
+  // whenever JIT compilation isn't attempted or isn't trusted; callers
+  // must always be prepared to fall back to the interpreted routines
+  // (rotconjugate/rotconjugatecmp against rotgrouppos(m)/rotinvmappos(m)
+  // above).
   typedef void (*jitconjfn_t)(const unsigned char *, unsigned char *);
   typedef int (*jitconjcmpfn_t)(const unsigned char *, unsigned char *);
+  typedef void (*jitconjtablefn_t)(int, const unsigned char *,
+                                   unsigned char *);
+  typedef int (*jitconjcmptablefn_t)(int, const unsigned char *,
+                                     unsigned char *);
   vector<jitconjfn_t> jitconj;
   vector<jitconjcmpfn_t> jitconjcmp;
-  void *jithandle = 0; // dlopen handle backing jitconj/jitconjcmp; kept
-                       // open for the process lifetime and never closed.
+  jitconjtablefn_t jitconjtable = 0;
+  jitconjcmptablefn_t jitconjcmptable = 0;
+  void *jithandle = 0; // dlopen handle backing the above; kept open for
+                       // the process lifetime and never closed.
+  bool havejit() const { return jitconjtable || !jitconj.empty(); }
+  void jitconjcall(int m, const setval p1, setval p2) const {
+    if (jitconjtable)
+      jitconjtable(m, p1.dat, p2.dat);
+    else
+      jitconj[m](p1.dat, p2.dat);
+  }
+  int jitconjcmpcall(int m, const setval p1, setval p2) const {
+    return jitconjcmptable ? jitconjcmptable(m, p1.dat, p2.dat)
+                           : jitconjcmp[m](p1.dat, p2.dat);
+  }
   vector<int> basemoveorders, baserotorders;
   vector<int> rotinv;
   vector<ull> commutes;

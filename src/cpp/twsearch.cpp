@@ -76,6 +76,7 @@ void reseteverything() {
   alloptimal = 0;
   disablesymmetry = 0;
   enablejit = 0;
+  jittable = 0;
   jitcc = 0;
   maxdepth = 1000000000;
   didprepass = 0;
@@ -160,6 +161,14 @@ static boolopt boolopts[] = {
      "failure to compile, dlopen, or self-check) the compiler's own\n"
      "diagnostic output.",
      &enablejit},
+    {"--jit-table",
+     "With --jit, generate one shared routine indexed by rotation number\n"
+     "at call time, instead of one fully-specialized routine per rotation.\n"
+     "Trades some speed for code size roughly 1/(rotation count) of the\n"
+     "default's -- worth trying on puzzles with large rotation groups\n"
+     "(e.g. megaminx) if the default's generated code pressures the\n"
+     "instruction cache on the target machine.  Ignored without --jit.",
+     &jittable},
 };
 static intopt intopts[] = {
     {"--newcanon",

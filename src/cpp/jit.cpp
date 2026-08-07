@@ -12,6 +12,7 @@
 #include <string>
 #include <unistd.h>
 int enablejit;
+int jittable;
 const char *jitcc;
 /*
  *   Code generation.  For a single rotation m, rotconjugate/rotconjugatecmp
@@ -144,6 +145,105 @@ static string gensource(const puzdef &pd) {
   o << "};\n";
   return o.str();
 }
+// Table-indexed variant (see --jit-table): same fully-unrolled-per-element
+// code shape as gensource() above -- still no loop over setdefs/j, so no
+// loop-control overhead -- but *one* shared conj()/conjcmp() pair, selected
+// at call time by a rotation index argument m, reading ap/cp out of flat
+// [nrot][totsize] tables instead of having them baked in as per-rotation
+// literals.  That reintroduces `cp[j]` as a genuine runtime load (`bp[cp[j]]`
+// is back to two *dependent* loads instead of gensource()'s one
+// fixed-offset load), so this is slower than gensource() -- but the
+// generated code no longer scales with nrot, so it's a lot smaller: the
+// data that used to make each rotation's code different now lives in
+// AP[]/CP[], which are just read-only tables, not more code.
+static string gensource_table(const puzdef &pd) {
+  ostringstream o;
+  o << "typedef unsigned char uc;\n";
+  int nrot = (int)pd.rotgroup.size();
+  int totsize = pd.totsize;
+  o << "static const uc AP[" << nrot << "][" << totsize << "] = {\n";
+  for (int m = 0; m < nrot; m++) {
+    const uchar *ap = pd.rotinvmap[m].dat;
+    o << "  {";
+    for (int k = 0; k < totsize; k++)
+      o << (k ? "," : "") << (int)ap[k];
+    o << "},\n";
+  }
+  o << "};\n";
+  o << "static const uc CP[" << nrot << "][" << totsize << "] = {\n";
+  for (int m = 0; m < nrot; m++) {
+    const uchar *cp = pd.rotgroup[m].pos.dat;
+    o << "  {";
+    for (int k = 0; k < totsize; k++)
+      o << (k ? "," : "") << (int)cp[k];
+    o << "},\n";
+  }
+  o << "};\n";
+  set<int> omods;
+  for (auto &sd : pd.setdefs)
+    if (sd.omod > 1)
+      omods.insert(sd.omod);
+  for (int om : omods) {
+    uchar *moda = gmoda[om];
+    o << "static const uc MODA" << om << "[" << 4 * om << "] = {";
+    for (int k = 0; k < 4 * om; k++)
+      o << (k ? "," : "") << (int)moda[k];
+    o << "};\n";
+  }
+  // Named tblconj/tblconjcmp rather than conj/conjcmp to avoid colliding
+  // with the C library's own complex-math conj() builtin.
+  o << "void tblconj(int m, const uc *bp, uc *dp) {\n";
+  o << "  const uc *ap = AP[m], *cp = CP[m];\n";
+  for (auto &sd : pd.setdefs) {
+    int n = sd.size, off = sd.off;
+    for (int j = 0; j < n; j++) {
+      o << "  dp[" << (off + j) << "] = ap[" << off << "+bp[" << off
+        << "+cp[" << (off + j) << "]]];\n";
+      if (sd.omod > 1)
+        o << "  dp[" << (off + n + j) << "] = MODA" << (int)sd.omod
+          << "[ap[" << (off + n) << "+bp[" << off << "+cp[" << (off + j)
+          << "]]]+MODA" << (int)sd.omod << "[bp[" << (off + n) << "+cp["
+          << (off + j) << "]]+cp[" << (off + n + j) << "]]];\n";
+      else
+        o << "  dp[" << (off + n + j) << "] = 0;\n";
+    }
+  }
+  o << "}\n";
+  o << "int tblconjcmp(int m, const uc *bp, uc *dp) {\n";
+  o << "  const uc *ap = AP[m], *cp = CP[m];\n";
+  o << "  int r = 0;\n";
+  for (auto &sd : pd.setdefs) {
+    int n = sd.size, off = sd.off;
+    for (int j = 0; j < n; j++) {
+      int didx = off + j;
+      o << "  { uc nv = ap[" << off << "+bp[" << off << "+cp[" << didx
+        << "]]];\n";
+      o << "    if (r > 0) dp[" << didx << "] = nv;\n";
+      o << "    else if (nv > dp[" << didx << "]) return 1;\n";
+      o << "    else if (nv < dp[" << didx << "]) { r = 1; dp[" << didx
+        << "] = nv; } }\n";
+    }
+    for (int j = 0; j < n; j++) {
+      int didx = off + n + j;
+      if (sd.omod > 1) {
+        o << "  { uc nv = MODA" << (int)sd.omod << "[ap[" << (off + n)
+          << "+bp[" << off << "+cp[" << (off + j) << "]]]+MODA"
+          << (int)sd.omod << "[bp[" << (off + n) << "+cp[" << (off + j)
+          << "]]+cp[" << didx << "]]];\n";
+        o << "    if (r > 0) dp[" << didx << "] = nv;\n";
+        o << "    else if (nv > dp[" << didx << "]) return 1;\n";
+        o << "    else if (nv < dp[" << didx << "]) { r = 1; dp[" << didx
+          << "] = nv; } }\n";
+      } else {
+        o << "  if (r > 0) dp[" << didx << "] = 0;\n";
+        o << "  else if (dp[" << didx << "] != 0) { r = 1; dp[" << didx
+          << "] = 0; }\n";
+      }
+    }
+  }
+  o << "  return -r;\n}\n";
+  return o.str();
+}
 // Try each of these, in order, as a C compiler; the generated file is
 // plain C, and passing -x c makes the language choice explicit regardless
 // of the file's (extensionless) name, so a C++-flavored CXX still works.
@@ -169,8 +269,9 @@ static void dumpfile(const string &label, const string &path) {
 // of quiet, since these are genuine diagnostics rather than routine status
 // -- dumps the compiler's own output so "JIT doesn't work here" is
 // diagnosable instead of a silent fallback.
-static bool compileandload(const string &src, void **handle, void ***conjtable,
-                           void ***conjcmptable) {
+static bool compileandload(const string &src, void **handle,
+                           const char *sym1, void **out1, const char *sym2,
+                           void **out2) {
   const char *tmpdir = getenv("TMPDIR");
   if (!tmpdir || !*tmpdir)
     tmpdir = "/tmp";
@@ -217,9 +318,9 @@ static bool compileandload(const string &src, void **handle, void ***conjtable,
     }
   }
   if (ok) {
-    *conjtable = (void **)dlsym(*handle, "twsearch_jit_conjtable");
-    *conjcmptable = (void **)dlsym(*handle, "twsearch_jit_conjcmptable");
-    ok = (*conjtable != 0 && *conjcmptable != 0);
+    *out1 = dlsym(*handle, sym1);
+    *out2 = dlsym(*handle, sym2);
+    ok = (*out1 != 0 && *out2 != 0);
     if (!ok) {
       const char *e = dlerror();
       failmsg = string("dlsym failed: ") + (e ? e : "unknown error") +
@@ -265,7 +366,7 @@ static bool selfcheck(puzdef &pd) {
     }
     for (int m = 0; m < NROT; m++) {
       pd.rotconjugate(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, tmp1);
-      pd.jitconj[m](p1.dat, tmp2.dat);
+      pd.jitconjcall(m, p1, tmp2);
       if (pd.comparepos(tmp1, tmp2) != 0)
         return false;
       // conjcmp needs a "current best" to compare against; try a few,
@@ -280,7 +381,7 @@ static bool selfcheck(puzdef &pd) {
         pd.assignpos(d2, d1);
         int r1 =
             pd.rotconjugatecmp(pd.rotinvmap[m], p1, pd.rotgroup[m].pos, d1);
-        int r2 = pd.jitconjcmp[m](p1.dat, d2.dat);
+        int r2 = pd.jitconjcmpcall(m, p1, d2);
         if (r1 != r2 || pd.comparepos(d1, d2) != 0)
           return false;
       }
@@ -291,6 +392,8 @@ static bool selfcheck(puzdef &pd) {
 void jit_build_symmetry(puzdef &pd) {
   pd.jitconj.clear();
   pd.jitconjcmp.clear();
+  pd.jitconjtable = 0;
+  pd.jitconjcmptable = 0;
   if (!enablejit)
     return;
   int nrot = (int)pd.rotgroup.size();
@@ -299,9 +402,11 @@ void jit_build_symmetry(puzdef &pd) {
   for (auto &sd : pd.setdefs)
     if (sd.relabel)
       return; // not handled by the generated code (yet); stay interpreted
-  string src = gensource(pd);
+  string src = jittable ? gensource_table(pd) : gensource(pd);
+  const char *sym1 = jittable ? "tblconj" : "twsearch_jit_conjtable";
+  const char *sym2 = jittable ? "tblconjcmp" : "twsearch_jit_conjcmptable";
   void *handle = 0;
-  void **conjtable = 0, **conjcmptable = 0;
+  void *out1 = 0, *out2 = 0;
   // Compiling can take several seconds for puzzles with large rotation
   // groups (e.g. megaminx), so say something before blocking on it -- and
   // keep the whole status (start, timing, outcome) to this one line, since
@@ -309,27 +414,35 @@ void jit_build_symmetry(puzdef &pd) {
   if (!quiet)
     cout << "Compiling JIT . . . " << flush;
   auto compilestart = chrono::steady_clock::now();
-  bool compiled = compileandload(src, &handle, &conjtable, &conjcmptable);
+  bool compiled = compileandload(src, &handle, sym1, &out1, sym2, &out2);
   double secs =
       chrono::duration<double>(chrono::steady_clock::now() - compilestart)
           .count();
   if (!compiled)
     return; // compileandload() already finished the status line
   pd.jithandle = handle;
-  pd.jitconj.resize(nrot);
-  pd.jitconjcmp.resize(nrot);
-  for (int m = 0; m < nrot; m++) {
-    pd.jitconj[m] = (puzdef::jitconjfn_t)conjtable[m];
-    pd.jitconjcmp[m] = (puzdef::jitconjcmpfn_t)conjcmptable[m];
+  if (jittable) {
+    pd.jitconjtable = (puzdef::jitconjtablefn_t)out1;
+    pd.jitconjcmptable = (puzdef::jitconjcmptablefn_t)out2;
+  } else {
+    void **conjtable = (void **)out1, **conjcmptable = (void **)out2;
+    pd.jitconj.resize(nrot);
+    pd.jitconjcmp.resize(nrot);
+    for (int m = 0; m < nrot; m++) {
+      pd.jitconj[m] = (puzdef::jitconjfn_t)conjtable[m];
+      pd.jitconjcmp[m] = (puzdef::jitconjcmpfn_t)conjcmptable[m];
+    }
   }
   if (!selfcheck(pd)) {
     if (!quiet)
       cout << "self-check failed; using interpreted." << endl;
     pd.jitconj.clear();
     pd.jitconjcmp.clear();
+    pd.jitconjtable = 0;
+    pd.jitconjcmptable = 0;
     return;
   }
   if (!quiet)
-    cout << nrot << " rotations, " << fixed << setprecision(1) << secs
-         << "s." << endl;
+    cout << nrot << " rotations" << (jittable ? " (table-indexed)" : "")
+         << ", " << fixed << setprecision(1) << secs << "s." << endl;
 }
