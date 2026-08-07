@@ -1,6 +1,8 @@
-# Compiled binaries -- rebuild with `make` in this directory.
+# Compiled binaries -- rebuild with `make` in this directory (or, for
+# permrank_proto, `c++ -O2 -std=c++17 -o permrank_proto permrank_proto.cpp`).
 /bench
 /extractor
+/permrank_proto
 
 # Data dumped by extract.cpp and consumed by bench.cpp -- regenerate with
 # `make extractor && ./extractor` (needs twsearch built from this branch
