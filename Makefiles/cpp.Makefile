@@ -20,7 +20,7 @@ ${CPP_MAKEFILE}:
 
 BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/filtermoves.cpp src/cpp/generatingset.cpp src/cpp/index.cpp \
-   src/cpp/jit.cpp src/cpp/parsemoves.cpp src/cpp/prunetable.cpp src/cpp/pruneio.cpp \
+   src/cpp/jit.cpp src/cpp/parsemoves.cpp src/cpp/permrank.cpp src/cpp/prunetable.cpp src/cpp/pruneio.cpp \
    src/cpp/puzdef.cpp src/cpp/readksolve.cpp src/cpp/rotations.cpp \
    src/cpp/solve.cpp src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
    src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp subgroup.cpp
@@ -35,7 +35,7 @@ CSOURCE = $(BASESOURCE) $(FFISOURCE) $(EXTRASOURCE)
 
 OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/filtermoves.o build/cpp/findalgo.o build/cpp/generatingset.o build/cpp/god.o \
-   build/cpp/index.o build/cpp/jit.o build/cpp/parsemoves.o build/cpp/prunetable.o build/cpp/pruneio.o build/cpp/puzdef.o \
+   build/cpp/index.o build/cpp/jit.o build/cpp/parsemoves.o build/cpp/permrank.o build/cpp/prunetable.o build/cpp/pruneio.o build/cpp/puzdef.o \
    build/cpp/readksolve.o build/cpp/solve.o build/cpp/test.o build/cpp/threads.o \
    build/cpp/twsearch.o build/cpp/util.o build/cpp/workchunks.o build/cpp/rotations.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
@@ -45,7 +45,7 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
-   src/cpp/jit.h src/cpp/parsemoves.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
+   src/cpp/jit.h src/cpp/parsemoves.h src/cpp/permrank.h src/cpp/prunetable.h src/cpp/puzdef.h src/cpp/readksolve.h src/cpp/solve.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h \

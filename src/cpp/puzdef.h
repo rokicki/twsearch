@@ -143,6 +143,29 @@ struct puzdef {
   // lowsymmguess/lowsymmbits below, and (via rotgrouppos/rotinvmappos) as
   // the interpreted fallback wherever jitconj/jitconjcmp aren't available.
   vector<uchar> rotgroupflat, rotinvmapflat;
+  // For n = setdefs[0].size small enough (see permrank.h/--fastindex):
+  // for rank r of setdefs[0]'s permutation under fastrank()'s scheme,
+  // fastbitsside[fastbits[r]] is exactly what lowsymmbits() would
+  // compute for a position with that permutation -- precomputed once,
+  // at puzzle load, over the whole domain.
+  //
+  // The overwhelming majority of lowsymmbits() results are a single bit
+  // (one rotation strictly wins, no tie), and even across ties, the
+  // actual number of *distinct* bitmask values that occur is small --
+  // so rather than store the ull result directly (8 bytes, mostly spent
+  // encoding which single bit is set), fastbits[r] is a single byte:
+  // for the common single-bit case, precisely that bit's index (0..
+  // nrot-1); for a tie, nrot + (index into the extra, deduplicated,
+  // multi-bit values appended after them).  fastbitsside's first nrot
+  // entries are exactly 1LL<<i, so indexing it is unconditional either
+  // way -- no branch needed to tell the two cases apart at query time.
+  //
+  // Left empty (the normal case) whenever --fastindex isn't passed,
+  // isn't applicable, or isn't trusted; callers must always be prepared
+  // to fall back to lowsymmbits().
+  vector<uchar> fastbits;
+  vector<ull> fastbitsside;
+  bool havefastbits() const { return !fastbits.empty(); }
   const uchar *rotgroupptr(int m) const {
     return rotgroupflat.data() + (size_t)m * totsize;
   }

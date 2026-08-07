@@ -1,5 +1,6 @@
 #include "rotations.h"
 #include "index.h"
+#include "permrank.h"
 #include <chrono>
 #include <cstring>
 #include <iostream>
@@ -282,7 +283,9 @@ int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
       }
     }
   } else if (pd.rotgroup.size() <= 64) {
-    ull lobits = pd.lowsymmbits(p1);
+    ull lobits = pd.havefastbits()
+                     ? pd.fastbitsside[pd.fastbits[fastrank(p1.dat)]]
+                     : pd.lowsymmbits(p1);
     int g = ffsll(lobits) - 1;
     if (pd.havejit())
       pd.jitconjcall(g, p1, p2);
@@ -363,7 +366,9 @@ int slowmodm2inv(const puzdef &pd, const setval p1, setval p2, setval pt) {
       }
     }
   } else if (pd.rotgroup.size() <= 64) {
-    ull lobits = pd.lowsymmbits(pt);
+    ull lobits = pd.havefastbits()
+                     ? pd.fastbitsside[pd.fastbits[fastrank(pt.dat)]]
+                     : pd.lowsymmbits(pt);
     int g = 0;
     lobits &= ~(1LL << g);
     while (lobits) {

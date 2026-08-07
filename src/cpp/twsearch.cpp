@@ -7,6 +7,7 @@
 #include "generatingset.h"
 #include "index.h"
 #include "jit.h"
+#include "permrank.h"
 #include "parsemoves.h"
 #include "prunetable.h"
 #include "puzdef.h"
@@ -81,6 +82,8 @@ void reseteverything() {
   enablejit = 0;
   jitstyle = 1;
   jitcc = 0;
+  enablefastindex = 0;
+  fastindexmaxn = 3628800; // 10!; --fastindex-maxn 0 means "no limit"
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -174,6 +177,14 @@ static boolopt boolopts[] = {
      "failure to compile, dlopen, or self-check) the compiler's own\n"
      "diagnostic output.",
      &enablejit},
+    {"--fastindex",
+     "Experimental: for puzzles whose primary discriminator set\n"
+     "(setdefs[0]) is small enough, precompute a full n!-entry table\n"
+     "mapping every permutation of it directly to the rotations to try,\n"
+     "replacing the runtime scan entirely.  Off by default; falls back\n"
+     "to the normal interpreted path (harmlessly) if not applicable or\n"
+     "not trusted.  See --fastindex-maxn.",
+     &enablefastindex},
 };
 static intopt intopts[] = {
     {"--newcanon",
@@ -209,6 +220,13 @@ static llopt solcountopt(
     "and is reduced by symmetry, the set of solutions will also be\n"
     "reduced by that symmetry.",
     &solutionsneeded);
+static llopt fastindexmaxnopt(
+    "--fastindex-maxn",
+    "num  With --fastindex, skip building the table if setdefs[0].size!\n"
+    "would exceed this many entries.  Default 3628800 (10!, ~29MB); pass\n"
+    "0 to remove the limit entirely (setdefs[0].size! can get very large,\n"
+    "very fast -- 12! is already ~3.8GB).",
+    &fastindexmaxn);
 /*
  *   Can be called multiple times at the start.
  */
@@ -291,6 +309,7 @@ puzdef makepuzdef(istream *f) {
   if (pd.baserotations.size())
     calcrotations(pd);
   jit_build_symmetry(pd);
+  build_fastindex(pd);
   calculatesizes(pd);
   calclooseper(pd);
   if (ccount == 0)
