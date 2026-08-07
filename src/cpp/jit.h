@@ -26,16 +26,32 @@
  */
 void jit_build_symmetry(puzdef &pd);
 extern int enablejit;
-// --jit-table: generate one shared conj()/conjcmp() pair, selected at call
-// time by a rotation index argument and reading its per-rotation
-// permutation/table data out of flat arrays, instead of --jit's default of
-// one fully-specialized (and much larger, all told) function pair per
-// rotation.  Trades some speed for code size roughly 1/nrot of the
-// default's -- worth trying on puzzles with large rotation groups (e.g.
-// megaminx) if instruction-cache pressure from the default's generated
-// code turns out to matter on the target machine.  Only meaningful
+// --jit-style: which shape of generated code to use.  Only meaningful
 // alongside --jit; ignored otherwise.
-extern int jittable;
+//
+//   0  table    One shared conj()/conjcmp() pair, selected at call time by
+//               a rotation index argument, reading its per-rotation
+//               permutation/table data out of flat arrays.  Small (code
+//               size independent of rotation count) but back to the same
+//               dependent-load pattern the interpreted fallback has.
+//   1  portable One fully-specialized function pair per rotation, with
+//               that rotation's data baked in as literals (default).
+//               Fastest, but code size scales with the rotation count --
+//               several times an L1i on a large rotation group (e.g.
+//               megaminx) on the machine this was developed on.
+//   2  neon     Like 0 (one shared, table-indexed pair, so equally small),
+//               but its inner loop uses ARM NEON TBL-based gather instead
+//               of scalar dependent loads.  AArch64 only.
+//   3  sse      Like 2, but x86 SSSE3/SSE4.1 PSHUFB-based gather.
+//   4  avx512   Not yet implemented; reserved for an AVX-512BW VPERMB
+//               version, which (being a single-instruction 64-byte gather,
+//               unlike SSE's chained 16-byte one) should need noticeably
+//               less code than style 3 for the same puzzle.
+//
+// Styles 2-4 fall back to the interpreted implementation (same as any
+// other JIT failure) if the target isn't the right architecture, or if
+// the running compiler doesn't accept the required flags.
+extern int jitstyle;
 // --jit-cc: use exactly this compiler instead of guessing ($CXX, then
 // cc/clang/gcc).  An explicit choice is tried alone, on the theory that
 // silently substituting something else when it fails would defeat the

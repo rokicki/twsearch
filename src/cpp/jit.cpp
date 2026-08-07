@@ -12,8 +12,9 @@
 #include <string>
 #include <unistd.h>
 int enablejit;
-int jittable;
+int jitstyle = 1;
 const char *jitcc;
+static int roundup(int x, int m) { return ((x + m - 1) / m) * m; }
 /*
  *   Code generation.  For a single rotation m, rotconjugate/rotconjugatecmp
  *   (see puzdef.h) walk every setdef and, for every element j in it, do
@@ -145,7 +146,7 @@ static string gensource(const puzdef &pd) {
   o << "};\n";
   return o.str();
 }
-// Table-indexed variant (see --jit-table): same fully-unrolled-per-element
+// Table-indexed variant (see --jit-style 0): same fully-unrolled-per-element
 // code shape as gensource() above -- still no loop over setdefs/j, so no
 // loop-control overhead -- but *one* shared conj()/conjcmp() pair, selected
 // at call time by a rotation index argument m, reading ap/cp out of flat
@@ -244,13 +245,322 @@ static string gensource_table(const puzdef &pd) {
   o << "  return -r;\n}\n";
   return o.str();
 }
+// SIMD-gather variants (--jit-style 2/3): unlike gensource()/gensource_table
+// above, these don't unroll the setdef/j loop at all -- the generated code
+// is a small, fixed set of loops regardless of nrot or totsize, so code
+// size stays flat (all the per-puzzle specificity lives in AP[]/GIDX[]/etc,
+// which is data, not code).  The loops replace the interpreted/table
+// versions' scalar `bp[cp[j]]` dependent-load chain with a vector gather:
+// conceptually, TBL(source_table, index_vector) looks up 16 bytes at once
+// out of up to a 64-byte (NEON) or 16-byte (SSE) table register; ORing the
+// per-window results together reconstructs the correct byte, since exactly
+// one window ever "owns" any given index (see gensource_neon/gensource_sse
+// for how each ISA's semantics make that ORing safe).
+//
+// Both stages of `ap[bp[cp[j]]]` are gathers: first bp[] gathered by a
+// per-position source-index table GIDX (== gensource()'s `gidx`, but global
+// rather than folded into per-rotation literals), then AP[m][] gathered by
+// (that result + a per-position setdef-offset table OFFV, since `off`
+// varies by which setdef a given output byte belongs to).  Both bp and
+// AP[m] can exceed one table register's width, hence the window loop.
+//
+// Orientation deltas involve two MODA[] table lookups and an add, not a
+// pure gather, so they're left to an ordinary scalar patch pass afterward
+// (loop-based over a small setdef descriptor table, not unrolled -- still
+// code-size-flat) that overwrites every orientation byte the gather wrote
+// something meaningless to, reusing the same GIDX/AP data.
+//
+// conjcmp reuses the exact same gather+patch to build a full candidate
+// array, then finds the first differing byte against the current dp with a
+// plain scalar walk -- equivalent to (but structured differently from)
+// gensource()'s interleaved compare-and-lazily-write version.  Once SIMD is
+// computing the whole candidate up front anyway, there's no remaining
+// benefit to fusing the comparison into the gather itself.
+//
+// Emits everything except gather_core() itself (ISA-specific; the caller
+// emits that separately) plus a forward declaration for it.
+static void emit_simd_tables(ostringstream &o, const puzdef &pd,
+                             int winbytes) {
+  int nrot = (int)pd.rotgroup.size();
+  int totsize = pd.totsize;
+  int inbuf = roundup(totsize, winbytes);
+  int nwin = inbuf / winbytes;
+  int outbuf = roundup(totsize, 16);
+  int nchunk = outbuf / 16;
+  o << "#define TOTSIZE " << totsize << "\n";
+  o << "#define INBUF " << inbuf << "\n";
+  o << "#define OUTBUF " << outbuf << "\n";
+  o << "#define NWIN " << nwin << "\n";
+  o << "#define NCHUNK " << nchunk << "\n";
+  o << "static const uc AP[" << nrot << "][INBUF] = {\n";
+  for (int m = 0; m < nrot; m++) {
+    const uchar *ap = pd.rotinvmap[m].dat;
+    o << "  {";
+    for (int k = 0; k < inbuf; k++)
+      o << (k ? "," : "") << (k < totsize ? (int)ap[k] : 0);
+    o << "},\n";
+  }
+  o << "};\n";
+  // GIDX/OFFV are indexed by "off+j" -- a permutation slot -- with the
+  // global source byte index (== gensource()'s `gidx`) / that setdef's
+  // `off`, respectively.  ODELTA reuses the same "off+j" index space to
+  // carry the matching orientation delta (gensource()'s `delta`).  Every
+  // other position (each "off+n+j" orientation slot, and any padding past
+  // totsize) is left 0 here; gather_core still computes *something* for
+  // those lanes (there's no per-lane way to skip them in a vector store),
+  // but the scalar patch pass below always overwrites them afterward.
+  o << "static const uc GIDX[" << nrot << "][OUTBUF] = {\n";
+  for (int m = 0; m < nrot; m++) {
+    const uchar *cp = pd.rotgroup[m].pos.dat;
+    vector<int> gidx(outbuf, 0);
+    for (auto &sd : pd.setdefs) {
+      int n = sd.size, off = sd.off;
+      for (int j = 0; j < n; j++)
+        gidx[off + j] = off + cp[off + j];
+    }
+    o << "  {";
+    for (int k = 0; k < outbuf; k++)
+      o << (k ? "," : "") << gidx[k];
+    o << "},\n";
+  }
+  o << "};\n";
+  {
+    vector<int> offv(outbuf, 0);
+    for (auto &sd : pd.setdefs) {
+      int n = sd.size, off = sd.off;
+      for (int j = 0; j < n; j++)
+        offv[off + j] = off;
+    }
+    o << "static const uc OFFV[OUTBUF] = {";
+    for (int k = 0; k < outbuf; k++)
+      o << (k ? "," : "") << offv[k];
+    o << "};\n";
+  }
+  set<int> omods;
+  for (auto &sd : pd.setdefs)
+    if (sd.omod > 1)
+      omods.insert(sd.omod);
+  for (int om : omods) {
+    uchar *moda = gmoda[om];
+    o << "static const uc MODA" << om << "[" << 4 * om << "] = {";
+    for (int k = 0; k < 4 * om; k++)
+      o << (k ? "," : "") << (int)moda[k];
+    o << "};\n";
+  }
+  if (!omods.empty()) {
+    o << "static const uc ODELTA[" << nrot << "][OUTBUF] = {\n";
+    for (int m = 0; m < nrot; m++) {
+      const uchar *cp = pd.rotgroup[m].pos.dat;
+      vector<int> odelta(outbuf, 0);
+      for (auto &sd : pd.setdefs) {
+        if (sd.omod <= 1)
+          continue;
+        int n = sd.size, off = sd.off;
+        for (int j = 0; j < n; j++)
+          odelta[off + j] = cp[off + n + j];
+      }
+      o << "  {";
+      for (int k = 0; k < outbuf; k++)
+        o << (k ? "," : "") << odelta[k];
+      o << "},\n";
+    }
+    o << "};\n";
+  }
+  o << "typedef struct { int off, n; const uc *moda; } orispec_t;\n";
+  {
+    int norispecs = 0;
+    ostringstream os;
+    for (auto &sd : pd.setdefs)
+      if (sd.omod > 1) {
+        if (norispecs)
+          os << ",";
+        os << "{" << sd.off << "," << sd.size << ",MODA" << (int)sd.omod
+           << "}";
+        norispecs++;
+      }
+    o << "#define NORISPECS " << norispecs << "\n";
+    if (norispecs)
+      o << "static const orispec_t ORISPECS[] = {" << os.str() << "};\n";
+  }
+  o << "typedef struct { int off, n; } zerospec_t;\n";
+  {
+    int nzerospecs = 0;
+    ostringstream os;
+    for (auto &sd : pd.setdefs)
+      if (sd.omod <= 1) {
+        if (nzerospecs)
+          os << ",";
+        os << "{" << sd.off << "," << sd.size << "}";
+        nzerospecs++;
+      }
+    o << "#define NZEROSPECS " << nzerospecs << "\n";
+    if (nzerospecs)
+      o << "static const zerospec_t ZEROSPECS[] = {" << os.str() << "};\n";
+  }
+  o << "static void gather_core(const uc *ap, const uc *gidx, "
+       "const uc *bpbuf, uc *outbuf);\n";
+}
+// ISA-agnostic: the orientation/zero patch pass, and the tblconj/tblconjcmp
+// entry points (see the big comment above emit_simd_tables).  Emitted after
+// gather_core() so it can call it.
+static void emit_simd_wrappers(ostringstream &o) {
+  o << "static void simd_patch(int m, const uc *bpbuf, uc *outbuf) {\n";
+  o << "  (void)m; (void)bpbuf; (void)outbuf;\n";
+  o << "#if NORISPECS\n";
+  o << "  { const uc *ap = AP[m], *gidx = GIDX[m], *odelta = ODELTA[m];\n";
+  o << "    int s, j;\n";
+  o << "    for (s = 0; s < NORISPECS; s++) {\n";
+  o << "      int off = ORISPECS[s].off, n = ORISPECS[s].n;\n";
+  o << "      const uc *moda = ORISPECS[s].moda;\n";
+  o << "      for (j = 0; j < n; j++) {\n";
+  o << "        uc g = gidx[off+j];\n";
+  o << "        outbuf[off+n+j] = moda[ap[off+n+bpbuf[g]] + "
+       "moda[bpbuf[g+n]+odelta[off+j]]];\n";
+  o << "      }\n";
+  o << "    }\n";
+  o << "  }\n";
+  o << "#endif\n";
+  o << "#if NZEROSPECS\n";
+  o << "  { int s;\n";
+  o << "    for (s = 0; s < NZEROSPECS; s++)\n";
+  o << "      memset(outbuf + ZEROSPECS[s].off + ZEROSPECS[s].n, 0, "
+       "ZEROSPECS[s].n);\n";
+  o << "  }\n";
+  o << "#endif\n";
+  o << "}\n";
+  o << "void tblconj(int m, const uc *bp, uc *dp) {\n";
+  o << "  uc bpbuf[INBUF], outbuf[OUTBUF];\n";
+  o << "  memset(bpbuf, 0, INBUF);\n";
+  o << "  memcpy(bpbuf, bp, TOTSIZE);\n";
+  o << "  gather_core(AP[m], GIDX[m], bpbuf, outbuf);\n";
+  o << "  simd_patch(m, bpbuf, outbuf);\n";
+  o << "  memcpy(dp, outbuf, TOTSIZE);\n";
+  o << "}\n";
+  o << "int tblconjcmp(int m, const uc *bp, uc *dp) {\n";
+  o << "  uc bpbuf[INBUF], outbuf[OUTBUF];\n";
+  o << "  int k;\n";
+  o << "  memset(bpbuf, 0, INBUF);\n";
+  o << "  memcpy(bpbuf, bp, TOTSIZE);\n";
+  o << "  gather_core(AP[m], GIDX[m], bpbuf, outbuf);\n";
+  o << "  simd_patch(m, bpbuf, outbuf);\n";
+  o << "  for (k = 0; k < TOTSIZE; k++) {\n";
+  o << "    if (outbuf[k] > dp[k]) return 1;\n";
+  o << "    if (outbuf[k] < dp[k]) { memcpy(dp, outbuf, TOTSIZE); return "
+       "-1; }\n";
+  o << "  }\n";
+  o << "  return 0;\n";
+  o << "}\n";
+}
+// --jit-style 2: ARM NEON.  gather_core() windows bp/AP[m] into groups of
+// up to 4 16-byte registers (vqtbl4q_u8's table operand, 64 bytes), and for
+// each 16-byte output chunk, ORs together every window's vqtbl4q_u8 result.
+// That's safe because vqtbl4q_u8 itself produces 0 for any index >= 64, and
+// (idx - 64*w), computed as wraparound uint8 arithmetic, is >= 64 for every
+// window that doesn't actually own idx (whether idx is beyond this window,
+// or -- wrapping around -- before it): so at most one window ever
+// contributes a nonzero byte to a given lane, and ORing them together
+// recovers it (or correctly reconstructs a legitimate 0).
+static string gensource_neon(const puzdef &pd) {
+  ostringstream o;
+  o << "#include <arm_neon.h>\n#include <string.h>\ntypedef unsigned char "
+       "uc;\n";
+  emit_simd_tables(o, pd, 64);
+  o << "static void gather_core(const uc *ap, const uc *gidx, "
+       "const uc *bpbuf, uc *outbuf) {\n";
+  o << "  uint8x16x4_t bpwin[NWIN], apwin[NWIN];\n";
+  o << "  int w, c;\n";
+  o << "  for (w = 0; w < NWIN; w++) {\n";
+  o << "    bpwin[w] = vld1q_u8_x4(bpbuf + 64*w);\n";
+  o << "    apwin[w] = vld1q_u8_x4(ap + 64*w);\n";
+  o << "  }\n";
+  o << "  for (c = 0; c < NCHUNK; c++) {\n";
+  o << "    uint8x16_t idx = vld1q_u8(gidx + 16*c);\n";
+  o << "    uint8x16_t g1 = vdupq_n_u8(0);\n";
+  o << "    for (w = 0; w < NWIN; w++) {\n";
+  o << "      uint8x16_t local = vsubq_u8(idx, vdupq_n_u8((uc)(64*w)));\n";
+  o << "      g1 = vorrq_u8(g1, vqtbl4q_u8(bpwin[w], local));\n";
+  o << "    }\n";
+  o << "    { uint8x16_t idx2 = vaddq_u8(g1, vld1q_u8(OFFV + 16*c));\n";
+  o << "      uint8x16_t out = vdupq_n_u8(0);\n";
+  o << "      for (w = 0; w < NWIN; w++) {\n";
+  o << "        uint8x16_t local2 = vsubq_u8(idx2, "
+       "vdupq_n_u8((uc)(64*w)));\n";
+  o << "        out = vorrq_u8(out, vqtbl4q_u8(apwin[w], local2));\n";
+  o << "      }\n";
+  o << "      vst1q_u8(outbuf + 16*c, out);\n";
+  o << "    }\n";
+  o << "  }\n";
+  o << "}\n";
+  emit_simd_wrappers(o);
+  return o.str();
+}
+// --jit-style 3: x86 SSSE3/SSE4.1.  Same idea as NEON's gather_core, but
+// _mm_shuffle_epi8's table operand is only 16 bytes (one window == one
+// output chunk, NWIN == NCHUNK), and -- unlike vqtbl4q_u8 -- it does *not*
+// zero its result for every out-of-range index (only for index bytes with
+// the high bit set; a raw index of, say, 20 would wrap into the table's
+// low nibble instead).  So instead of relying on wraparound + the
+// instruction's own zeroing, each window explicitly computes an in-range
+// mask (unsigned local<16, via the standard "flip both operands' sign bit,
+// then signed-compare" trick, since SSE has no unsigned byte compare) and
+// blends with it, which is correct however it's out of range.
+static string gensource_sse(const puzdef &pd) {
+  ostringstream o;
+  o << "#include <tmmintrin.h>\n#include <smmintrin.h>\n#include "
+       "<string.h>\ntypedef unsigned char uc;\n";
+  emit_simd_tables(o, pd, 16);
+  o << "static void gather_core(const uc *ap, const uc *gidx, "
+       "const uc *bpbuf, uc *outbuf) {\n";
+  o << "  __m128i bpwin[NWIN], apwin[NWIN];\n";
+  o << "  int w, c;\n";
+  o << "  for (w = 0; w < NWIN; w++) {\n";
+  o << "    bpwin[w] = _mm_loadu_si128((const __m128i *)(bpbuf + 16*w));\n";
+  o << "    apwin[w] = _mm_loadu_si128((const __m128i *)(ap + 16*w));\n";
+  o << "  }\n";
+  o << "  for (c = 0; c < NCHUNK; c++) {\n";
+  o << "    __m128i idx = _mm_loadu_si128((const __m128i *)(gidx + "
+       "16*c));\n";
+  o << "    __m128i g1 = _mm_setzero_si128();\n";
+  o << "    for (w = 0; w < NWIN; w++) {\n";
+  o << "      __m128i base = _mm_set1_epi8((char)(16*w));\n";
+  o << "      __m128i local = _mm_sub_epi8(idx, base);\n";
+  o << "      __m128i lb = _mm_xor_si128(local, _mm_set1_epi8((char)0x80));"
+       "\n";
+  o << "      __m128i inr = _mm_cmplt_epi8(lb, _mm_set1_epi8((char)0x90));"
+       "\n";
+  o << "      __m128i g = _mm_shuffle_epi8(bpwin[w], local);\n";
+  o << "      g1 = _mm_blendv_epi8(g1, g, inr);\n";
+  o << "    }\n";
+  o << "    { __m128i offv = _mm_loadu_si128((const __m128i *)(OFFV + "
+       "16*c));\n";
+  o << "      __m128i idx2 = _mm_add_epi8(g1, offv);\n";
+  o << "      __m128i out = _mm_setzero_si128();\n";
+  o << "      for (w = 0; w < NWIN; w++) {\n";
+  o << "        __m128i base = _mm_set1_epi8((char)(16*w));\n";
+  o << "        __m128i local = _mm_sub_epi8(idx2, base);\n";
+  o << "        __m128i lb = _mm_xor_si128(local, "
+       "_mm_set1_epi8((char)0x80));\n";
+  o << "        __m128i inr = _mm_cmplt_epi8(lb, "
+       "_mm_set1_epi8((char)0x90));\n";
+  o << "        __m128i g = _mm_shuffle_epi8(apwin[w], local);\n";
+  o << "        out = _mm_blendv_epi8(out, g, inr);\n";
+  o << "      }\n";
+  o << "      _mm_storeu_si128((__m128i *)(outbuf + 16*c), out);\n";
+  o << "    }\n";
+  o << "  }\n";
+  o << "}\n";
+  emit_simd_wrappers(o);
+  return o.str();
+}
 // Try each of these, in order, as a C compiler; the generated file is
 // plain C, and passing -x c makes the language choice explicit regardless
 // of the file's (extensionless) name, so a C++-flavored CXX still works.
+// extraflags carries ISA-specific flags the generated code needs beyond
+// the baseline (e.g. --jit-style 3's -mssse3 -msse4.1).
 static bool trycompile(const string &cc, const string &srcpath,
-                       const string &sopath) {
-  string cmd = cc + " -x c -O2 -shared -fPIC -o " + sopath + " " + srcpath +
-               " > " + srcpath + ".log 2>&1";
+                       const string &sopath, const string &extraflags) {
+  string cmd = cc + " -x c -O2 -shared -fPIC " + extraflags + " -o " +
+               sopath + " " + srcpath + " > " + srcpath + ".log 2>&1";
   return system(cmd.c_str()) == 0;
 }
 // Print the given file's contents under a labeled banner, so a failure is
@@ -269,9 +579,9 @@ static void dumpfile(const string &label, const string &path) {
 // of quiet, since these are genuine diagnostics rather than routine status
 // -- dumps the compiler's own output so "JIT doesn't work here" is
 // diagnosable instead of a silent fallback.
-static bool compileandload(const string &src, void **handle,
-                           const char *sym1, void **out1, const char *sym2,
-                           void **out2) {
+static bool compileandload(const string &src, const string &extraflags,
+                           void **handle, const char *sym1, void **out1,
+                           const char *sym2, void **out2) {
   const char *tmpdir = getenv("TMPDIR");
   if (!tmpdir || !*tmpdir)
     tmpdir = "/tmp";
@@ -296,17 +606,17 @@ static bool compileandload(const string &src, void **handle,
   // paper over it failing by silently trying something else.  Otherwise,
   // fall through a short list of reasonable guesses.
   if (jitcc && *jitcc) {
-    ok = trycompile(jitcc, srcpath, sopath);
+    ok = trycompile(jitcc, srcpath, sopath, extraflags);
   } else {
     const char *cxx = getenv("CXX");
     if (cxx && *cxx)
-      ok = trycompile(cxx, srcpath, sopath);
+      ok = trycompile(cxx, srcpath, sopath, extraflags);
     if (!ok)
-      ok = trycompile("cc", srcpath, sopath);
+      ok = trycompile("cc", srcpath, sopath, extraflags);
     if (!ok)
-      ok = trycompile("clang", srcpath, sopath);
+      ok = trycompile("clang", srcpath, sopath, extraflags);
     if (!ok)
-      ok = trycompile("gcc", srcpath, sopath);
+      ok = trycompile("gcc", srcpath, sopath, extraflags);
   }
   if (ok) {
     *handle = dlopen(sopath.c_str(), RTLD_NOW);
@@ -389,6 +699,12 @@ static bool selfcheck(puzdef &pd) {
   }
   return true;
 }
+// Style 1 ("portable") uses jitconj/jitconjcmp (array of nrot function
+// pointers, one call per rotation); every other style shares a single
+// tblconj/tblconjcmp pair taking the rotation index as an argument
+// (jitconjtable/jitconjcmptable).  See puzdef.h's havejit()/jitconjcall()/
+// jitconjcmpcall(), which hide this distinction from every other caller.
+static bool styleistableshaped(int style) { return style != 1; }
 void jit_build_symmetry(puzdef &pd) {
   pd.jitconj.clear();
   pd.jitconjcmp.clear();
@@ -402,9 +718,37 @@ void jit_build_symmetry(puzdef &pd) {
   for (auto &sd : pd.setdefs)
     if (sd.relabel)
       return; // not handled by the generated code (yet); stay interpreted
-  string src = jittable ? gensource_table(pd) : gensource(pd);
-  const char *sym1 = jittable ? "tblconj" : "twsearch_jit_conjtable";
-  const char *sym2 = jittable ? "tblconjcmp" : "twsearch_jit_conjcmptable";
+  if (jitstyle == 4) {
+    if (!quiet)
+      cout << "--jit-style 4 (avx512) isn't implemented yet; using "
+              "interpreted."
+           << endl;
+    return;
+  }
+  string src;
+  string extraflags;
+  const char *stylename = "";
+  switch (jitstyle) {
+  case 0:
+    src = gensource_table(pd);
+    stylename = "table";
+    break;
+  case 2:
+    src = gensource_neon(pd);
+    stylename = "neon";
+    break;
+  case 3:
+    src = gensource_sse(pd);
+    extraflags = "-mssse3 -msse4.1";
+    stylename = "sse";
+    break;
+  default:
+    src = gensource(pd);
+    break;
+  }
+  bool tableshaped = styleistableshaped(jitstyle);
+  const char *sym1 = tableshaped ? "tblconj" : "twsearch_jit_conjtable";
+  const char *sym2 = tableshaped ? "tblconjcmp" : "twsearch_jit_conjcmptable";
   void *handle = 0;
   void *out1 = 0, *out2 = 0;
   // Compiling can take several seconds for puzzles with large rotation
@@ -414,14 +758,15 @@ void jit_build_symmetry(puzdef &pd) {
   if (!quiet)
     cout << "Compiling JIT . . . " << flush;
   auto compilestart = chrono::steady_clock::now();
-  bool compiled = compileandload(src, &handle, sym1, &out1, sym2, &out2);
+  bool compiled =
+      compileandload(src, extraflags, &handle, sym1, &out1, sym2, &out2);
   double secs =
       chrono::duration<double>(chrono::steady_clock::now() - compilestart)
           .count();
   if (!compiled)
     return; // compileandload() already finished the status line
   pd.jithandle = handle;
-  if (jittable) {
+  if (tableshaped) {
     pd.jitconjtable = (puzdef::jitconjtablefn_t)out1;
     pd.jitconjcmptable = (puzdef::jitconjcmptablefn_t)out2;
   } else {
@@ -443,6 +788,7 @@ void jit_build_symmetry(puzdef &pd) {
     return;
   }
   if (!quiet)
-    cout << nrot << " rotations" << (jittable ? " (table-indexed)" : "")
-         << ", " << fixed << setprecision(1) << secs << "s." << endl;
+    cout << nrot << " rotations" << (*stylename ? " (" : "") << stylename
+         << (*stylename ? ")" : "") << ", " << fixed << setprecision(1)
+         << secs << "s." << endl;
 }

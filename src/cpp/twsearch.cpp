@@ -76,7 +76,7 @@ void reseteverything() {
   alloptimal = 0;
   disablesymmetry = 0;
   enablejit = 0;
-  jittable = 0;
+  jitstyle = 1;
   jitcc = 0;
   maxdepth = 1000000000;
   didprepass = 0;
@@ -161,14 +161,6 @@ static boolopt boolopts[] = {
      "failure to compile, dlopen, or self-check) the compiler's own\n"
      "diagnostic output.",
      &enablejit},
-    {"--jit-table",
-     "With --jit, generate one shared routine indexed by rotation number\n"
-     "at call time, instead of one fully-specialized routine per rotation.\n"
-     "Trades some speed for code size roughly 1/(rotation count) of the\n"
-     "default's -- worth trying on puzzles with large rotation groups\n"
-     "(e.g. megaminx) if the default's generated code pressures the\n"
-     "instruction cache on the target machine.  Ignored without --jit.",
-     &jittable},
 };
 static intopt intopts[] = {
     {"--newcanon",
@@ -188,6 +180,15 @@ static intopt intopts[] = {
     {"--maxdepth", "num  Maximum depth for searches.", &maxdepth, 0, 1000},
     {"-R", "num  Seed for random number generator.", &seed, -2000000000,
      2000000000},
+    {"--jit-style",
+     "num  With --jit, which shape of generated code to use: 0 table\n"
+     "(one shared routine, small, indexed by rotation number at call\n"
+     "time), 1 portable (default; one specialized routine per rotation,\n"
+     "fastest but code size scales with rotation count), 2 neon (like 0\n"
+     "but ARM NEON gather instead of scalar loads; AArch64 only), 3 sse\n"
+     "(like 2 but x86 SSSE3/SSE4.1), 4 avx512 (not yet implemented).\n"
+     "Ignored without --jit.",
+     &jitstyle, 0, 4},
 };
 static llopt solcountopt(
     "-c",
