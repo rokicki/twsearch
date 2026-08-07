@@ -14,6 +14,10 @@ using namespace std;
  *   gain a fair bit by specializing specific cases.
  */
 extern double dllstates;
+// Quick x86-vs-arm64 A/B knob for lowsymmbits' mandatory-round codegen
+// shape (see there) -- not meant to be permanent or documented, just to
+// settle whether cmov-vs-branch is actually why it regressed on x86.
+extern int symmguessbranchy;
 /*
  *   gmoda is used to calculate orientations for a given count of
  *   orientations.  Let's say we're working on a case where there
@@ -348,14 +352,27 @@ struct puzdef {
     // traffic that outweighed the branches it removed).
     int rv = rif[bp[rgf[0]]];
     ull r = 1;
-    for (int m = 1; m < nrot; m++) {
-      size_t base = (size_t)m * totsize;
-      int t = rif[base + bp[rgf[base]]];
-      ull bit = 1LL << m;
-      bool isless = t < rv;
-      bool iseq = t == rv;
-      rv = isless ? t : rv;
-      r = isless ? bit : (iseq ? (r | bit) : r);
+    if (symmguessbranchy) {
+      for (int m = 1; m < nrot; m++) {
+        size_t base = (size_t)m * totsize;
+        int t = rif[base + bp[rgf[base]]];
+        if (t < rv) {
+          rv = t;
+          r = 1LL << m;
+        } else if (t == rv) {
+          r |= 1LL << m;
+        }
+      }
+    } else {
+      for (int m = 1; m < nrot; m++) {
+        size_t base = (size_t)m * totsize;
+        int t = rif[base + bp[rgf[base]]];
+        ull bit = 1LL << m;
+        bool isless = t < rv;
+        bool iseq = t == rv;
+        rv = isless ? t : rv;
+        r = isless ? bit : (iseq ? (r | bit) : r);
+      }
     }
     for (int o = 1; o < setdefs[0].size; o++) {
       if ((r & (r - 1)) == 0)

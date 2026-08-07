@@ -6,6 +6,7 @@
 #include <set>
 #include <vector>
 int disablesymmetry;
+int symmguessbranchy;
 // so we can use STL we wrap setvals in a vector.
 vector<uchar> setvaltovec(puzdef &pd, setval v) {
   return vector<uchar>(v.dat, v.dat + pd.totsize);

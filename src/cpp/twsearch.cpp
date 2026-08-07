@@ -75,6 +75,7 @@ void reseteverything() {
   randomstart = 0;
   alloptimal = 0;
   disablesymmetry = 0;
+  symmguessbranchy = 0;
   enablejit = 0;
   jitstyle = 1;
   jitcc = 0;
@@ -149,6 +150,10 @@ static boolopt boolopts[] = {
      "reduced by that symmetry.",
      &alloptimal},
     {"--nosymmetry", "Disable all symmetry reductions.", &disablesymmetry},
+    {"--symmguess-branchy",
+     "Experimental A/B knob: use explicit if/else instead of ternaries in\n"
+     "lowsymmbits' mandatory round.  Not meant to be permanent.",
+     &symmguessbranchy},
     {"--jit",
      "Enable JIT-compiled symmetry reduction: at puzzle load, spawn the\n"
      "system C compiler to generate and compile specialized code for the\n"
