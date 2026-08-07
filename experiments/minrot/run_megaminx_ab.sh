@@ -1,10 +1,17 @@
 #!/bin/bash
-# Runs the four megaminx configurations (original, current/no-jit,
-# current/--jit, current/--jit --jit-table) on a fixed scramble, twice each,
-# strictly sequentially (never concurrently -- timing-sensitive), capturing
-# instructions/cycles where the platform can supply them.  Meant to be
-# launched once and left alone; writes a summary at the end via
-# aggregate_megaminx_ab.py.
+# Runs six megaminx configurations -- original (main), and current
+# (symm-combined) with no JIT and --jit-style 0/1/2/3 -- on a fixed
+# scramble, twice each, strictly sequentially (never concurrently --
+# timing-sensitive), capturing instructions/cycles where the platform can
+# supply them.  Meant to be launched once and left alone; writes a summary
+# at the end via aggregate_megaminx_ab.py.
+#
+# --jit-style 3 (sse) only does anything on x86; on other architectures the
+# compiler will simply fail to build the generated code and it'll silently
+# fall back to interpreted (same numbers as current_nojit) -- expected, not
+# a bug, and the only way to give this script the same six-way shape
+# everywhere. --jit-style 2 (neon) is the converse: only does anything on
+# ARM.
 #
 # Portable across machines/architectures: run from anywhere, on any clone.
 # Needs build/bin/twsearch_original (built from main) and
@@ -29,9 +36,9 @@ if [ "$OS" = "Linux" ] && command -v perf >/dev/null 2>&1; then
   HAVEPERF=1
 fi
 
-declare -a LABELS=(original current_nojit current_jit current_jittable)
-declare -a BINS=(build/bin/twsearch_original build/bin/twsearch_current build/bin/twsearch_current build/bin/twsearch_current)
-declare -a ARGS=("" "" "--jit" "--jit --jit-table")
+declare -a LABELS=(original current_nojit current_jitportable current_jittable current_jitneon current_jitsse)
+declare -a BINS=(build/bin/twsearch_original build/bin/twsearch_current build/bin/twsearch_current build/bin/twsearch_current build/bin/twsearch_current build/bin/twsearch_current)
+declare -a ARGS=("" "" "--jit --jit-style 1" "--jit --jit-style 0" "--jit --jit-style 2" "--jit --jit-style 3")
 
 SUMMARY="$LOGDIR/megaminx_ab_summary.txt"
 echo "megaminx A/B run started $(date)" > "$SUMMARY"
@@ -41,7 +48,7 @@ echo "puzzle: $PUZZLE" >> "$SUMMARY"
 echo >> "$SUMMARY"
 
 for rep in 1 2; do
-  for i in 0 1 2 3; do
+  for i in 0 1 2 3 4 5; do
     label="${LABELS[$i]}"
     bin="${BINS[$i]}"
     args="${ARGS[$i]}"
