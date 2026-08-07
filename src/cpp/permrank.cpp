@@ -205,6 +205,21 @@ void build_fastindex(puzdef &pd) {
       return;
     }
   }
+  if (verbose > 1) {
+    // Popcount histogram: how discriminating is setdefs[0] alone?  A
+    // large fraction of multi-bit (tied) entries means slowmodm2 falls
+    // through to the full-state rotconjugatecmp scan often even with
+    // this table, which is the case this table can't speed up.
+    long long hist[256] = {0};
+    for (long long r = 0; r < total; r++)
+      hist[__builtin_popcountll(rawbits[(size_t)r])]++;
+    cout << "Fast symmetry index popcount histogram (" << pd.setdefs[0].name
+         << ", " << total << " permutations):" << endl;
+    for (int i = 0; i < 256; i++)
+      if (hist[i])
+        cout << "  " << i << " bit" << (i == 1 ? "" : "s") << ": " << hist[i]
+             << " (" << (100.0 * hist[i] / total) << "%)" << endl;
+  }
   // fastbitsside[0..nrot) is exactly 1LL<<i; every single-bit rawbits[]
   // value already has a slot there.  Ties (more than one bit set) get
   // deduplicated and appended after -- almost always a small handful of
