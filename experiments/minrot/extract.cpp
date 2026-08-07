@@ -1,0 +1,285 @@
+// One-time data extractor: loads real .tws puzzle files through twsearch's
+// actual puzdef/readksolve/rotations machinery (so the rotation-group data
+// is guaranteed correct -- no re-deriving it by hand) and dumps, for a
+// chosen "discriminator" set per puzzle, everything the standalone minrot
+// prototype (bench.cpp, deliberately independent of twsearch at runtime)
+// needs to try out new symmetry-reduction algorithms against real data:
+//
+//   <puzzle>_rotdata.h   -- small, compile-time-embeddable: n, nrot, and
+//                           per-rotation G[m][] (source position read for
+//                           each output position of the discriminator set)
+//                           and AP[m][] (the relabeling table for that
+//                           rotation), i.e. exactly the puzzle-specific
+//                           constants twsearch's JIT bakes into generated
+//                           code today.
+//   <puzzle>_samples.bin -- many real (reachable, random-walk) observed
+//                           permutations of the discriminator set, each
+//                           paired with the *reference* answer: the
+//                           bitmask of rotations tied for lexicographically
+//                           least at output position 0 (computed here via
+//                           a straightforward, obviously-correct O(nrot)
+//                           scan -- exactly what lowsymmbits' mandatory
+//                           first round computes today) so bench.cpp never
+//                           has to re-derive or trust its own port of the
+//                           reference algorithm; it just compares against
+//                           this ground truth.
+//
+// Build/run: see Makefile in this directory (links against twsearch's
+// already-built object files, minus twsearch.o which has main()).
+#include "filtermoves.h"
+#include "index.h"
+#include "puzdef.h"
+#include "readksolve.h"
+#include "rotations.h"
+#include "threads.h"
+#include "util.h"
+#include <algorithm>
+#include <cstdint>
+#include <cstdio>
+#include <fstream>
+#include <iostream>
+#include <string>
+#include <vector>
+using namespace std;
+
+struct puzzlespec {
+  string label;    // used for output filenames
+  string twsfile;   // path to the .tws source
+  string discname;  // name of the Set to use as discriminator
+};
+
+// Reference: the bitmask of rotations tied for lexicographically least at
+// output position 0 of the discriminator set, given the n observed values
+// (obs[0..n)) and the per-rotation G/AP tables.  This is a direct,
+// deliberately unclever port of lowsymmbits' mandatory first round (see
+// src/cpp/puzdef.h), just generalized to an arbitrary chosen set instead
+// of hardcoding setdefs[0].
+static uint64_t referencebitmask(int nrot, int n, const vector<vector<uint8_t>> &G,
+                                  const vector<vector<uint8_t>> &AP,
+                                  const uint8_t *obs) {
+  (void)n;
+  int rv = AP[0][obs[G[0][0]]];
+  uint64_t r = 1;
+  for (int m = 1; m < nrot; m++) {
+    int t = AP[m][obs[G[m][0]]];
+    if (t < rv) {
+      r = 1ULL << m;
+      rv = t;
+    } else if (t == rv)
+      r |= 1ULL << m;
+  }
+  return r;
+}
+
+static void dumppuzzle(const puzzlespec &spec, int nsamples) {
+  ifstream f(spec.twsfile);
+  if (!f) {
+    cerr << "! can't open " << spec.twsfile << endl;
+    exit(1);
+  }
+  puzdef pd = readdef(&f);
+  filtermovelist(pd, 0);
+  // calclooseper (called from calcrotinvs, called from calcrotations) is a
+  // process-wide one-shot ("if (looseper) return;") -- fine for twsearch's
+  // normal one-puzzle-per-process usage, but we load several puzzles in
+  // this one process, and reusing the *previous* puzzle's (too-small)
+  // looseiper here corrupts the heap in loosepack.  Reset before every
+  // puzzle.
+  looseper = looseiper = basebits = 0;
+  if (pd.baserotations.size())
+    calcrotations(pd);
+  if (pd.rotgroup.size() < 2) {
+    cerr << "! " << spec.label << ": no rotation group" << endl;
+    exit(1);
+  }
+  int discidx = -1;
+  for (int i = 0; i < (int)pd.setdefs.size(); i++)
+    if (pd.setdefs[i].name == spec.discname)
+      discidx = i;
+  if (discidx < 0) {
+    cerr << "! " << spec.label << ": no set named " << spec.discname << endl;
+    exit(1);
+  }
+  setdef &sd = pd.setdefs[discidx];
+  int n = sd.size, off = sd.off;
+  int nrot = (int)pd.rotgroup.size();
+  cout << spec.label << ": disc=" << spec.discname << " n=" << n
+       << " nrot=" << nrot << " totsize=" << pd.totsize << endl;
+  vector<vector<uint8_t>> G(nrot, vector<uint8_t>(n)), AP(nrot, vector<uint8_t>(n));
+  for (int m = 0; m < nrot; m++) {
+    for (int j = 0; j < n; j++) {
+      G[m][j] = pd.rotgroup[m].pos.dat[off + j];
+      AP[m][j] = pd.rotinvmap[m].dat[off + j];
+    }
+  }
+  // --- rotdata.h ---
+  {
+    string path = spec.label + "_rotdata.h";
+    ofstream o(path);
+    o << "// Generated by experiments/minrot/extract.cpp from "
+      << spec.twsfile << " (Set " << spec.discname << ").  Do not edit.\n";
+    o << "static const int " << spec.label << "_n = " << n << ";\n";
+    // Offset of the discriminator set within the *full* totsize-byte
+    // state -- G[]/AP[] above use indices local to the discriminator
+    // set's own n-byte slice, so anyone feeding a full-state array (see
+    // FullData/fullsamples.bin below) into a guess algorithm needs to
+    // slice at this offset first.
+    o << "static const int " << spec.label << "_disc_off = " << off << ";\n";
+    o << "static const int " << spec.label << "_nrot = " << nrot << ";\n";
+    o << "static const unsigned char " << spec.label << "_G[" << nrot << "]["
+      << n << "] = {\n";
+    for (int m = 0; m < nrot; m++) {
+      o << "  {";
+      for (int j = 0; j < n; j++)
+        o << (j ? "," : "") << (int)G[m][j];
+      o << "},\n";
+    }
+    o << "};\n";
+    o << "static const unsigned char " << spec.label << "_AP[" << nrot << "]["
+      << n << "] = {\n";
+    for (int m = 0; m < nrot; m++) {
+      o << "  {";
+      for (int j = 0; j < n; j++)
+        o << (j ? "," : "") << (int)AP[m][j];
+      o << "},\n";
+    }
+    o << "};\n";
+  }
+  // --- samples.bin: nsamples * (n bytes observed + 8 bytes reference
+  // bitmask, little-endian) from a random walk starting at solved ---
+  int totsize = pd.totsize;
+  stacksetval p1(pd), p2(pd);
+  pd.assignpos(p1, pd.solved);
+  {
+    string path = spec.label + "_samples.bin";
+    ofstream o(path, ios::binary);
+    for (int t = 0; t < nsamples; t++) {
+      int mv = (int)myrand((int)pd.moves.size());
+      pd.mul(p1, pd.moves[mv].pos, p2);
+      pd.assignpos(p1, p2);
+      vector<uint8_t> obs(n);
+      for (int j = 0; j < n; j++)
+        obs[j] = p1.dat[off + j];
+      uint64_t ref = referencebitmask(nrot, n, G, AP, obs.data());
+      o.write((const char *)obs.data(), n);
+      o.write((const char *)&ref, sizeof(ref));
+    }
+  }
+  // --- fulldata appended to rotdata.h: everything needed to reproduce
+  // rotconjugate/rotconjugatecmp for *every* setdef (not just the
+  // discriminator set), i.e. exactly what jit.cpp's gensource() bakes
+  // into generated code: full-width per-rotation cp/ap tables, setdef
+  // structure, and the gmoda[omod] orientation tables in play. ---
+  {
+    string path = spec.label + "_rotdata.h";
+    ofstream o(path, ios::app);
+    o << "static const int " << spec.label << "_totsize = " << totsize << ";\n";
+    o << "static const int " << spec.label << "_nsetdefs = "
+      << pd.setdefs.size() << ";\n";
+    o << "static const int " << spec.label << "_sd_size[" << pd.setdefs.size()
+      << "] = {";
+    for (size_t i = 0; i < pd.setdefs.size(); i++)
+      o << (i ? "," : "") << pd.setdefs[i].size;
+    o << "};\n";
+    o << "static const int " << spec.label << "_sd_off[" << pd.setdefs.size()
+      << "] = {";
+    for (size_t i = 0; i < pd.setdefs.size(); i++)
+      o << (i ? "," : "") << pd.setdefs[i].off;
+    o << "};\n";
+    o << "static const int " << spec.label << "_sd_omod[" << pd.setdefs.size()
+      << "] = {";
+    for (size_t i = 0; i < pd.setdefs.size(); i++)
+      o << (i ? "," : "") << (int)pd.setdefs[i].omod;
+    o << "};\n";
+    for (auto &sd : pd.setdefs) {
+      if (sd.omod <= 1)
+        continue;
+      o << "static const unsigned char " << spec.label << "_moda" << (int)sd.omod
+        << "[" << 4 * sd.omod << "] = {";
+      for (int k = 0; k < 4 * sd.omod; k++)
+        o << (k ? "," : "") << (int)gmoda[sd.omod][k];
+      o << "};\n";
+    }
+    o << "static const unsigned char " << spec.label << "_FULLCP[" << nrot
+      << "][" << totsize << "] = {\n";
+    for (int m = 0; m < nrot; m++) {
+      o << "  {";
+      for (int j = 0; j < totsize; j++)
+        o << (j ? "," : "") << (int)pd.rotgroup[m].pos.dat[j];
+      o << "},\n";
+    }
+    o << "};\n";
+    o << "static const unsigned char " << spec.label << "_FULLAP[" << nrot
+      << "][" << totsize << "] = {\n";
+    for (int m = 0; m < nrot; m++) {
+      o << "  {";
+      for (int j = 0; j < totsize; j++)
+        o << (j ? "," : "") << (int)pd.rotinvmap[m].dat[j];
+      o << "},\n";
+    }
+    o << "};\n";
+  }
+  // --- fullsamples.bin: end-to-end ground truth for guess+conjugate.
+  // nfullsamples * (totsize bytes observed + 8 bytes guess-at-position-0
+  // reference + totsize bytes *true* symmetry-reduced result, obtained by
+  // calling twsearch's actual slowmodm2() -- the same function committed
+  // on symm-combined, using its interpreted (flat-table, branch-free)
+  // fallback path since we never call jit_build_symmetry here).  Fewer
+  // samples than samples.bin (full-state records are much bigger and we
+  // don't need as many for a stable timing signal).
+  //
+  // IMPORTANT: this reference is only a valid ground truth for a
+  // discriminator that *is* pd.setdefs[0].  slowmodm2's final tie-break
+  // (rotconjugatecmp) always compares bytes in the fixed setdef file
+  // order, so narrowing candidates via any *other* set can genuinely
+  // discard the true global winner (a rotation with mediocre bytes in
+  // the chosen set but excellent bytes in setdefs[0] would lose the
+  // narrowing round and never get compared) -- consistent narrowing
+  // requires the same set be primary in *both* steps, everywhere, not
+  // just in the guess.  Only use this file's conjref for puzzlespecs
+  // whose discname names setdefs[0]. ---
+  if (discidx != 0) {
+    cout << "  (skipping fullsamples.bin: " << spec.discname
+         << " is not setdefs[0], see comment above -- real slowmodm2 isn't a"
+            " valid reference for it)"
+         << endl;
+  } else {
+    int nfull = min(nsamples, 20000);
+    string path = spec.label + "_fullsamples.bin";
+    ofstream o(path, ios::binary);
+    stacksetval q1(pd), q2(pd);
+    for (int t = 0; t < nfull; t++) {
+      int mv = (int)myrand((int)pd.moves.size());
+      pd.mul(p1, pd.moves[mv].pos, p2);
+      pd.assignpos(p1, p2);
+      pd.assignpos(q1, p1);
+      uint64_t ref = referencebitmask(nrot, n, G, AP, p1.dat + off);
+      slowmodm2(pd, q1, q2); // authoritative: real twsearch symmetry reduction
+      o.write((const char *)p1.dat, totsize);
+      o.write((const char *)&ref, sizeof(ref));
+      o.write((const char *)q2.dat, totsize);
+    }
+    cout << "  " << nfull << " full-pipeline samples -> " << path << endl;
+  }
+}
+
+int main() {
+  init_util();
+  init_threads();
+  mysrand(0xC0FFEEu); // fixed seed: reproducible sample set across reruns
+  vector<puzzlespec> specs = {
+      {"cube333", "../../samples/symm/3x3x3.tws", "CORNERS"},
+      // EDGES is setdefs[0] for 3x3x3.tws -- needed as its own extraction
+      // (separate from "cube333" above) so the full-pipeline benchmark has
+      // a discriminator that's actually valid to check against real
+      // slowmodm2 (see the fullsamples.bin comment above).
+      {"cube333_edges", "../../samples/symm/3x3x3.tws", "EDGES"},
+      {"fto", "FTO_rot.tws", "C4RNER"},
+      {"megaminx_corners", "../../samples/symm/megaminx.tws", "CORNERS"},
+      {"megaminx_edges", "../../samples/symm/megaminx.tws", "EDGES"},
+  };
+  for (auto &s : specs)
+    dumppuzzle(s, 200000);
+  cout << "done." << endl;
+  return 0;
+}

@@ -1,0 +1,14 @@
+# Compiled binaries -- rebuild with `make` in this directory.
+/bench
+/extractor
+
+# Data dumped by extract.cpp and consumed by bench.cpp -- regenerate with
+# `make extractor && ./extractor` (needs twsearch built from this branch
+# first; see the Makefile).
+*_rotdata.h
+*_samples.bin
+*_fullsamples.bin
+
+# Per-session benchmark output -- see run_megaminx_ab.sh, which regenerates
+# these on every run.
+/logs/
