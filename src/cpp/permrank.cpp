@@ -2,12 +2,14 @@
 #include "util.h"
 #include <algorithm>
 #include <cstring>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <numeric>
 #include <unordered_map>
 int enablefastindex;
 long long fastindexmaxn;
+const char *fastindexdumppath;
 // Splits n into a "lo" half of size n/2 and a "hi" half of size n-n/2;
 // lo/hi are direct-indexed (raw bytes read as a base-n number) rather
 // than compressed to only the n!/(n-k)! valid (all-distinct) entries,
@@ -176,14 +178,30 @@ void build_fastindex(puzdef &pd) {
   }
   pr.build(n);
   int nrot = (int)pd.rotgroup.size();
+  // fastbitsside[0..nrot) is exactly 1LL<<i, fixed and known up front, so
+  // the common single-bit case needs no lookup at all: it's just the bit
+  // index.  Ties (more than one bit set) get a slot dynamically assigned
+  // on first sight, via a map -- almost always a small handful of
+  // distinct values in practice, per the same reasoning that makes
+  // lowsymmbits' own extend-on-tie loop rare.  A byte can only index 256
+  // slots total; if that's ever not enough this is a hard error (rather
+  // than a silent fallback), since it'd mean the "ties are rare and few"
+  // premise this whole encoding rests on turned out to be wrong for some
+  // puzzle -- worth knowing loudly.  One pass, no per-rank buffering: the
+  // whole point is that a rank's fate is decided immediately from
+  // lowsymmbits()'s result and never revisited.
+  pd.fastbitsside.assign(nrot, 0);
+  for (int i = 0; i < nrot; i++)
+    pd.fastbitsside[i] = 1ULL << i;
+  unordered_map<ull, int> tieindex; // raw multi-bit value -> side-table slot
+  pd.fastbits.resize((size_t)total);
+  long long hist[256] = {0}; // popcount histogram, see below (cheap to
+                             // always track; only printed if verbose>1)
   // Enumerate every permutation of setdefs[0] in lexicographic order via
   // std::next_permutation, which conveniently visits them in exactly
   // rank order -- so the loop counter *is* the rank, no separate
   // ranking or unranking needed to build the table itself (only at
-  // query time, via fastrank() above).  Raw ull results go in a
-  // temporary array first; fastbits/fastbitsside get built from that
-  // once every distinct tie value has been seen (see below).
-  vector<ull> rawbits((size_t)total);
+  // query time, via fastrank() above).
   {
     stacksetval synth(pd);
     pd.assignpos(synth, pd.solved);
@@ -192,7 +210,25 @@ void build_fastindex(puzdef &pd) {
     long long r = 0;
     do {
       memcpy(synth.dat, perm.data(), n);
-      rawbits[(size_t)r] = pd.lowsymmbits(synth);
+      ull bits = pd.lowsymmbits(synth);
+      hist[__builtin_popcountll(bits)]++;
+      if ((bits & (bits - 1)) == 0) { // exactly one bit set (bits != 0 always)
+        pd.fastbits[(size_t)r] = (uchar)(ffsll((long long)bits) - 1);
+      } else {
+        auto it = tieindex.find(bits);
+        int slot;
+        if (it != tieindex.end()) {
+          slot = it->second;
+        } else {
+          slot = nrot + (int)tieindex.size();
+          if (slot > 255)
+            error("! fast symmetry index: more distinct tie values than a "
+                  "byte can index -- unexpected, see permrank.cpp");
+          tieindex[bits] = slot;
+          pd.fastbitsside.push_back(bits);
+        }
+        pd.fastbits[(size_t)r] = (uchar)slot;
+      }
       r++;
     } while (next_permutation(perm.begin(), perm.end()));
     // Sanity check on the build loop itself (independent of
@@ -202,6 +238,8 @@ void build_fastindex(puzdef &pd) {
       if (!quiet)
         cout << "Fast symmetry index: build loop visited " << r << " of "
              << total << " permutations; not using it." << endl;
+      pd.fastbits.clear();
+      pd.fastbitsside.clear();
       return;
     }
   }
@@ -210,49 +248,12 @@ void build_fastindex(puzdef &pd) {
     // large fraction of multi-bit (tied) entries means slowmodm2 falls
     // through to the full-state rotconjugatecmp scan often even with
     // this table, which is the case this table can't speed up.
-    long long hist[256] = {0};
-    for (long long r = 0; r < total; r++)
-      hist[__builtin_popcountll(rawbits[(size_t)r])]++;
     cout << "Fast symmetry index popcount histogram (" << pd.setdefs[0].name
          << ", " << total << " permutations):" << endl;
     for (int i = 0; i < 256; i++)
       if (hist[i])
         cout << "  " << i << " bit" << (i == 1 ? "" : "s") << ": " << hist[i]
              << " (" << (100.0 * hist[i] / total) << "%)" << endl;
-  }
-  // fastbitsside[0..nrot) is exactly 1LL<<i; every single-bit rawbits[]
-  // value already has a slot there.  Ties (more than one bit set) get
-  // deduplicated and appended after -- almost always a small handful of
-  // distinct values in practice, per the same reasoning that makes
-  // lowsymmbits' own extend-on-tie loop rare.  A byte can only index
-  // 256 slots total; if that's ever not enough this is a hard error
-  // (see below) rather than a silent fallback, since it'd mean the
-  // "ties are rare and few" premise this whole encoding rests on
-  // turned out to be wrong for some puzzle -- worth knowing loudly.
-  pd.fastbitsside.assign(nrot, 0);
-  for (int i = 0; i < nrot; i++)
-    pd.fastbitsside[i] = 1ULL << i;
-  unordered_map<ull, int> tieindex; // raw multi-bit value -> side-table slot
-  pd.fastbits.resize((size_t)total);
-  for (long long r = 0; r < total; r++) {
-    ull bits = rawbits[(size_t)r];
-    if ((bits & (bits - 1)) == 0) { // exactly one bit set (bits != 0 always)
-      pd.fastbits[(size_t)r] = (uchar)(ffsll((long long)bits) - 1);
-      continue;
-    }
-    auto it = tieindex.find(bits);
-    int slot;
-    if (it != tieindex.end()) {
-      slot = it->second;
-    } else {
-      slot = nrot + (int)tieindex.size();
-      if (slot > 255)
-        error("! fast symmetry index: more distinct tie values than a "
-              "byte can index -- unexpected, see permrank.cpp");
-      tieindex[bits] = slot;
-      pd.fastbitsside.push_back(bits);
-    }
-    pd.fastbits[(size_t)r] = (uchar)slot;
   }
   // Verify against the interpreted lowsymmbits() on real reachable
   // positions before trusting this -- same safety-net shape as jit.cpp's
@@ -286,4 +287,11 @@ void build_fastindex(puzdef &pd) {
     cout << "Fast symmetry index built for " << pd.setdefs[0].name << " ("
          << total << " entries, " << pd.fastbitsside.size()
          << "-entry side table)." << endl;
+  if (fastindexdumppath && *fastindexdumppath) {
+    ofstream f(fastindexdumppath, ios::binary);
+    f.write((const char *)pd.fastbits.data(), (streamsize)pd.fastbits.size());
+    if (!quiet)
+      cout << "Fast symmetry index: wrote " << pd.fastbits.size()
+           << " bytes to " << fastindexdumppath << endl;
+  }
 }

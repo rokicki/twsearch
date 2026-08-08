@@ -84,6 +84,7 @@ void reseteverything() {
   jitcc = 0;
   enablefastindex = 0;
   fastindexmaxn = 3628800; // 10!; --fastindex-maxn 0 means "no limit"
+  fastindexdumppath = 0;
   maxdepth = 1000000000;
   didprepass = 0;
 #ifdef USE_PTHREADS
@@ -126,6 +127,10 @@ static stringopt stringopts[] = {
      "($CXX, then cc/clang/gcc).  Tried alone; --jit falls back to the\n"
      "interpreted implementation (not to guessing) if it fails.",
      &jitcc},
+    {"--fastindex-dump",
+     "path  With --fastindex, after a successful build, write the raw\n"
+     "n!-byte table (one byte per permutation rank) to this file.",
+     &fastindexdumppath},
 };
 static boolopt boolopts[] = {
     {"--nodeduplicatesolve", "Don't deduplicate search tree on solves.",

@@ -14,3 +14,9 @@
 # Per-session benchmark output -- see run_megaminx_ab.sh, which regenerates
 # these on every run.
 /logs/
+
+# --fastindex-dump output and derived files -- see symm-investigations.md
+# for the commands/scripts that regenerate these (edgesymm1.dat alone is
+# 479MB, definitely not something to commit).
+*.dat
+*.dat.xz

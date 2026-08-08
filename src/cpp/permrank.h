@@ -49,6 +49,11 @@ extern int enablefastindex;
 // Cap on n! (see the size warning above), default 10! (~29MB); 0 means
 // "no cap, trust the caller."  --fastindex-maxn.
 extern long long fastindexmaxn;
+// --fastindex-dump path: after a successful build, write pd.fastbits
+// (the raw n!-byte table, one byte per permutation rank -- not
+// fastbitsside, which is tiny) to this file.  For poking at how
+// compressible the table actually is; null means don't dump.
+extern const char *fastindexdumppath;
 // Rank of setdefs[0]'s current permutation under whatever n/split
 // build_fastindex() last set up; only meaningful (and only ever called)
 // when pd.fastbits is non-empty.  A free function rather than a puzdef
