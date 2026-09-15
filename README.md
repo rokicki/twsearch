@@ -90,7 +90,9 @@ Options:
    set before attempting to solve.
 
 `--compact`  Print and parse positions on standard input and output
-    in a one-line compact format.
+    in a one-line compact format.  The format is described in
+    `docs/compactformat.md`; note that it is not self-describing, so keep
+    track of which `.tws` file any compact output came from.
 
 `--describesets`  Print a table of what moves affect what pieces.
 
