@@ -371,13 +371,20 @@ int main_search(const char *def_file, const char *scramble_file) {
   puzdef pd = makepuzdef(&f);
   if (requestedcmd) {
     requestedcmd->docommand(pd);
-  } else if (scramble_file != NULL) {
-    ifstream scrambles;
-    scrambles.open(scramble_file, ifstream::in);
-    if (scrambles.fail())
-      error("! could not open scramble file ", scramble_file);
-    processscrambles(&scrambles, pd, gs);
-    scrambles.close();
+  } else if (embeddedscrambles.size() || scramble_file != NULL) {
+    prunetable pt(pd, maxmem);
+    if (embeddedscrambles.size()) {
+      istringstream scrambles(embeddedscrambles);
+      processscrambles(&scrambles, pd, pt, gs);
+    }
+    if (scramble_file != NULL) {
+      ifstream scrambles;
+      scrambles.open(scramble_file, ifstream::in);
+      if (scrambles.fail())
+        error("! could not open scramble file ", scramble_file);
+      processscrambles(&scrambles, pd, pt, gs);
+      scrambles.close();
+    }
   }
   if (verbose)
     cout << "Twsearch finished." << endl;

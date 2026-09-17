@@ -468,9 +468,11 @@ void expandalgomoves(puzdef &pd, vector<string> &newnames) {
     }
   }
 }
+string embeddedscrambles;
 puzdef readdef(istream *f) {
   vector<string> newnames;
   curline.clear();
+  embeddedscrambles.clear();
   puzdef pz;
   int state = 0;
   ull checksum = 0;
@@ -478,9 +480,12 @@ puzdef readdef(istream *f) {
   lineno = 0;
   int ignore = 0;
   while (1) {
+    ull sumbeforeline = checksum;
     vector<string> toks = getline(f, checksum);
-    if (toks.size() == 0)
+    if (toks.size() == 0) {
+      checksum = sumbeforeline; // ignore any whitespace at the end of the file
       break;
+    }
     if (toks[0] == "Name") {
       if (state != 0)
         inerror("! Name in wrong place");
@@ -582,6 +587,28 @@ puzdef readdef(istream *f) {
         seq += toks[i];
       }
       pz.moveseqs.push_back({toks[1], seq, 0});
+    } else if (toks[0] == "Scramble" || toks[0] == "ScrambleState" ||
+               toks[0] == "ScrambleAlg" || toks[0] == "CPOS") {
+      /*
+       *   Scrambles may be given at the end of the puzzle definition
+       *   instead of in a separate file; the rest of the file is set
+       *   aside here and solved after the puzzle is set up.  The lines
+       *   are kept out of the puzzle checksum.
+       */
+      if (state < 2)
+        inerror("! scramble must come after the moves");
+      checksum = sumbeforeline; // the scrambles are not part of the puzzle
+      ull scramblesum = 0;
+      while (toks.size()) {
+        for (int i = 0; i < (int)toks.size(); i++) {
+          if (i)
+            embeddedscrambles += " ";
+          embeddedscrambles += toks[i];
+        }
+        embeddedscrambles += "\n";
+        toks = getline(f, scramblesum);
+      }
+      break;
     } else {
       inerror("! unexpected first token on line ", toks[0]);
     }

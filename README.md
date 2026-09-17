@@ -49,6 +49,20 @@ Sample usage:
 ./build/bin/twsearch --moves U,R,F -q -g samples/main/kilominx.tws
 ```
 
+Scrambles do not have to be in a separate file; the same `Scramble`,
+`ScrambleState`, `ScrambleAlg`, and `CPOS` blocks may instead be given at
+the end of the puzzle definition, after the moves.  Everything from the
+first such block to the end of the file is taken as scrambles, so the
+file can be handed to `twsearch` on its own:
+
+```shell
+./build/bin/twsearch puzzle-and-scrambles.tws
+```
+
+Scrambles at the end of the file are not part of the puzzle, so they do
+not change which pruning tables the puzzle uses, and a scramble file may
+still be given as well (the ones in the definition are solved first).
+
 The maximum memory setting should be used carefully; on a machine running
 Windows or OS-X with heavy browser usage and other programs, you may want
 to set it to only one quarter of your physical RAM.  On a dedicated Linux

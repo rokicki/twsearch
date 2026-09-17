@@ -12,6 +12,8 @@ int getnumber(int minval, const string &s);
 allocsetval readposition(puzdef &pz, char typ, istream *f, ull &checksum,
                          bool zero_indexed);
 puzdef readdef(istream *f);
+/* scrambles given at the end of the puzzle definition, if any */
+extern string embeddedscrambles;
 void addmovepowers(puzdef &pd);
 extern int nocorners, nocenters, noedges, ignoreori, distinguishall;
 extern set<string> omitsets, omitperms, omitoris, setsmustexist, relabelsets;
