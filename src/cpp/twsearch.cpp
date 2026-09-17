@@ -1,4 +1,5 @@
 #include "twsearch.h"
+#include "cancel.h"
 #include "canon.h"
 #include "city.h"
 #include "cmdlineops.h"
@@ -275,6 +276,12 @@ int getcompactval(int &at, const string &s) {
   return -1;
 }
 
+static void startscramble(const puzdef &pd, prunetable *&pt) {
+  beginscramble();
+  if (pt == 0)
+    pt = new prunetable(pd, maxmem);
+}
+
 void readposition(puzdef &pd, setval &p1, string crep) {
   int at = 0;
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
@@ -302,7 +309,11 @@ void readposition(puzdef &pd, setval &p1, string crep) {
     error("! extra input in compact format");
 }
 
-void processscrambles(istream *f, puzdef &pd, prunetable &pt,
+/*
+ *   The pruning table is built when the first scramble has been read (if
+ *   pt is null), so that a cancel sent during that build applies to it.
+ */
+void processscrambles(istream *f, puzdef &pd, prunetable *&pt,
                       generatingset *gs) {
   string scramblename;
   ull checksum = 0;
@@ -319,7 +330,8 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
       allocsetval p =
           readposition(pd, 'S', f, checksum,
                        toks[0] == "ScrambleState" || toks[0] == "StartState");
-      solveit(pd, pt, scramblename, p, gs);
+      startscramble(pd, pt);
+      solveit(pd, *pt, scramblename, p, gs);
     } else if (toks[0] == "ScrambleAlg") {
       expect(toks, 2);
       scramblename = toks[1];
@@ -331,14 +343,16 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
         if (toks[0] == "End")
           break;
         for (int i = 0; i < (int)toks.size(); i++)
-          domove(pd, p1, findmove_generously(pd, toks[i]));
+          domove(pd, p1, findmove_generously(pd, toks[i], false));
       }
-      solveit(pd, pt, scramblename, p1, gs);
+      startscramble(pd, pt);
+      solveit(pd, *pt, scramblename, p1, gs);
     } else if (toks[0] == "CPOS") {
       expect(toks, 2);
       scramblename = "noname";
       readposition(pd, p1, toks[1]);
-      solveit(pd, pt, scramblename, p1, gs);
+      startscramble(pd, pt);
+      solveit(pd, *pt, scramblename, p1, gs);
     } else {
       error("! unsupported command in scramble file");
     }
@@ -346,8 +360,9 @@ void processscrambles(istream *f, puzdef &pd, prunetable &pt,
 }
 
 void processscrambles(istream *f, puzdef &pd, generatingset *gs) {
-  prunetable pt(pd, maxmem);
+  prunetable *pt = 0;
   processscrambles(f, pd, pt, gs);
+  delete pt;
 }
 
 int main_search(const char *def_file, const char *scramble_file) {
@@ -372,12 +387,18 @@ int main_search(const char *def_file, const char *scramble_file) {
   if (requestedcmd) {
     requestedcmd->docommand(pd);
   } else if (embeddedscrambles.size() || scramble_file != NULL) {
-    prunetable pt(pd, maxmem);
+    prunetable *pt = 0; // built lazily, and shared by every scramble below
     if (embeddedscrambles.size()) {
+      // scrambles given at the end of the puzzle definition
       istringstream scrambles(embeddedscrambles);
       processscrambles(&scrambles, pd, pt, gs);
     }
-    if (scramble_file != NULL) {
+    if (scramble_file != NULL && strcmp(scramble_file, "-") == 0) {
+      // Scrambles on standard input, solved as each one arrives, so a
+      // controlling process can reuse the pruning table across solves and
+      // cancel solves (see cancel.h).
+      processscrambles(cancelablestdin(), pd, pt, gs);
+    } else if (scramble_file != NULL) {
       ifstream scrambles;
       scrambles.open(scramble_file, ifstream::in);
       if (scrambles.fail())
@@ -385,6 +406,7 @@ int main_search(const char *def_file, const char *scramble_file) {
       processscrambles(&scrambles, pd, pt, gs);
       scrambles.close();
     }
+    delete pt;
   }
   if (verbose)
     cout << "Twsearch finished." << endl;

@@ -31,7 +31,7 @@ void solvecmdline(puzdef &pd, const char *scr, generatingset *gs) {
   pd.assignpos(p1, pd.solved);
   string noname;
   prunetable pt(pd, maxmem);
-  parsedomovelist_generously(pd, scr, p1);
+  parsedomovelist_generously(pd, scr, p1, false);
   solveit(pd, pt, noname, p1, gs);
 }
 static struct solvecmd : cmd {
@@ -47,9 +47,12 @@ static struct solvecmd : cmd {
   virtual void docommand(puzdef &pd) {
     prunetable pt(pd, maxmem);
     string emptys;
-    processlines(pd, [&](const puzdef &pd, setval p, const char *) {
-      solveit(pd, pt, emptys, p, gs);
-    });
+    processlines(
+        pd,
+        [&](const puzdef &pd, setval p, const char *) {
+          solveit(pd, pt, emptys, p, gs);
+        },
+        false);
   };
 } registersolve;
 static struct solvep2cmd : cmd {
@@ -408,12 +411,13 @@ static struct showrandompositioncmd : llcmd {
 } registerrandpositioncmd;
 // basic infrastructure for walking a set of sequences
 void processlines(const puzdef &pd,
-                  function<void(const puzdef &, setval, const char *)> f) {
+                  function<void(const puzdef &, setval, const char *)> f,
+                  bool allowrotations) {
   string s;
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
-    parsedomovelist_generously(pd, s, p1);
+    parsedomovelist_generously(pd, s, p1, allowrotations);
     f(pd, p1, s.c_str());
   }
 }
@@ -457,7 +461,8 @@ void processlines5(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
-    parsedomovelist_generously(pd, s, p1);
+    // only used for -p2, which solves the positions
+    parsedomovelist_generously(pd, s, p1, false);
     f(pd, p1, s.c_str());
   }
 }

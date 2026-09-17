@@ -1,4 +1,5 @@
 #include "solve.h"
+#include "cancel.h"
 #include "cmdlineops.h"
 #include <iostream>
 ll solutionsfound = 0;
@@ -97,7 +98,7 @@ int microthread::getwork(const puzdef &pd, prunetable &pt) {
     int w = -1;
     int finished = 0;
     get_global_lock();
-    finished = satisfiedsolutioncount();
+    finished = satisfiedsolutioncount() || searchcanceled();
     if (workat < (int)workchunks.size())
       w = workat++;
     release_global_lock();
@@ -121,6 +122,10 @@ int solveworker::solveiter(const puzdef &pd, prunetable &pt, const setval p) {
     }
   }
   for (ll checkcnt = 0; active; checkcnt++) {
+    // The solution check below gets rarer as the search goes on; a cancel
+    // should not, so it is checked separately (without the lock).
+    if ((checkcnt & 4095) == 4095 && searchcanceled())
+      return 0;
     int uid = rover++;
     if (rover >= workinguthreading)
       rover = 0;
@@ -284,6 +289,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
   ull lastextra = 0;
   pt.checkextend(pd); // fill table up a bit more if needed
   for (int d = initd; d <= maxdepth; d++) {
+    if (searchcanceled()) {
+      cout << "Search canceled at depth " << d << endl << flush;
+      return -1;
+    }
     lastlookups = totlookups;
     lastextra = totextra;
     if (alloptimal && solutionsfound > 0)
@@ -357,6 +366,10 @@ int solve(const puzdef &pd, prunetable &pt, const setval p, generatingset *gs) {
              << flush;
       }
       return d;
+    }
+    if (searchcanceled()) {
+      cout << "Search canceled at depth " << d << endl << flush;
+      return -1;
     }
     double dur = duration();
     double rate = (totlookups - lastlookups - totextra + lastextra) / dur / 1e6;

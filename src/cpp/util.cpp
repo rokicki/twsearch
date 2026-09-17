@@ -30,11 +30,28 @@ double duration() {
   return r;
 }
 string curline;
+#ifdef WASM
+#include <emscripten/emscripten.h>
+// The body is JavaScript.
+// clang-format off
+EM_JS(void, js_throwerror, (const char *msg), {
+  var e = new Error(UTF8ToString(Number(msg)));
+  e.name = "TwsearchError";
+  throw e;
+});
+// clang-format on
+#endif
 void error(string msg, string extra) {
   cerr << msg << extra << endl;
   if (curline.size() > 0)
     cerr << "At: " << curline << endl;
+#ifdef WASM
+  // There is no process to exit.  Throw a JavaScript exception out of the
+  // module; the caller must discard this instance (see wasm/wasmapi.cpp).
+  js_throwerror((msg + extra).c_str());
+#else
   exit(10);
+#endif
 }
 void warn(string msg, string extra) { cerr << msg << extra << endl; }
 static mt19937 *rng;
