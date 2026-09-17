@@ -9,6 +9,12 @@ void inerror(const string s, const string x = "") {
     cerr << lineno << ": ";
   error(s, x);
 }
+/*
+ *   The checksum covers the tokens, not the characters of the file, so
+ *   comments, blank lines, and how the tokens are spaced do not change it.
+ *   That way a file keeps its identity (and its pruning tables) when it is
+ *   edited by hand, for instance to add scrambles at the end.
+ */
 vector<string> getline(istream *f, ull &checksum) {
   string s;
   int c;
@@ -17,8 +23,6 @@ vector<string> getline(istream *f, ull &checksum) {
     s.clear();
     while (1) {
       c = f->get();
-      if (c != EOF)
-        checksum = 31 * checksum + c;
       if (c == EOF || c == 10 || c == 13) {
         if (c == EOF || s.size() > 0)
           break;
@@ -37,7 +41,10 @@ vector<string> getline(istream *f, ull &checksum) {
     }
     if (verbose > 2)
       cout << ">> " << s << endl;
-    if (s[0] == '#') {
+    int firstch = 0; // a comment may be indented
+    while (firstch < (int)s.size() && s[firstch] <= ' ')
+      firstch++;
+    if (firstch >= (int)s.size() || s[firstch] == '#') {
       lineno++;
       continue;
     }
@@ -58,6 +65,12 @@ vector<string> getline(istream *f, ull &checksum) {
       lineno++;
       continue;
     }
+    for (int i = 0; i < (int)toks.size(); i++) {
+      for (int j = 0; j < (int)toks[i].size(); j++)
+        checksum = 31 * checksum + toks[i][j];
+      checksum = 31 * checksum + ' ';
+    }
+    checksum = 31 * checksum + '\n';
     curline = s;
     return toks;
   }
@@ -482,10 +495,8 @@ puzdef readdef(istream *f) {
   while (1) {
     ull sumbeforeline = checksum;
     vector<string> toks = getline(f, checksum);
-    if (toks.size() == 0) {
-      checksum = sumbeforeline; // ignore any whitespace at the end of the file
+    if (toks.size() == 0)
       break;
-    }
     if (toks[0] == "Name") {
       if (state != 0)
         inerror("! Name in wrong place");
