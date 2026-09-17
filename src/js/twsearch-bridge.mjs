@@ -120,6 +120,9 @@ const ALLOWED_ARGS = new Map([
   ["--checkbeforesolve", 0],
   ["--noearlysolutions", 0],
   ["--nosymmetry", 0],
+  ["--nocorners", 0],
+  ["--nocenters", 0],
+  ["--noedges", 0],
   ["--noorientation", 0],
   ["--distinguishall", 0],
 ]);

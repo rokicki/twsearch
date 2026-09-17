@@ -126,8 +126,17 @@ WASM_LDFLAGS = -sMODULARIZE -sEXPORT_ES6 -sSINGLE_FILE \
    -sASYNCIFY -sASYNCIFY_IMPORTS=js_pollcancel -sASYNCIFY_IGNORE_INDIRECT \
    -sEXPORTED_FUNCTIONS=_w_args,_w_setksolve,_w_solvescramble \
    -sEXPORTED_RUNTIME_METHODS=ccall
-WASM_SOURCE = $(filter-out src/cpp/test.cpp,$(wildcard src/cpp/*.cpp)) \
-   src/cpp/wasm/wasmapi.cpp src/cpp/vendor/cityhash/src/city.cc
+# Source files left out of the wasm build: functionality the web doesn't use.
+# Each command registers itself, so omitting its file just drops the command;
+# src/cpp/wasm/omitted.cpp stands in for the few functions still referenced.
+WASM_OMIT ?= src/cpp/test.cpp src/cpp/god.cpp src/cpp/pruneio.cpp \
+   src/cpp/coset.cpp src/cpp/findalgo.cpp src/cpp/orderedgs.cpp \
+   src/cpp/shorten.cpp src/cpp/subgroup.cpp src/cpp/antipode.cpp \
+   src/cpp/beamsearch.cpp src/cpp/descsets.cpp src/cpp/ordertree.cpp \
+   src/cpp/totalvar.cpp src/cpp/unrotate.cpp src/cpp/cmdlineops.cpp
+WASM_SOURCE = $(filter-out $(WASM_OMIT),$(wildcard src/cpp/*.cpp)) \
+   src/cpp/wasm/wasmapi.cpp src/cpp/wasm/omitted.cpp \
+   src/cpp/vendor/cityhash/src/city.cc
 
 .PHONY: build-wasm
 build-wasm: ${WASM_DIR}/twsearch.mjs
@@ -144,6 +153,6 @@ ${WASM_DIR}/emscripten-config: | ${WASM_DIR}/
 	printf "LLVM_ROOT = '%s'\nBINARYEN_ROOT = '%s'\nNODE_JS = '%s'\n" \
 	   "${EMSDK}/upstream/bin" "${EMSDK}/upstream" "$$(command -v node)" > $@
 
-${WASM_DIR}/twsearch.mjs: $(WASM_SOURCE) $(HSOURCE) src/cpp/wasm/wasmapi.cpp src/js/twsearch-session.mjs src/js/twsearch-worker.mjs Makefiles/cpp.Makefile ${WASM_EM_CONFIG} | ${WASM_DIR}/
+${WASM_DIR}/twsearch.mjs: $(WASM_SOURCE) $(HSOURCE) src/js/twsearch-session.mjs src/js/twsearch-worker.mjs Makefiles/cpp.Makefile ${WASM_EM_CONFIG} | ${WASM_DIR}/
 	$(WASM_CXX) $(WASM_CXXFLAGS) $(WASM_FLAGS) -o $@ $(WASM_SOURCE) $(WASM_LDFLAGS)
 	cp src/js/twsearch-session.mjs src/js/twsearch-worker.mjs ${WASM_DIR}/

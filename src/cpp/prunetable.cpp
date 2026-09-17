@@ -3,6 +3,8 @@
 #include "cmds.h"
 #include <iostream>
 #include <set>
+fillworker fillworkers[MAXTHREADS];
+string inputbasename;
 int writeprunetables = 1; // default is auto
 int startprunedepth = 3;
 double fillpref = 1;
