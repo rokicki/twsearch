@@ -87,7 +87,10 @@ Options:
    reorder moves so the result is canonical; it just cancels moves.
 
 `--checkbeforesolve`  Check each position for solvability using generating
-   set before attempting to solve.
+   set before attempting to solve.  Sets with identical pieces or orientation
+   wildcards only get basic checks (piece counts and orientation sums within
+   each orbit of locations under the moves), so a position that passes may
+   still be unsolvable.
 
 `--compact`  Print and parse positions on standard input and output
     in a one-line compact format.  The format is described in

@@ -128,7 +128,8 @@ static boolopt boolopts[] = {
      "Emit any solutions whose prefix is also a solution.", &noearlysolutions},
     {"--checkbeforesolve",
      "Check each position for solvability using generating\n"
-     "set before attempting to solve.",
+     "set before attempting to solve.  Sets with identical\n"
+     "pieces or orientation wildcards only get basic checks.",
      &checkbeforesolve},
     {"--randomstart", "Randomize move order when solving.", &randomstart},
     {"-q", "Use only minimal (quarter) turns.", &quarter},
@@ -236,11 +237,7 @@ puzdef makepuzdef(istream *f) {
   if (distinguishall)
     pd.addoptionssum("distinguishall");
   if (checkbeforesolve) {
-    if (!pd.uniq)
-      warn("Ignoring --checkbeforesolve due to identical pieces");
-    else if (pd.wildo)
-      warn("Ignoring --checkbeforesolve due to orientation wildcards");
-    else if (pd.haveillegal)
+    if (pd.haveillegal)
       warn("Ignoring --checkbeforesolve due to illegal positions");
     else
       gs = new generatingset(pd);
