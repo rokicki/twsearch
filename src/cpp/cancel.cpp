@@ -1,3 +1,9 @@
+/*
+ *   Cancelling where there is a standard input to read and threads to read
+ *   it with.  A build where cancels arrive some other way leaves this file
+ *   out and provides its own: the WebAssembly one does (wasm/wasmapi.cpp),
+ *   where the search has to ask the page instead.
+ */
 #include "cancel.h"
 #include <atomic>
 #include <iostream>
@@ -80,15 +86,8 @@ istream *cancelablestdin() {
   }).detach();
   return is;
 }
-/*
- *   These two are weak, so that a build where a cancel arrives some other
- *   way can define its own and have them called directly: the WebAssembly
- *   build does (see wasm/wasmapi.cpp), where the search has to ask the page
- *   rather than read standard input.  A direct call matters there, since
- *   asking the page suspends the search.
- */
-__attribute__((weak)) void beginscramble() { solvegen.fetch_add(1); }
-__attribute__((weak)) int searchcanceled() {
+void beginscramble() { solvegen.fetch_add(1); }
+int searchcanceled() {
   return cancelgen.load(memory_order_relaxed) ==
          solvegen.load(memory_order_relaxed);
 }

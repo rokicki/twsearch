@@ -134,10 +134,15 @@ EM_JS(int, js_pollcancel, (), {
 // gone (see the note at the top of this file).
 static void wasm_error(const string &msg) { js_throwerror(msg.c_str()); }
 
-// The cancel that cancel.cpp leaves weak for us: the page sets a flag, and
-// asking for it is also where the search yields to the event loop, so this
-// has to be called directly rather than through a pointer (the build tells
-// Asyncify that indirect calls never suspend).
+/*
+ *   Cancelling, in place of cancel.cpp, which the WebAssembly build leaves
+ *   out: there is no standard input to watch, so the page sets a flag
+ *   instead.  Asking for that flag is also where the search yields to the
+ *   event loop, so these are called directly, which is why this is a
+ *   different file rather than a pointer (the build tells Asyncify that
+ *   indirect calls never suspend).
+ */
+std::istream *cancelablestdin() { return &std::cin; }
 void beginscramble() { js_beginscramble(); }
 int searchcanceled() { return js_pollcancel(); }
 

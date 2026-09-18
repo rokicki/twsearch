@@ -34,10 +34,9 @@
  */
 // Returns a stream of standard input with cancel lines removed (native).
 std::istream *cancelablestdin();
-// Called as each scramble begins to be solved.  Weak: a build where cancels
-// arrive some other way can define its own (see cancel.cpp).
+// Called as each scramble begins to be solved.
 void beginscramble();
-// Nonzero if the scramble being solved has been canceled.  Weak, as above.
+// Nonzero if the scramble being solved has been canceled.
 int searchcanceled();
 #define CANCEL_H
 #endif

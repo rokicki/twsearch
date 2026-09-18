@@ -172,7 +172,9 @@ WASM_LDFLAGS = -sMODULARIZE -sEXPORT_ES6 -sSINGLE_FILE \
 # else compiles, and each command registers itself, so more files could be
 # left out here to make the bundle smaller (about 110KB compressed for all
 # of them), at the cost of those commands.
-WASM_OMIT ?= src/cpp/serve.cpp
+# cancel.cpp reads standard input in a thread, which a page has neither of;
+# wasm/wasmapi.cpp does that job there instead.
+WASM_OMIT ?= src/cpp/serve.cpp src/cpp/cancel.cpp
 WASM_SOURCE = $(filter-out $(WASM_OMIT),$(wildcard src/cpp/*.cpp)) \
    src/cpp/wasm/wasmapi.cpp src/cpp/vendor/cityhash/src/city.cc
 
