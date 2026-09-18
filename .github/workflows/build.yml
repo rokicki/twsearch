@@ -21,19 +21,18 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux-x64
-            cxxflags: ""
+            cxxflags: "-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g1 -Wsign-compare"
           # One binary for both Apple Silicon and Intel Macs.
           - os: macos-latest
             platform: macos
-            cxxflags: "-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare -arch arm64 -arch x86_64"
+            cxxflags: "-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g1 -Wsign-compare -arch arm64 -arch x86_64"
     steps:
       - uses: actions/checkout@v4
 
+      # -g1: function names and line tables, for backtraces, at a fraction
+      # of the size of -g.
       - name: Build
-        env:
-          FLAGS: ${{ matrix.cxxflags }}
-        run: |
-          if [ -n "$FLAGS" ]; then make build CXXFLAGS="$FLAGS"; else make build; fi
+        run: make build CXXFLAGS="${{ matrix.cxxflags }}"
 
       - name: Both Mac architectures are there and run
         if: matrix.platform == 'macos'
@@ -59,6 +58,9 @@ jobs:
         with:
           name: twsearch-${{ matrix.platform }}
           path: build/bin/twsearch
+
+      - name: Size
+        run: ls -l build/bin/twsearch
 
       - name: Build without the server
         run: make clean && make build SERVE=0
@@ -86,7 +88,7 @@ jobs:
       - name: Build
         run: |
           make build \
-            CXXFLAGS="-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare -static -static-libgcc -static-libstdc++"
+            CXXFLAGS="-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g1 -Wsign-compare -static -static-libgcc -static-libstdc++"
 
       - name: Searches with known answers
         run: make test-cpp-samples
@@ -109,6 +111,9 @@ jobs:
         with:
           name: twsearch-windows-x64
           path: build/bin/twsearch.exe
+
+      - name: Size
+        run: ls -l build/bin/twsearch.exe
 
       - name: Build without the server
         run: |
