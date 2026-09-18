@@ -1,13 +1,20 @@
 TWSEARCH_VERSION=v0.0.0
 
 .PHONY: build-cpp
-build-cpp: build/bin/twsearch
+build-cpp: $(TWSEARCH)
 
 # MAKEFLAGS += -j
 # CXXFLAGS = -fsanitize=address -fsanitize=undefined -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
 CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
 LDFLAGS = -lpthread
+ifeq ($(OS),Windows_NT)
+# --serve listens on a socket; on Windows that lives in ws2_32.  The linker
+# there also names the program twsearch.exe, whatever we ask for.
+LDFLAGS += -lws2_32
+EXE = .exe
+endif
+TWSEARCH = build/bin/twsearch$(EXE)
 
 # Serving searches to a web page over HTTP: the --serve option.  It is the
 # only thing that uses the vendored HTTP and JSON headers, and nothing else
@@ -73,8 +80,8 @@ build/cpp/vendor/cityhash/%.o: src/cpp/vendor/cityhash/src/%.cc Makefiles/cpp.Ma
 build/bin/:
 	mkdir -p build/bin/
 
-build/bin/twsearch: $(OBJ) Makefiles/cpp.Makefile | build/bin/
-	$(CXX) $(CXXFLAGS) -o build/bin/twsearch $(OBJ) $(LDFLAGS)
+$(TWSEARCH): $(OBJ) Makefiles/cpp.Makefile | build/bin/
+	$(CXX) $(CXXFLAGS) -o $(TWSEARCH) $(OBJ) $(LDFLAGS)
 
 .PHONY: lint-cpp
 lint-cpp:
@@ -84,6 +91,25 @@ lint-cpp:
 format-cpp:
 	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v /vendor/ | xargs clang-format -i
 
+.PHONY: test-serve
+# Starts twsearch serving on a port of its own and puts it through the
+# protocol a page uses: solving, streaming, changing puzzles, cancelling.
+test-serve: $(TWSEARCH)
+	node test/bridge-test.mjs $(TWSEARCH)
+
+.PHONY: test-cpp-samples
+# A few searches with known answers, to show a build of twsearch works.
+test-cpp-samples: $(TWSEARCH)
+	@mkdir -p build/test
+	$(TWSEARCH) -M 1024 --nowrite samples/main/3x3x3.tws samples/main/tperm.scr | grep -q "^ D R2 D' F2 U F2 R2 U R2 U' R2$$"
+	$(TWSEARCH) --schreiersims samples/main/3x3x3.tws | grep -q "^State size is 43252003274489856000$$"
+	printf 'ScrambleState twist\nCORNER\n0 1 2 3 4 5 6 7\n1 0 0 0 0 0 0 0\nEnd\n' > build/test/twist.scr
+	$(TWSEARCH) -M 1024 --nowrite --checkbeforesolve samples/main/3x3x3.tws build/test/twist.scr | grep -q "Ignoring unsolvable position"
+	cat samples/main/3x3x3.tws > build/test/embedded.tws
+	printf '\nScrambleAlg alg\nR U R2 F2 D\nEnd\n' >> build/test/embedded.tws
+	$(TWSEARCH) -M 1024 --nowrite --checkbeforesolve build/test/embedded.tws | grep -q "^Found 1 solution"
+	@echo "samples ok"
+
 .PHONY: cpp-clean
 cpp-clean:
 	rm -rf ./build
@@ -91,7 +117,7 @@ cpp-clean:
 # C++ and `twsearch-cpp-wrapper` testing
 
 .PHONY: test-cpp-cli
-test-cpp-cli: build/bin/twsearch
+test-cpp-cli: $(TWSEARCH)
 	cargo run --package twsearch-cpp-wrapper \
 		--example test-cpp-cli
 

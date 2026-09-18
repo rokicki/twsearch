@@ -1,0 +1,129 @@
+# Builds twsearch on the three platforms and checks that each build works,
+# including the part a page uses: `twsearch --serve` spawning searches and
+# streaming them back (see docs/bridgeprotocol.md).  The Windows job matters
+# most: it is the only place the Windows halves of serve.cpp run.
+name: build
+
+on:
+  push:
+    branches: [main, explorer-integration]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unix:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: make build
+
+      - name: Searches with known answers
+        run: make test-cpp-samples
+
+      - name: Serving, as a page uses it
+        run: make test-serve
+
+      - name: Build without the server
+        run: make clean && make build SERVE=0
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twsearch-${{ matrix.os }}
+          path: build/bin/twsearch
+
+  windows:
+    name: windows-latest
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          # A static build, so what comes out needs no DLLs from here.
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-make
+            make
+            grep
+
+      - name: Build
+        run: |
+          make build \
+            CXXFLAGS="-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compare -static -static-libgcc -static-libstdc++"
+
+      - name: Searches with known answers
+        run: make test-cpp-samples
+
+      # Run it from cmd rather than the MSYS shell: nothing of MSYS is on the
+      # path there, so this fails if the binary wants a DLL from it.
+      - name: Run it outside MSYS
+        shell: cmd
+        run: |
+          build\bin\twsearch.exe -M 1024 --nowrite samples\main\3x3x3.tws samples\main\tperm.scr
+
+      # The Windows-only code: CreateProcess, the pipes, TerminateProcess for
+      # abandon, and the socket layer.  The test starts the server itself.
+      - name: Serving, as a page uses it
+        shell: pwsh
+        run: node test/bridge-test.mjs build/bin/twsearch.exe
+
+      - name: Build without the server
+        run: |
+          make clean
+          make build SERVE=0 \
+            CXXFLAGS="-O3 -std=c++20 -static -static-libgcc -static-libstdc++"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: twsearch-windows-x64
+          path: build/bin/twsearch.exe
+
+  # The cheap way to get a Windows binary without a Windows machine.  It is
+  # only built here, not run; the job above is what says Windows works.
+  windows-cross:
+    name: windows cross-compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install MinGW
+        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix
+      - name: Build
+        run: |
+          make build \
+            CXX=x86_64-w64-mingw32-g++-posix \
+            CXXFLAGS="-O3 -std=c++20 -static -static-libgcc -static-libstdc++" \
+            OS=Windows_NT
+      - run: file build/bin/twsearch
+
+  release:
+    name: attach the binaries to the release
+    needs: [unix, windows]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { path: artifacts }
+      - name: Name them by platform
+        run: |
+          mkdir -p release
+          cp artifacts/twsearch-ubuntu-latest/twsearch release/twsearch-linux-x64
+          cp artifacts/twsearch-macos-latest/twsearch release/twsearch-macos-arm64
+          cp artifacts/twsearch-windows-x64/twsearch.exe release/twsearch-windows-x64.exe
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: release/*

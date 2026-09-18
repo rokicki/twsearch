@@ -201,7 +201,8 @@ Options:
    runs this same program for the puzzle being solved, one puzzle at a time,
    so a puzzle's pruning tables last as long as the page stays with that
    puzzle.  `-M` says how much memory a search may use.  See also `--port`.
-   `src/js/twsearch-bridge.mjs` does the same thing under node.
+   `src/js/twsearch-bridge.mjs` does the same thing under node.  The protocol
+   is documented in `docs/bridgeprotocol.md`.
 
 `--schreiersims`  Run the Schreier-Sims algorithm to calculate the state
    space size of the puzzle.

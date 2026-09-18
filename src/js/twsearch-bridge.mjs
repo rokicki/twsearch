@@ -44,6 +44,10 @@
  *   behavior.
  *
  *   Only a fixed set of search options is accepted, -M is capped at
+ *   The protocol is documented in docs/bridgeprotocol.md, and tested by
+ *   test/bridge-test.mjs; `twsearch --serve` speaks the same one without
+ *   needing node.
+ *
  *   --max-mem, and requests are refused from origins other than localhost
  *   and the sites listed in allowOrigins below unless --allow-origin names
  *   them.  A page served from anywhere else needs, for example:
