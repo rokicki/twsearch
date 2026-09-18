@@ -1,5 +1,12 @@
 TWSEARCH_VERSION=v0.0.0
 
+# What the program is called.  The linker on Windows names it twsearch.exe
+# whatever we ask for, so every rule and test says $(TWSEARCH).
+ifeq ($(OS),Windows_NT)
+EXE = .exe
+endif
+TWSEARCH = build/bin/twsearch$(EXE)
+
 .PHONY: build-cpp
 build-cpp: $(TWSEARCH)
 
@@ -9,12 +16,9 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
 LDFLAGS = -lpthread
 ifeq ($(OS),Windows_NT)
-# --serve listens on a socket; on Windows that lives in ws2_32.  The linker
-# there also names the program twsearch.exe, whatever we ask for.
+# --serve listens on a socket; on Windows that lives in ws2_32.
 LDFLAGS += -lws2_32
-EXE = .exe
 endif
-TWSEARCH = build/bin/twsearch$(EXE)
 
 # Serving searches to a web page over HTTP: the --serve option.  It is the
 # only thing that uses the vendored HTTP and JSON headers, and nothing else

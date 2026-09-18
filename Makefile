@@ -1,7 +1,9 @@
 # Filtered to contain only the C++ build.
 
 .PHONY: build
-build: build/bin/twsearch
+# build-cpp knows what the program is called, which is not the same on every
+# platform (Windows insists on twsearch.exe).
+build: build-cpp
 
 .PHONY: clean
 clean:
