@@ -569,6 +569,10 @@ static struct memopt : specialopt {
 #ifndef ASLIBRARY
 #define STR2(x) #x
 #define STRINGIZE(x) STR2(x)
+// Set by --serve (serve.cpp) when the job is to serve searches rather than
+// run one.  Null when that file is not part of this build.
+int (*servehook)(const char *self) = 0;
+
 int main(int argc, const char **argv) {
   reseteverything();
   int orig_argc = argc;
@@ -582,6 +586,9 @@ int main(int argc, const char **argv) {
       cout << " " << orig_argv[i];
     cout << endl << flush;
   }
+
+  if (servehook)
+    return servehook(orig_argv[0]);
 
   if (argc <= 1) {
     printhelp();

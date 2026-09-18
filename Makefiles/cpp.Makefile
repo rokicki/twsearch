@@ -9,6 +9,16 @@ CXXFLAGS = -O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g -Wsign-compa
 FLAGS = -DTWSEARCH_VERSION=${TWSEARCH_VERSION} -DUSE_PTHREADS -DUSE_PPQSORT
 LDFLAGS = -lpthread
 
+# Serving searches to a web page over HTTP: the --serve option.  It is the
+# only thing that uses the vendored HTTP and JSON headers, and nothing else
+# uses it, so `make build SERVE=0` builds a twsearch without it.
+SERVE ?= 1
+ifeq ($(SERVE),1)
+SERVESOURCE = src/cpp/serve.cpp
+SERVEOBJ = build/cpp/serve.o
+SERVEHEADER = src/cpp/serve.h
+endif
+
 # TODO: why does this always trigger rebuilds when using as a target dependency?
 CPP_MAKEFILE = Makefile/cpp.Makefile
 ${CPP_MAKEFILE}:
@@ -19,7 +29,7 @@ BASESOURCE = src/cpp/canon.cpp src/cpp/vendor/cityhash/src/city.cc \
    src/cpp/puzdef.cpp src/cpp/readksolve.cpp src/cpp/rotations.cpp \
    src/cpp/solve.cpp src/cpp/threads.cpp src/cpp/twsearch.cpp src/cpp/util.cpp \
    src/cpp/workchunks.cpp src/cpp/cmds.cpp src/cpp/cmdlineops.cpp src/cpp/subgroup.cpp \
-   src/cpp/cancel.cpp
+   src/cpp/cancel.cpp $(SERVESOURCE)
 
 EXTRASOURCE = src/cpp/antipode.cpp \
    src/cpp/coset.cpp src/cpp/descsets.cpp \
@@ -37,7 +47,8 @@ OBJ = build/cpp/antipode.o build/cpp/canon.o build/cpp/cmdlineops.o \
    build/cpp/orderedgs.o build/cpp/coset.o build/cpp/descsets.o \
    build/cpp/ordertree.o build/cpp/unrotate.o build/cpp/shorten.o \
    build/cpp/cmds.o build/cpp/beamsearch.o build/cpp/subgroup.o \
-   build/cpp/totalvar.o build/cpp/cancel.o build/cpp/vendor/cityhash/city.o
+   build/cpp/totalvar.o build/cpp/cancel.o $(SERVEOBJ) \
+   build/cpp/vendor/cityhash/city.o
 
 HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/filtermoves.h src/cpp/findalgo.h src/cpp/generatingset.h src/cpp/god.h src/cpp/index.h \
@@ -45,7 +56,7 @@ HSOURCE = src/cpp/antipode.h src/cpp/canon.h src/cpp/cmdlineops.h \
    src/cpp/test.h src/cpp/threads.h src/cpp/util.h src/cpp/workchunks.h src/cpp/rotations.h \
    src/cpp/orderedgs.h src/cpp/twsearch.h src/cpp/coset.h src/cpp/descsets.h \
    src/cpp/ordertree.h src/cpp/unrotate.h src/cpp/shorten.h src/cpp/cmds.h \
-   src/cpp/totalvar.h src/cpp/subgroup.h src/cpp/cancel.h
+   src/cpp/totalvar.h src/cpp/subgroup.h src/cpp/cancel.h $(SERVEHEADER)
 
 build/cpp:
 	mkdir -p build/cpp
@@ -67,11 +78,11 @@ build/bin/twsearch: $(OBJ) Makefiles/cpp.Makefile | build/bin/
 
 .PHONY: lint-cpp
 lint-cpp:
-	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v ppqsort | xargs clang-format --dry-run -Werror
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v /vendor/ | xargs clang-format --dry-run -Werror
 
 .PHONY: format-cpp
 format-cpp:
-	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v ppqsort | xargs clang-format -i
+	find ./src/cpp -iname "*.h" -o -iname "*.cpp" | grep -v /vendor/ | xargs clang-format -i
 
 .PHONY: cpp-clean
 cpp-clean:
@@ -133,7 +144,8 @@ WASM_OMIT ?= src/cpp/test.cpp src/cpp/god.cpp src/cpp/pruneio.cpp \
    src/cpp/coset.cpp src/cpp/findalgo.cpp src/cpp/orderedgs.cpp \
    src/cpp/shorten.cpp src/cpp/subgroup.cpp src/cpp/antipode.cpp \
    src/cpp/beamsearch.cpp src/cpp/descsets.cpp src/cpp/ordertree.cpp \
-   src/cpp/totalvar.cpp src/cpp/unrotate.cpp src/cpp/cmdlineops.cpp
+   src/cpp/totalvar.cpp src/cpp/unrotate.cpp src/cpp/cmdlineops.cpp \
+   src/cpp/serve.cpp
 WASM_SOURCE = $(filter-out $(WASM_OMIT),$(wildcard src/cpp/*.cpp)) \
    src/cpp/wasm/wasmapi.cpp src/cpp/wasm/omitted.cpp \
    src/cpp/vendor/cityhash/src/city.cc

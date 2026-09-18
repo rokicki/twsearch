@@ -180,6 +180,11 @@ Options:
 
 `--randomstart`  Randomize move order when solving.
 
+`--allow-origin` *url*  Let a page served from this site use `--serve`.  Pages
+   served from this machine are always allowed; give this once per other site.
+
+`--port` *num*  The port `--serve` listens on; the default is 2023.
+
 `-S`  Test solves by doing increasingly long random sequences.
    An integer argument can be provided appended to the S (as in -S5) to
    indicate the number of random moves to apply at each step.
@@ -187,6 +192,16 @@ Options:
 `-s`  Read a set of move sequences on standard input and perform an
    optimal solve on each.  If the option is given as -si, only look for
    improvements in total solution length.
+
+`--serve`  Serve searches over HTTP to a web page on this machine, so that a
+   page such as the Twizzle Explorer can use this twsearch instead of a
+   WebAssembly build of it.  It listens on 127.0.0.1 only, answers pages from
+   this machine and from a few known sites (see `--allow-origin`), and accepts
+   only the search options such a page needs.  It does not search itself: it
+   runs this same program for the puzzle being solved, one puzzle at a time,
+   so a puzzle's pruning tables last as long as the page stays with that
+   puzzle.  `-M` says how much memory a search may use.  See also `--port`.
+   `src/js/twsearch-bridge.mjs` does the same thing under node.
 
 `--schreiersims`  Run the Schreier-Sims algorithm to calculate the state
    space size of the puzzle.

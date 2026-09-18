@@ -7,6 +7,7 @@
 using argvtype = const char **;
 extern int checkbeforesolve;
 extern generatingset *gs;
+extern int (*servehook)(const char *self);
 extern void processargs(int &argc, argvtype &argv, int includecmds);
 extern puzdef makepuzdef(istream *f);
 extern puzdef makepuzdef(string s);
