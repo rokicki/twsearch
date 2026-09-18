@@ -42,14 +42,8 @@ void reseteverything() {
   usehashenc = 0;
   legalmovelist = 0;
   seed = 0;
-// for now, WASM limit is 1GB; normal C++ limit is 8GB
-#ifdef WASM
-  maxmem = 1LL * 1024LL * 1024LL * 1024LL;
-  writeprunetables = 0; // never
-#else
   maxmem = 8LL * 1024LL * 1024LL * 1024LL;
   writeprunetables = 1; // auto
-#endif
   ccount = 0;
   canonlim = 0;
   inputbasename = UNKNOWNPUZZLE;
@@ -90,10 +84,6 @@ void reseteverything() {
 }
 void doinit() {
   if (!initialized) {
-// disable saving pruning tables when running under WASM
-#ifdef WASM
-    writeprunetables = 0; // never
-#endif
     init_util();
     init_threads();
     if (seed)
@@ -177,9 +167,7 @@ void processargs(int &argc, argvtype &argv, int includecmds) {
 // part of the executable we need to reference it here.  But we don't
 // bring it into the WASM.
 #ifdef ASLIBRARY
-#ifndef WASM
   ensure_test_is_linked();
-#endif
 #endif
   while (argc > 1 && argv[1][0] == '-') {
     argc--;

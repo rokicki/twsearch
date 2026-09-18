@@ -1,37 +1,7 @@
 #include "cancel.h"
 #include <atomic>
 #include <iostream>
-#ifdef WASM
-#include <emscripten/emscripten.h>
-// The bodies are JavaScript.
-// clang-format off
-EM_JS(void, js_beginscramble, (), { Module.twsearchCanceled = false; });
-/*
- *   Asyncify import: when enough time has passed, suspend the wasm stack
- *   and let the event loop run (a MessageChannel message is a prompt task,
- *   unlike setTimeout which may be clamped), then resume.
- */
-EM_JS(int, js_pollcancel, (), {
-  if (Asyncify.state === Asyncify.State.Normal) {
-    var now = performance.now();
-    if (!(now - (Module.twsearchLastYield || 0) >= 50))
-      return Module.twsearchCanceled ? 1 : 0;
-  }
-  return Asyncify.handleSleep(function(wakeUp) {
-    var ch = new MessageChannel();
-    ch.port1.onmessage = function() {
-      ch.port1.close();
-      Module.twsearchLastYield = performance.now();
-      wakeUp(Module.twsearchCanceled ? 1 : 0);
-    };
-    ch.port2.postMessage(0);
-  });
-});
-// clang-format on
-std::istream *cancelablestdin() { return &std::cin; }
-void beginscramble() { js_beginscramble(); }
-int searchcanceled() { return js_pollcancel(); }
-#else
+
 #include <condition_variable>
 #include <deque>
 #include <mutex>
@@ -110,9 +80,15 @@ istream *cancelablestdin() {
   }).detach();
   return is;
 }
-void beginscramble() { solvegen.fetch_add(1); }
-int searchcanceled() {
+/*
+ *   These two are weak, so that a build where a cancel arrives some other
+ *   way can define its own and have them called directly: the WebAssembly
+ *   build does (see wasm/wasmapi.cpp), where the search has to ask the page
+ *   rather than read standard input.  A direct call matters there, since
+ *   asking the page suspends the search.
+ */
+__attribute__((weak)) void beginscramble() { solvegen.fetch_add(1); }
+__attribute__((weak)) int searchcanceled() {
   return cancelgen.load(memory_order_relaxed) ==
          solvegen.load(memory_order_relaxed);
 }
-#endif

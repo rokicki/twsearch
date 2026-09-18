@@ -29,6 +29,7 @@
  *   JavaScript Error named TwsearchError.  The instance must then be
  *   discarded, just as the native process would be gone.
  */
+#include "../cancel.h"
 #include "../prunetable.h"
 #include "../puzdef.h"
 #include "../twsearch.h"
@@ -93,11 +94,63 @@ static void wasm_init() {
   }
 }
 
+/*
+ *   What twsearch does differently when it is a module in a page rather than
+ *   a program with a process: the hooks it offers for exactly this (see
+ *   util.h and cancel.h).  The bodies below are JavaScript.
+ */
+// clang-format off
+EM_JS(void, js_throwerror, (const char *msg), {
+  var e = new Error(UTF8ToString(Number(msg)));
+  e.name = "TwsearchError";
+  throw e;
+});
+EM_JS(void, js_beginscramble, (), { Module.twsearchCanceled = false; });
+/*
+ *   Asyncify import: when enough time has passed, suspend the wasm stack
+ *   and let the event loop run (a MessageChannel message is a prompt task,
+ *   unlike setTimeout which may be clamped), then resume.
+ */
+EM_JS(int, js_pollcancel, (), {
+  if (Asyncify.state === Asyncify.State.Normal) {
+    var now = performance.now();
+    if (!(now - (Module.twsearchLastYield || 0) >= 50))
+      return Module.twsearchCanceled ? 1 : 0;
+  }
+  return Asyncify.handleSleep(function(wakeUp) {
+    var ch = new MessageChannel();
+    ch.port1.onmessage = function() {
+      ch.port1.close();
+      Module.twsearchLastYield = performance.now();
+      wakeUp(Module.twsearchCanceled ? 1 : 0);
+    };
+    ch.port2.postMessage(0);
+  });
+});
+// clang-format on
+
+// There is no process to exit: throw the message out of the module instead.
+// The caller must then discard this instance, as the native program would be
+// gone (see the note at the top of this file).
+static void wasm_error(const string &msg) { js_throwerror(msg.c_str()); }
+
+// The cancel that cancel.cpp leaves weak for us: the page sets a flag, and
+// asking for it is also where the search yields to the event loop, so this
+// has to be called directly rather than through a pointer (the build tells
+// Asyncify that indirect calls never suspend).
+void beginscramble() { js_beginscramble(); }
+int searchcanceled() { return js_pollcancel(); }
+
 extern "C" {
 
 EMSCRIPTEN_KEEPALIVE void w_args(const char *s) {
   wasm_init();
   reseteverything();
+  errorhook = wasm_error;
+  // A page has less memory to play with than a machine does, and nothing
+  // worth keeping a pruning table on.
+  maxmem = 1LL * 1024LL * 1024LL * 1024LL;
+  writeprunetables = 0; // never
   // processargs wants argv[0] to be the program name, and options such
   // as --moves keep pointers into argv, so the strings are never freed.
   vector<const char *> argv;

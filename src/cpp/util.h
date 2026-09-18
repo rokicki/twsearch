@@ -38,6 +38,9 @@ const int BITSPERLOOSE = 8 * sizeof(loosetype);
 double walltime();
 double duration();
 void error(string msg, string extra = "");
+// Set where there is no process to exit: the WebAssembly build throws the
+// message out of the module instead (see wasm/wasmapi.cpp).
+extern void (*errorhook)(const string &msg);
 void warn(string msg, string extra = "");
 double myrand(int n);
 void mysrand(int n);

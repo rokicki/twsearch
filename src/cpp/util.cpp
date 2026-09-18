@@ -30,28 +30,16 @@ double duration() {
   return r;
 }
 string curline;
-#ifdef WASM
-#include <emscripten/emscripten.h>
-// The body is JavaScript.
-// clang-format off
-EM_JS(void, js_throwerror, (const char *msg), {
-  var e = new Error(UTF8ToString(Number(msg)));
-  e.name = "TwsearchError";
-  throw e;
-});
-// clang-format on
-#endif
+// Where an error ends up, when this is not a program with a process to
+// exit: the WebAssembly build sets this (see wasm/wasmapi.cpp).
+void (*errorhook)(const string &msg) = 0;
 void error(string msg, string extra) {
   cerr << msg << extra << endl;
   if (curline.size() > 0)
     cerr << "At: " << curline << endl;
-#ifdef WASM
-  // There is no process to exit.  Throw a JavaScript exception out of the
-  // module; the caller must discard this instance (see wasm/wasmapi.cpp).
-  js_throwerror((msg + extra).c_str());
-#else
+  if (errorhook)
+    errorhook(msg + extra);
   exit(10);
-#endif
 }
 void warn(string msg, string extra) { cerr << msg << extra << endl; }
 static mt19937 *rng;
@@ -110,12 +98,6 @@ int isprime(int p) {
  */
 string actual_cache_dir;
 const char *user_option_cache_dir;
-#ifdef WASM
-const char *prune_table_dir(bool _create_dirs) {
-  (void)_create_dirs; // Avoid a build warning for the unused arg.
-  return "BOGUS_PATH";
-}
-#else
 static int attempted_mkdirs = 0;
 #ifdef _WIN32
 static const char *envname = "LOCALAPPDATA";
@@ -227,4 +209,3 @@ see
   swap(actual_cache_dir, cachedir);
   return actual_cache_dir.c_str();
 }
-#endif
