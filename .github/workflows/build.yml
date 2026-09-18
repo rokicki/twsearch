@@ -1,7 +1,7 @@
 # Builds twsearch on the three platforms and checks that each build works,
 # including the part a page uses: `twsearch --serve` spawning searches and
 # streaming them back (see docs/bridgeprotocol.md).  On a v* tag, attaches
-# the binaries to a release.
+# the macOS and Windows binaries to a release (Linux users build their own).
 name: build
 
 on:
@@ -146,14 +146,29 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with: { path: artifacts }
-      - name: Name them by platform
+      # Each binary alone (what the README's curl lines fetch), and bundled
+      # with the README, licenses, docs, and samples: a .tar.gz for macOS, a
+      # .zip for Windows.
+      - name: Name them by platform and bundle them
         run: |
           mkdir -p release
-          cp artifacts/twsearch-linux-x64/twsearch release/twsearch-linux-x64
           cp artifacts/twsearch-macos/twsearch release/twsearch-macos
           cp artifacts/twsearch-windows-x64/twsearch.exe release/twsearch-windows-x64.exe
+          chmod +x release/twsearch-macos
+          bundle() {
+            dir=twsearch-$1
+            mkdir -p bundle/$dir
+            cp -R README.md LICENSE-GPL.md LICENSE-MPL.md docs samples bundle/$dir/
+            cp release/$2 bundle/$dir/$3
+          }
+          bundle macos twsearch-macos twsearch
+          bundle windows-x64 twsearch-windows-x64.exe twsearch.exe
+          (cd bundle && tar czf ../release/twsearch-macos.tar.gz twsearch-macos)
+          (cd bundle && zip -qr ../release/twsearch-windows-x64.zip twsearch-windows-x64)
+          ls -l release
       - uses: softprops/action-gh-release@v2
         with:
           files: release/*

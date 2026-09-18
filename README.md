@@ -5,7 +5,7 @@ base of compatibility but do not guarantee it.
 
 ## Running `twsearch`
 
-Prebuilt binaries for macOS (Apple Silicon and Intel), Windows, and Linux are
+Prebuilt binaries for macOS (Apple Silicon and Intel) and Windows are
 on the [releases page](https://github.com/rokicki/twsearch/releases/latest).
 From a terminal:
 
@@ -19,9 +19,10 @@ curl.exe -L -o twsearch.exe https://github.com/rokicki/twsearch/releases/latest/
 ```
 
 They are unsigned; downloaded with `curl` rather than a browser, neither
-system objects.
+system objects.  `twsearch-macos.tar.gz` and `twsearch-windows-x64.zip`
+bundle the binary with this README, the docs, and the samples.
 
-If you have a C++ toolchain on your computer, you can run:
+On Linux, or with a C++ toolchain anywhere, build it:
 
 ```shell
 # Check out and build the binary
