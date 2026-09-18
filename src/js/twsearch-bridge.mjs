@@ -45,7 +45,13 @@
  *
  *   Only a fixed set of search options is accepted, -M is capped at
  *   --max-mem, and requests are refused from origins other than localhost
- *   and the cubing.net sites unless --allow-origin names them.
+ *   and the sites listed in allowOrigins below unless --allow-origin names
+ *   them.  A page served from anywhere else needs, for example:
+ *
+ *       node twsearch-bridge.mjs --allow-origin https://example.org
+ *
+ *   The page's own server cannot grant this: the browser asks the bridge,
+ *   so the bridge is what decides.
  */
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -63,6 +69,8 @@ const opts = {
   allowOrigins: [
     "https://alpha.twizzle.net",
     "https://experiments.cubing.net",
+    "https://cube20.org",
+    "https://www.cube20.org",
   ],
 };
 {
