@@ -129,6 +129,9 @@ this is required of an implementation, not optional:
 - **Cap the memory.**  Whatever a page asks for with `-M`, no more than the
   figure the reader started the solver with; if the page asks for nothing,
   hand it that same figure.
+- **Pass down the reader's pruning table settings.**  twsearch gives each
+  search the `--writeprunetables` and `--cachedir` it was started with; a
+  page's `--writeprunetables` overrides the first.
 - **Limit the request size.**  32MB is generous for a puzzle definition.
 
 ## For another solver

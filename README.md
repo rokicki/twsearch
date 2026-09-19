@@ -217,7 +217,9 @@ Options:
    only the search options such a page needs.  It does not search itself: it
    runs this same program for the puzzle being solved, one puzzle at a time,
    so a puzzle's pruning tables last as long as the page stays with that
-   puzzle.  `-M` says how much memory a search may use.  See also `--port`.
+   puzzle.  `-M` says how much memory a search may use, and
+   `--writeprunetables` and `--cachedir` apply to every search.  See also
+   `--port`.
    `src/js/twsearch-bridge.mjs` does the same thing under node.  The protocol
    is documented in `docs/bridgeprotocol.md`.
 

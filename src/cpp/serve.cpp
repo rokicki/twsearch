@@ -502,7 +502,16 @@ static shared_ptr<childrun> startchild(const string &key, const string &tws,
     ofstream f(twsfile, ios::binary | ios::trunc);
     f << tws;
   }
-  vector<string> childargs(args);
+  // The server's own pruning table settings come first, so the page's
+  // options, parsed after them, can override --writeprunetables.
+  static const char *writenames[] = {"never", "auto", "always"};
+  vector<string> childargs = {"--writeprunetables",
+                              writenames[writeprunetables]};
+  if (user_option_cache_dir) {
+    childargs.push_back("--cachedir");
+    childargs.push_back(user_option_cache_dir);
+  }
+  childargs.insert(childargs.end(), args.begin(), args.end());
   childargs.push_back(twsfile.string());
   childargs.push_back("-"); // read positions to solve from standard input
   if (!run->proc.start(selfpath, childargs, run->spawnfailure)) {
