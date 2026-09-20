@@ -25,6 +25,18 @@
 using namespace std;
 
 static int serveport = 2023;
+/*
+ *   --serve also answers with a page, so that someone can open
+ *   http://127.0.0.1:<port>/ and have Gyrelab.  That page holds nothing but
+ *   a script tag: browsers no longer let a page from the open web reach a
+ *   program on the reader's own machine, but a page served from here is
+ *   already here, and may ask this twsearch for searches with none of that
+ *   in the way.  What the page actually is comes from the site below, so it
+ *   is always the current version and this needs to know one address and
+ *   nothing else about it.  --app points somewhere else (a copy being worked
+ *   on, say), and --no-app serves no page at all.
+ */
+static string appurl = "https://cube20.org/gyrelab/";
 static vector<string> alloworigins = {
     "https://alpha.twizzle.net",
     "https://experiments.cubing.net",
@@ -641,6 +653,15 @@ static bool checkargs(const picojson::value &given, vector<string> &out,
 static bool originallowed(const string &origin) {
   if (origin.empty())
     return true; // not a browser
+  /*
+   *   A page opened from a file says "null", having no site of its own, and
+   *   that is how someone runs a downloaded copy of a page like Gyrelab.
+   *   Browsers keep a page on the open web from reaching this machine at all
+   *   (Chrome refuses it outright, whatever we answer), so what says "null"
+   *   here is a file on this machine.
+   */
+  if (origin == "null")
+    return true;
   for (const auto &allowed : alloworigins)
     if (origin == allowed)
       return true;
@@ -739,6 +760,21 @@ int runserver(const char *self) {
     }
     return false;
   };
+
+  if (appurl.size()) {
+    server.Get("/", [&](const httplib::Request &, httplib::Response &res) {
+      res.set_content("<!DOCTYPE html>\n"
+                      "<meta charset=\"utf-8\">\n"
+                      "<meta name=\"viewport\" content=\"width=device-width, "
+                      "initial-scale=0.75\">\n"
+                      "<title>Gyrelab</title>\n"
+                      "<body>\n"
+                      "<p>Fetching Gyrelab from " +
+                          appurl + " ...</p>\n<script src=\"" + appurl +
+                          "boot.js\"></script>\n",
+                      "text/html");
+    });
+  }
 
   server.Options(
       "/v1/.*", [&](const httplib::Request &req, httplib::Response &res) {
@@ -886,6 +922,32 @@ static struct servecmd : specialopt {
                    "asking; this does the searching.") {}
   virtual void parse_args(int *, const char ***) { servehook = runserver; }
 } registerserve;
+
+static struct appcmd : cmd {
+  appcmd()
+      : cmd("--app",
+            "url  Where --serve fetches the page it answers with; the\n"
+            "default is https://cube20.org/gyrelab/ .  It wants a boot.js\n"
+            "in it.") {}
+  virtual void parse_args(int *argc, const char ***argv) {
+    (*argc)--;
+    (*argv)++;
+    appurl = **argv;
+    if (appurl.size() && appurl.back() != '/')
+      appurl += '/';
+  }
+  virtual void docommand(puzdef &) { error("! bad docommand"); }
+  virtual int ismaincmd() { return 0; }
+} registerapp;
+
+static struct noappcmd : cmd {
+  noappcmd()
+      : cmd("--no-app",
+            "Serve searches only, and no page to ask for them with.") {}
+  virtual void parse_args(int *, const char ***) { appurl.clear(); }
+  virtual void docommand(puzdef &) { error("! bad docommand"); }
+  virtual int ismaincmd() { return 0; }
+} registernoapp;
 
 static struct portcmd : intopt {
   portcmd()

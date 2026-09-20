@@ -198,7 +198,13 @@ Options:
 `--randomstart`  Randomize move order when solving.
 
 `--allow-origin` *url*  Let a page served from this site use `--serve`.  Pages
-   served from this machine are always allowed; give this once per other site.
+   served from this machine, and pages opened from a file, are always allowed;
+   give this once per other site.
+
+`--app` *url*  Where `--serve` fetches the page it answers with; the default is
+   `https://cube20.org/gyrelab/`.
+
+`--no-app`  Have `--serve` answer searches only, and no page.
 
 `--port` *num*  The port `--serve` listens on; the default is 2023.
 
@@ -220,6 +226,12 @@ Options:
    puzzle.  `-M` says how much memory a search may use, and
    `--writeprunetables` and `--cachedir` apply to every search.  See also
    `--port`.
+   It also answers with a page of its own, so that opening
+   http://127.0.0.1:2023/ gives you Gyrelab: that page holds nothing but a
+   script tag fetching the app from `https://cube20.org/gyrelab/`, which
+   `--app` points elsewhere and `--no-app` turns off.  A page served this way
+   shares an origin with the searches it asks for, which is what browsers now
+   require of anything reaching a program on the reader's own machine.
    `src/js/twsearch-bridge.mjs` does the same thing under node.  The protocol
    is documented in `docs/bridgeprotocol.md`.
 

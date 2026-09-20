@@ -134,6 +134,24 @@ this is required of an implementation, not optional:
   page's `--writeprunetables` overrides the first.
 - **Limit the request size.**  32MB is generous for a puzzle definition.
 
+## Where the page comes from
+
+A browser will not let a page from the open web reach a program on the
+reader's machine: Chrome refuses outright, whatever headers are answered, and
+what it offers instead (a permission the reader grants) is not something a
+page can rely on.  Two shapes avoid the question entirely, because the page
+is then as local as the solver:
+
+- the solver answers `GET /` with the page, as `twsearch --serve` does: the
+  page and the searches it asks for share an origin, so nothing is
+  cross-origin at all;
+- the reader opens a copy of the page from their own filesystem, which sends
+  `Origin: null`; a solver that means to support this has to allow that
+  origin.
+
+Either way, a page kept on a web site remains the way to try a solver in a
+browser, with the searching done there.
+
 ## For another solver
 
 The text in `out` events is the solver's own, and a page that wants to show
