@@ -560,6 +560,8 @@ static struct memopt : specialopt {
 // Set by --serve (serve.cpp) when the job is to serve searches rather than
 // run one.  Null when that file is not part of this build.
 int (*servehook)(const char *self) = 0;
+// Set by serve.cpp when it is part of this build; see watchparent() there.
+void (*parentwatchhook)() = 0;
 
 int main(int argc, const char **argv) {
   reseteverything();
@@ -577,6 +579,10 @@ int main(int argc, const char **argv) {
 
   if (servehook)
     return servehook(orig_argv[0]);
+
+  // A search the server started should not outlive the server.
+  if (parentwatchhook)
+    parentwatchhook();
 
   if (argc <= 1) {
     printhelp();

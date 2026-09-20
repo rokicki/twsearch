@@ -105,6 +105,11 @@ its turn rather than being refused.
 
 **A page that goes away** (the connection closes) cancels its search.
 
+**Nothing outlives the server.**  twsearch searches in a child process, and a
+search can hold many gigabytes; a server that is killed outright never gets
+to tidy up, so each child watches for the server going away and exits when it
+does.  A solver that searches in another process should do the same.
+
 ## Keeping the reader's machine theirs
 
 A program that any web page could drive is a program that needs care.  All of

@@ -6,6 +6,7 @@
 #include "vendor/cpp-httplib/httplib.h"
 #include "vendor/picojson/picojson.h"
 // clang-format on
+#include <chrono>
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
@@ -686,8 +687,64 @@ static bool hostallowed(const string &host) {
   return h == "127.0.0.1" || h == "localhost" || h == "[::1]";
 }
 
+/*
+ *   A search should not outlive the server that asked for it.  The server
+ *   puts its own process id in the environment its children inherit; a
+ *   child that finds it there watches that process and exits when it goes
+ *   away, so killing the server does not leave a search running with
+ *   nobody to read its answer and gigabytes of pruning table held.  This is
+ *   one thread that spends its life asleep rather than a check in the
+ *   search, which would cost something on every node; the search is stopped
+ *   by ending the process, since there is nothing left to report to.
+ *
+ *   Neither side can do this alone on all three platforms: Linux has
+ *   PR_SET_PDEATHSIG and Windows has job objects, but macOS has no way for
+ *   a parent to arrange it, so the child watches instead, the same way
+ *   everywhere.
+ */
+static const char *serverpidvar = "TWSEARCH_SERVER_PID";
+
+static void tellchildrenwhoweare() {
+  string pid = to_string((long long)
+#ifdef _WIN32
+                             GetCurrentProcessId()
+#else
+                             getpid()
+#endif
+  );
+#ifdef _WIN32
+  _putenv_s(serverpidvar, pid.c_str());
+#else
+  setenv(serverpidvar, pid.c_str(), 1);
+#endif
+}
+
+void watchparent() {
+  const char *s = getenv(serverpidvar);
+  if (s == 0 || *s == 0)
+    return;
+  long long serverpid = atoll(s);
+  if (serverpid <= 0)
+    return;
+  thread([serverpid]() {
+#ifdef _WIN32
+    HANDLE h = OpenProcess(SYNCHRONIZE, FALSE, (DWORD)serverpid);
+    if (h == NULL) // cannot watch it; better to search on than to stop
+      return;
+    WaitForSingleObject(h, INFINITE);
+#else
+    // Cheap enough once a second in a thread that is otherwise asleep; a
+    // second is prompt for letting go of the memory.
+    while (getppid() == (pid_t)serverpid)
+      this_thread::sleep_for(chrono::seconds(1));
+#endif
+    _Exit(0);
+  }).detach();
+}
+
 int runserver(const char *self) {
   selfpath = self;
+  tellchildrenwhoweare();
 #ifndef _WIN32
   // The child's standard input closing is normal; do not die of it.
   signal(SIGPIPE, SIG_IGN);
@@ -919,7 +976,11 @@ static struct servecmd : specialopt {
       : specialopt("--serve",
                    "Serve searches over HTTP to a web page on this machine\n"
                    "(see --port and --allow-origin).  The page does the\n"
-                   "asking; this does the searching.") {}
+                   "asking; this does the searching.") {
+    // Every twsearch does this, not just the server: a search started by a
+    // server exits when that server does.
+    parentwatchhook = watchparent;
+  }
   virtual void parse_args(int *, const char ***) { servehook = runserver; }
 } registerserve;
 

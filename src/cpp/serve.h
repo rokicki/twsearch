@@ -16,5 +16,11 @@
  *   Makefiles/cpp.Makefile) and the --serve option simply does not exist.
  */
 int runserver(const char *self);
+/*
+ *   Called by every twsearch at startup (through parentwatchhook): a search
+ *   the server started exits when the server does.  Does nothing when this
+ *   twsearch was not started by a server.
+ */
+void watchparent();
 #define SERVE_H
 #endif
