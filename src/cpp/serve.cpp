@@ -709,6 +709,21 @@ int runserver(const char *self) {
 
   httplib::Server server;
   server.set_payload_max_length(32 * 1024 * 1024);
+  /*
+   *   One twsearch to a port.  The default here sets SO_REUSEPORT, which
+   *   lets a second server bind the same port and leaves the system to give
+   *   each connection to one or the other; a page then cannot tell which one
+   *   it is talking to, and stopping either kills whatever it was doing.
+   *   SO_REUSEADDR on its own still lets this start again straight after it
+   *   is stopped, without waiting for old connections to time out.
+   */
+  server.set_socket_options([](socket_t sock) {
+#ifdef _WIN32
+    httplib::set_socket_opt(sock, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, 1);
+#else
+    httplib::set_socket_opt(sock, SOL_SOCKET, SO_REUSEADDR, 1);
+#endif
+  });
 
   auto refuse = [](const httplib::Request &req, httplib::Response &res) {
     if (!hostallowed(req.get_header_value("Host")) ||
@@ -846,13 +861,20 @@ int runserver(const char *self) {
         });
   });
 
+  // Take the port first, so that what is said next is true.
+  if (!server.bind_to_port("127.0.0.1", serveport)) {
+    filesystem::remove_all(workdir);
+    error("! could not serve on port " + to_string(serveport) +
+          "; something is already using it (another twsearch --serve?).  "
+          "Stop that one, or give this one a --port of its own.");
+  }
   cout << "twsearch serving http://127.0.0.1:" << serveport << "/ from "
        << selfpath << endl
        << flush;
-  bool ok = server.listen("127.0.0.1", serveport);
+  bool ok = server.listen_after_bind();
   filesystem::remove_all(workdir);
   if (!ok)
-    error("! could not listen; is something else using that port?");
+    error("! stopped serving unexpectedly");
   return 0;
 }
 
