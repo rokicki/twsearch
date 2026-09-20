@@ -315,29 +315,43 @@ string childproc::wait() {
 #endif
 
 /*
-/*
  *   --echo writes what crosses the bridge to standard output: the puzzle and
  *   the scrambles as they arrive, and the solver's output as it goes back.
- *   The output is written as it is, so this reads as the page reads, and the
- *   puzzle and the scrambles are written as they are, so those blocks can be
- *   lifted out as a .tws file and run again.  The lines this adds to say
+ *   The output is written as it is and in the pieces it arrives in, so a
+ *   line the solver is still writing ("Filling depth 8 val 2 ") shows here
+ *   when it shows on the page, and not when it ends.  The puzzle and the
+ *   scrambles are written as they are, so those blocks can be lifted out as
+ *   a .tws file and run again.  The lines this adds to say
  *   what is going on are comments, which is what makes lifting a block out
  *   simple, but the whole transcript is not a .tws file and is not meant to
  *   be one.
  */
 static int echosearches = 0;
 static mutex echolock;
+static bool echoatlinestart = true;
+
+static void echowrite(const string &text) { // echolock held
+  cout << text << flush;
+  echoatlinestart = text.back() == '\n';
+}
 
 static void echotext(const string &text) {
-  if (!echosearches)
+  if (!echosearches || text.empty())
     return;
   lock_guard<mutex> hold(echolock);
-  cout << text << flush;
+  echowrite(text);
 }
 
 // The transcript's own remarks about what is happening, as comments so
 // that a puzzle or scramble block can be lifted out of it cleanly.
-static void echocomment(const string &line) { echotext("# " + line + "\n"); }
+static void echocomment(const string &line) {
+  if (!echosearches)
+    return;
+  lock_guard<mutex> hold(echolock);
+  if (!echoatlinestart) // never land in the middle of the solver's line
+    echowrite("\n");
+  echowrite("# " + line + "\n");
+}
 
 /*
  *   One position to solve: what the page asked for, and the output on its
@@ -376,7 +390,6 @@ struct childrun : enable_shared_from_this<childrun> {
   jobptr current;
   deque<string> stderrtail;
   string outpartial;
-  string errpartial; // only for --echo, which wants whole lines
   bool dead = false;
   string killreason;
   string spawnfailure;
@@ -414,6 +427,7 @@ static bool endofsolve(const string &line) {
 
 void childrun::onstdout(const string &text) {
   lock_guard<mutex> hold(servelock);
+  echotext(text);
   if (current)
     current->events.push_back(jsonline("out", "text", text));
   outpartial += text;
@@ -421,8 +435,6 @@ void childrun::onstdout(const string &text) {
   while ((at = outpartial.find('\n')) != string::npos) {
     string line = outpartial.substr(0, at);
     outpartial.erase(0, at + 1);
-    if (echosearches)
-      echotext(line + "\n");
     onstdoutline(line);
   }
   servewake.notify_all();
@@ -442,14 +454,7 @@ void childrun::onstderr(const string &text) {
   lock_guard<mutex> hold(servelock);
   if (current)
     current->events.push_back(jsonline("err", "text", text));
-  if (echosearches) {
-    errpartial += text;
-    size_t at;
-    while ((at = errpartial.find('\n')) != string::npos) {
-      echotext(errpartial.substr(0, at) + "\n");
-      errpartial.erase(0, at + 1);
-    }
-  }
+  echotext(text);
   stderrtail.push_back(text);
   while (stderrtail.size() > 20)
     stderrtail.pop_front();

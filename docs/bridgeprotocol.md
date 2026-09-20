@@ -143,7 +143,9 @@ this is required of an implementation, not optional:
 
 `twsearch --serve --echo` writes the whole conversation to standard output:
 the puzzle when it arrives, each scramble as it is sent to the solver, and
-the solver's output as it goes back, exactly as the page sees it.  Redirect
+the solver's output as it goes back, exactly as the page sees it and in the
+pieces it arrives in, so a line the solver is still writing ("Filling depth
+8 val 2 ") shows progress here as it does there.  Redirect
 it to a file and a session can be read, kept, or picked over later.
 
 The remarks it adds are comments, and the puzzle and scramble blocks are

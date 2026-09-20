@@ -141,14 +141,24 @@ if (startme) {
       await new Promise((r) => setTimeout(r, 200));
     }
   }
-  await fetch(`${echobase}/v1/solve`, {
+  const stream = await fetch(`${echobase}/v1/solve`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: origin },
-    body: JSON.stringify({ id: "echo", tws, args: ["-M", "64"], scramble }),
+    body: JSON.stringify({ id: "echo", tws, args: ["-v2", "-M", "64"], scramble }),
   }).then((r) => r.text());
   echoserver.kill();
   await new Promise((r) => setTimeout(r, 300));
 
+  // What the page was sent, in the pieces it was sent in.  The transcript
+  // holds exactly that, so a half written line reaches both at once.
+  const sent = stream
+    .split("\n")
+    .filter((l) => l)
+    .map((l) => JSON.parse(l))
+    .filter((e) => e.type === "out")
+    .map((e) => e.text)
+    .join("");
+  check(transcript.includes(sent), "echo: the transcript is what the page was sent, byte for byte");
   check(transcript.includes(" F2 R U' R'"), "echo: the solution appears as the page saw it");
   check(transcript.includes(tws.trim()), "echo: the puzzle appears as it arrived");
   check(transcript.includes(scramble.trim()), "echo: the scramble appears as it arrived");
