@@ -139,6 +139,17 @@ this is required of an implementation, not optional:
   page's `--writeprunetables` overrides the first.
 - **Limit the request size.**  32MB is generous for a puzzle definition.
 
+## Keeping what crossed the bridge
+
+`twsearch --serve --echo` writes the whole conversation to standard output:
+the puzzle when it arrives, each scramble as it is sent to the solver, and
+the solver's output as it goes back, exactly as the page sees it.  Redirect
+it to a file and a session can be read, kept, or picked over later.
+
+The remarks it adds are comments, and the puzzle and scramble blocks are
+written as they are, so those can be lifted out into a `.tws` file and run
+again.  The transcript as a whole is not a `.tws` file.
+
 ## Where the page comes from
 
 A browser will not let a page from the open web reach a program on the

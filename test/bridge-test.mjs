@@ -7,8 +7,8 @@
 //    node test/bridge-test.mjs                      test whatever is already
 //                                                   listening (BRIDGE_URL,
 //                                                   or port 2023)
-import { spawn } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const startme = process.argv[2];
 const port = Number(process.env.BRIDGE_PORT ?? (startme ? 2033 : 2023));
@@ -118,6 +118,47 @@ check(canceled.events.at(-1)?.type === "done", "and the solve then ends");
 // Still usable afterwards.
 const after = await solve({ id: "f", tws, args: ["-v2", "--checkbeforesolve", "-M", "64"], scramble });
 check(after.events.at(-1)?.type === "done", "still works after a cancel");
+
+// --echo: a transcript of what crossed the bridge, on standard output.  The
+// solver's output appears as the page saw it, and the puzzle and scramble
+// blocks appear as they are, so they can be lifted out and run again.  Its
+// own server, so the transcript holds one puzzle and one search.
+if (startme) {
+  const echoport = port + 1;
+  const echoserver = spawn(startme, ["--serve", "--port", String(echoport), "--no-app", "--echo"], {
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  let transcript = "";
+  echoserver.stdout.on("data", (d) => { transcript += d; });
+  const echobase = `http://127.0.0.1:${echoport}`;
+  const until = Date.now() + 30000;
+  for (;;) {
+    try {
+      await fetch(`${echobase}/v1/info`, { headers: { Origin: origin } });
+      break;
+    } catch {
+      if (Date.now() > until) break;
+      await new Promise((r) => setTimeout(r, 200));
+    }
+  }
+  await fetch(`${echobase}/v1/solve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: origin },
+    body: JSON.stringify({ id: "echo", tws, args: ["-M", "64"], scramble }),
+  }).then((r) => r.text());
+  echoserver.kill();
+  await new Promise((r) => setTimeout(r, 300));
+
+  check(transcript.includes(" F2 R U' R'"), "echo: the solution appears as the page saw it");
+  check(transcript.includes(tws.trim()), "echo: the puzzle appears as it arrived");
+  check(transcript.includes(scramble.trim()), "echo: the scramble appears as it arrived");
+  // The claim that those blocks can be lifted out and run.
+  mkdirSync("build/test", { recursive: true });
+  const lifted = "build/test/lifted.tws";
+  writeFileSync(lifted, `${tws}\n${scramble}`);
+  const rerun = spawnSync(startme, ["-M", "64", "--nowrite", lifted], { encoding: "utf8" });
+  check(/^ F2 R U' R'$/m.test(rerun.stdout ?? ""), "echo: a lifted out block solves the same position");
+}
 
 stop();
 console.log(failures === 0 ? "All bridge checks passed." : `${failures} failure(s).`);

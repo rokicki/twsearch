@@ -315,6 +315,31 @@ string childproc::wait() {
 #endif
 
 /*
+/*
+ *   --echo writes what crosses the bridge to standard output: the puzzle and
+ *   the scrambles as they arrive, and the solver's output as it goes back.
+ *   The output is written as it is, so this reads as the page reads, and the
+ *   puzzle and the scrambles are written as they are, so those blocks can be
+ *   lifted out as a .tws file and run again.  The lines this adds to say
+ *   what is going on are comments, which is what makes lifting a block out
+ *   simple, but the whole transcript is not a .tws file and is not meant to
+ *   be one.
+ */
+static int echosearches = 0;
+static mutex echolock;
+
+static void echotext(const string &text) {
+  if (!echosearches)
+    return;
+  lock_guard<mutex> hold(echolock);
+  cout << text << flush;
+}
+
+// The transcript's own remarks about what is happening, as comments so
+// that a puzzle or scramble block can be lifted out of it cleanly.
+static void echocomment(const string &line) { echotext("# " + line + "\n"); }
+
+/*
  *   One position to solve: what the page asked for, and the output on its
  *   way back.  The HTTP thread waits on these; the threads reading the
  *   child fill them in.
@@ -351,6 +376,7 @@ struct childrun : enable_shared_from_this<childrun> {
   jobptr current;
   deque<string> stderrtail;
   string outpartial;
+  string errpartial; // only for --echo, which wants whole lines
   bool dead = false;
   string killreason;
   string spawnfailure;
@@ -395,6 +421,8 @@ void childrun::onstdout(const string &text) {
   while ((at = outpartial.find('\n')) != string::npos) {
     string line = outpartial.substr(0, at);
     outpartial.erase(0, at + 1);
+    if (echosearches)
+      echotext(line + "\n");
     onstdoutline(line);
   }
   servewake.notify_all();
@@ -414,6 +442,14 @@ void childrun::onstderr(const string &text) {
   lock_guard<mutex> hold(servelock);
   if (current)
     current->events.push_back(jsonline("err", "text", text));
+  if (echosearches) {
+    errpartial += text;
+    size_t at;
+    while ((at = errpartial.find('\n')) != string::npos) {
+      echotext(errpartial.substr(0, at) + "\n");
+      errpartial.erase(0, at + 1);
+    }
+  }
   stderrtail.push_back(text);
   while (stderrtail.size() > 20)
     stderrtail.pop_front();
@@ -432,6 +468,8 @@ void childrun::onclose(const string &failure) {
     all.push_back(job);
   current = nullptr;
   queue.clear();
+  if (echosearches && all.size())
+    echocomment("error: " + failure);
   for (auto &job : all) {
     job->events.push_back(jsonline("error", "message", failure));
     job->failure = failure;
@@ -454,6 +492,11 @@ void childrun::next() {
   string text = current->scramble;
   if (text.empty() || text.back() != '\n')
     text += "\n";
+  if (echosearches) {
+    echocomment("");
+    echocomment("solve " + current->id);
+    echotext(text);
+  }
   proc.write(text);
 }
 
@@ -527,6 +570,14 @@ static shared_ptr<childrun> startchild(const string &key, const string &tws,
   childargs.insert(childargs.end(), args.begin(), args.end());
   childargs.push_back(twsfile.string());
   childargs.push_back("-"); // read positions to solve from standard input
+  if (echosearches) {
+    string cmd = "twsearch";
+    for (const auto &a : childargs)
+      cmd += " " + a;
+    echocomment("");
+    echocomment(cmd);
+    echotext(tws.size() && tws.back() == '\n' ? tws : tws + "\n");
+  }
   if (!run->proc.start(selfpath, childargs, run->spawnfailure)) {
     run->dead = true;
     return run;
@@ -1009,6 +1060,17 @@ static struct noappcmd : cmd {
   virtual void docommand(puzdef &) { error("! bad docommand"); }
   virtual int ismaincmd() { return 0; }
 } registernoapp;
+
+static struct echocmd : cmd {
+  echocmd()
+      : cmd("--echo",
+            "Write the puzzle, the scrambles, and the solver's output to\n"
+            "standard output as they cross the bridge.  A session with one\n"
+            "puzzle in it is a .tws file that runs the same searches again.") {}
+  virtual void parse_args(int *, const char ***) { echosearches = 1; }
+  virtual void docommand(puzdef &) { error("! bad docommand"); }
+  virtual int ismaincmd() { return 0; }
+} registerecho;
 
 static struct portcmd : intopt {
   portcmd()
