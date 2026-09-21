@@ -1,4 +1,8 @@
-TWSEARCH_VERSION=v0.0.0
+# What this build calls itself, from the tag it was built at, so a binary
+# someone downloaded can say which one it is.  A checkout with no tags (a
+# tarball, or a shallow clone) falls back, and the command line wins over
+# both: make build TWSEARCH_VERSION=v1.2.3
+TWSEARCH_VERSION ?= $(shell git describe --tags --dirty --always 2>/dev/null || echo v0.0.0)
 
 # What the program is called.  The linker on Windows names it twsearch.exe
 # whatever we ask for, so every rule and test says $(TWSEARCH).

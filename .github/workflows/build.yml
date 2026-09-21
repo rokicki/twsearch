@@ -28,6 +28,10 @@ jobs:
             cxxflags: "-O3 -Warray-bounds -Wextra -Wall -pedantic -std=c++20 -g1 -Wsign-compare -arch arm64 -arch x86_64"
     steps:
       - uses: actions/checkout@v4
+        # The build names itself after the tag it was built at, so fetch
+        # them: the default checkout has none.
+        with:
+          fetch-depth: 0
 
       # -g1: function names and line tables, for backtraces, at a fraction
       # of the size of -g.
@@ -73,6 +77,10 @@ jobs:
         shell: msys2 {0}
     steps:
       - uses: actions/checkout@v4
+        # The build names itself after the tag it was built at, so fetch
+        # them: the default checkout has none.
+        with:
+          fetch-depth: 0
 
       - uses: msys2/setup-msys2@v2
         with:
@@ -84,6 +92,13 @@ jobs:
             mingw-w64-ucrt-x86_64-make
             make
             grep
+            git
+
+      # This git is not the one that made the checkout, and it refuses to
+      # read a tree it thinks belongs to someone else.  Without this the
+      # build cannot ask for the tag and falls back to v0.0.0.
+      - name: Let git read this checkout
+        run: git config --global --add safe.directory '*'
 
       - name: Build
         run: |
@@ -128,6 +143,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # The build names itself after the tag it was built at, so fetch
+        # them: the default checkout has none.
+        with:
+          fetch-depth: 0
       - name: Install MinGW
         run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix
       - name: Build
@@ -147,6 +166,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        # The build names itself after the tag it was built at, so fetch
+        # them: the default checkout has none.
+        with:
+          fetch-depth: 0
       - uses: actions/download-artifact@v4
         with: { path: artifacts }
       # Each binary alone (what the README's curl lines fetch), and bundled
