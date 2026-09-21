@@ -157,12 +157,15 @@ if (startme) {
   await new Promise((r) => setTimeout(r, 300));
 
   // What the page was sent, in the pieces it was sent in.  The transcript
-  // holds exactly that, so a half written line reaches both at once.
+  // holds exactly that, so a half written line reaches both at once.  Both
+  // streams: what the solver says on standard error (a warning about a
+  // pruning table it could not read, say) reaches the page as well, and the
+  // transcript carries the two in the order the server saw them.
   const sent = stream
     .split("\n")
     .filter((l) => l)
     .map((l) => JSON.parse(l))
-    .filter((e) => e.type === "out")
+    .filter((e) => e.type === "out" || e.type === "err")
     .map((e) => e.text)
     .join("");
   if (!transcript.includes(sent)) {
