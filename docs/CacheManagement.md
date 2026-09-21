@@ -165,14 +165,35 @@ on every invocation.
 
 Two twsearch processes can hold the same cache file at once, and today one
 writes it in place while the other reads it.  That is how the Windows build
-came to read a half written table, which it then half read into itself: the
-fix for the reading side is in, but the writing side still wants a write to
-a temporary name followed by a rename, so a reader sees either the old file
-or the new one and never the middle of one.
+came to read a half written table, which it then half read into itself.  The
+reading side no longer believes what it is given, but a reader can still
+meet a file that is only half there.
 
-A related gap: a read that fails inside the block reading threads still
-calls error() and ends the program, where the rest of the read paths now
-give up on the file and build the table instead.
+The usual answer, a temporary name and a rename over the old file, costs
+what it replaces: the old file and the new one both exist until the rename,
+so a 200 GB table wants 400 GB to write.  On the disks this is meant to
+protect, that is the wrong trade.
+
+So: unlink the old file, then write a new one under the same name.  The
+peak is one file.  On Unix a reader that already has the old file open
+reads it to the end undisturbed, since unlink only takes away the name.  A
+reader arriving during the write finds either no file, and builds the table,
+or a file that stops in the middle.
+
+That last case is the price, and it has to be paid on the reading side:
+
+- A read that runs out of file must give up and build the table, the same
+  as a read that finds nothing.  Today a short file reaches error() in
+  readblock and in the block reading threads, and ends the program.
+- A file left behind by a write that never finished is not a passing state
+  but a permanent one, since there is no older file to fall back to.  Every
+  later run meets it.  Leave it where it is rather than deleting it, though:
+  what looks like a dead file may be one another process is writing right
+  now.
+
+On Windows an unlink fails while another process has the file open, as does
+a rename over it, so the writer skips writing that time, the way it skips
+when the disk is full.
 
 ## Not part of this
 
