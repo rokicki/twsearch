@@ -1,26 +1,62 @@
 # `twsearch`
 
-Search program for twisty puzzles. Much like [KSolve](https://github.com/cubing/ksolve) but, due to licensing issues on that program, we have coded it completely from scratch  We start from a
-base of compatibility but do not guarantee it.
+Search program for twisty puzzles.  Describe a puzzle, hand it a position,
+and it finds the shortest way back, either in a browser or on your own
+machine.  Much like [KSolve](https://github.com/cubing/ksolve) but, due to
+licensing issues on that program, we have coded it completely from scratch.
+We start from a base of compatibility but do not guarantee it.
 
-## Running `twsearch`
+## Try it in a browser
 
-Prebuilt binaries for macOS (Apple Silicon and Intel) and Windows are
-on the [releases page](https://github.com/rokicki/twsearch/releases/latest).
-From a terminal:
+**[cube20.org/gyrelab](https://cube20.org/gyrelab/)**
+
+[![Gyrelab solving a megaminx](images/gyrelab.png)](https://cube20.org/gyrelab/)
+
+Gyrelab is a page for playing with these puzzles: pick one of the named
+puzzles or cut your own, scramble it, paint a position on it, and solve.
+Nothing to download, since twsearch is built to WebAssembly and runs in the
+page, on one thread with a modest amount of memory.  That is enough for a
+great many puzzles and positions, and not enough for the hard ones.
+
+## Let it search on this machine
+
+A local twsearch binary can host the same UI locally on your machine and
+perform the searches using multiple cores and more memory, allowing many
+searches to run deeper and even hundreds of times faster.  (It still fetches
+the UI from cube20.org, but for web security, the main page is served by
+twsearch.)
+
+Prebuilt binaries for macOS (Apple Silicon and Intel) and Windows are on the
+[releases page](https://github.com/rokicki/twsearch/releases/latest).  From a
+terminal:
 
 ```shell
 # macOS
 curl -L -o twsearch https://github.com/rokicki/twsearch/releases/latest/download/twsearch-macos
 chmod +x twsearch
+./twsearch --serve
 
 # Windows
 curl.exe -L -o twsearch.exe https://github.com/rokicki/twsearch/releases/latest/download/twsearch-windows-x64.exe
+.\twsearch.exe --serve
 ```
 
-They are unsigned; downloaded with `curl` rather than a browser, neither
-system objects.  `twsearch-macos.tar.gz` and `twsearch-windows-x64.zip`
-bundle the binary with this README, the docs, and the samples.
+Then open **http://127.0.0.1:2023/**.  That is the same UI but sharing the
+host origin between the page and the bridge to the binary, so browsers are
+not worried about an external page reaching into your local network.  See
+`--port`, `--app`, and `--allow-origin` below, and `docs/bridgeprotocol.md`
+for what passes between them.
+
+The binaries are unsigned; downloaded with `curl` rather than a browser, so
+neither system complains about running binaries from the internet.
+`twsearch-macos.tar.gz` and `twsearch-windows-x64.zip` bundle the binary with
+this README, the docs, and the samples.
+
+## Running `twsearch` from the command line
+
+Everything above is one way of using twsearch.  But twsearch contains other
+functionality, such as God's number runs, coset solves, move sequence
+analysis, and more; for that, you must use it from the command line.
 
 On Linux, or with a C++ toolchain anywhere, build it:
 

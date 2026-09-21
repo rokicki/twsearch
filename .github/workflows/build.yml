@@ -210,7 +210,7 @@ jobs:
           bundle() {
             dir=twsearch-$1
             mkdir -p bundle/$dir
-            cp -R README.md LICENSE-GPL.md LICENSE-MPL.md docs samples bundle/$dir/
+            cp -R README.md LICENSE-GPL.md LICENSE-MPL.md docs images samples bundle/$dir/
             cp release/$2 bundle/$dir/$3
           }
           bundle macos twsearch-macos twsearch
