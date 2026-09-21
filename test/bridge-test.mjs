@@ -167,10 +167,9 @@ if (startme) {
     .join("");
   if (!transcript.includes(sent)) {
     // Nothing else here can be understood without seeing what did arrive.
-    console.log(`  [echo] ${transcript.length} bytes of transcript, starts: ${JSON.stringify(transcript.slice(0, 400))}`);
-    console.log(`  [echo] ends: ${JSON.stringify(transcript.slice(-200))}`);
+    console.log(`  [echo] transcript (${transcript.length} bytes): ${JSON.stringify(transcript)}`);
     console.log(`  [echo] stderr: ${JSON.stringify(echoerrors.slice(0, 400))}`);
-    console.log(`  [echo] wanted: ${JSON.stringify(sent.slice(0, 200))}`);
+    console.log(`  [echo] wanted (${sent.length} bytes): ${JSON.stringify(sent)}`);
   }
   check(transcript.includes(sent), "echo: the transcript is what the page was sent, byte for byte");
   check(transcript.includes(" F2 R U' R'"), "echo: the solution appears as the page saw it");

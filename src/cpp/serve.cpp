@@ -17,6 +17,8 @@
 #include <thread>
 #include <vector>
 #ifdef _WIN32
+#include <fcntl.h>
+#include <io.h>
 #include <windows.h>
 #else
 #include <csignal>
@@ -801,6 +803,13 @@ void watchparent() {
 int runserver(const char *self) {
   selfpath = self;
   tellchildrenwhoweare();
+#ifdef _WIN32
+  // --echo promises the bytes the page was sent.  Standard output here is
+  // in text mode, which turns every \n into \r\n; what the solver wrote
+  // already ends \r\n, so the transcript would carry \r\r\n.
+  if (echosearches)
+    _setmode(_fileno(stdout), _O_BINARY);
+#endif
 #ifndef _WIN32
   // The child's standard input closing is normal; do not die of it.
   signal(SIGPIPE, SIG_IGN);
