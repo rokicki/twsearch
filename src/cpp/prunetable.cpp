@@ -189,6 +189,12 @@ void prunetable::freshtable() {
 
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
   pdp = &pd;
+  // Before anything else: freshtable() frees these, and this constructor
+  // does not go through the default one that clears them.
+  amem = 0;
+  mem = 0;
+  for (int i = 0; i < 7; i++)
+    dtabs[i] = 0;
   totsize = pd.totsize;
   ull bytesize = 2048;
   while (2 * bytesize <= maxmem &&
