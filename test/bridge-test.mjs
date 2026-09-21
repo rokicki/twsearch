@@ -129,18 +129,25 @@ if (startme) {
     stdio: ["ignore", "pipe", "pipe"],
   });
   let transcript = "";
+  let echoerrors = "";
   echoserver.stdout.on("data", (d) => { transcript += d; });
+  // Drain this too: nobody reading it is a pipe that fills and a server
+  // that stops.
+  echoserver.stderr.on("data", (d) => { echoerrors += d; });
   const echobase = `http://127.0.0.1:${echoport}`;
   const until = Date.now() + 30000;
+  let answered = false;
   for (;;) {
     try {
       await fetch(`${echobase}/v1/info`, { headers: { Origin: origin } });
+      answered = true;
       break;
     } catch {
       if (Date.now() > until) break;
       await new Promise((r) => setTimeout(r, 200));
     }
   }
+  check(answered, "echo: the server answers");
   const stream = await fetch(`${echobase}/v1/solve`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: origin },
@@ -158,6 +165,13 @@ if (startme) {
     .filter((e) => e.type === "out")
     .map((e) => e.text)
     .join("");
+  if (!transcript.includes(sent)) {
+    // Nothing else here can be understood without seeing what did arrive.
+    console.log(`  [echo] ${transcript.length} bytes of transcript, starts: ${JSON.stringify(transcript.slice(0, 400))}`);
+    console.log(`  [echo] ends: ${JSON.stringify(transcript.slice(-200))}`);
+    console.log(`  [echo] stderr: ${JSON.stringify(echoerrors.slice(0, 400))}`);
+    console.log(`  [echo] wanted: ${JSON.stringify(sent.slice(0, 200))}`);
+  }
   check(transcript.includes(sent), "echo: the transcript is what the page was sent, byte for byte");
   check(transcript.includes(" F2 R U' R'"), "echo: the solution appears as the page saw it");
   check(transcript.includes(tws.trim()), "echo: the puzzle appears as it arrived");
