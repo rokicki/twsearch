@@ -33,6 +33,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Ask the runner's own git, the one that made this checkout, so that
+      # every platform answers the same.  MSYS2 brings its own git, which
+      # reads the checkout differently and calls every file modified, and
+      # the Windows build then named itself -dirty when nothing had changed.
+      - name: What to call this build
+        shell: bash
+        run: echo "TWSEARCH_VERSION=$(git describe --tags --dirty --always)" >> "$GITHUB_ENV"
+
       # -g1: function names and line tables, for backtraces, at a fraction
       # of the size of -g.
       - name: Build
@@ -82,6 +90,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      # Ask the runner's own git, the one that made this checkout, so that
+      # every platform answers the same.  MSYS2 brings its own git, which
+      # reads the checkout differently and calls every file modified, and
+      # the Windows build then named itself -dirty when nothing had changed.
+      - name: What to call this build
+        shell: bash
+        run: echo "TWSEARCH_VERSION=$(git describe --tags --dirty --always)" >> "$GITHUB_ENV"
+
       - uses: msys2/setup-msys2@v2
         with:
           msystem: UCRT64
@@ -92,13 +108,6 @@ jobs:
             mingw-w64-ucrt-x86_64-make
             make
             grep
-            git
-
-      # This git is not the one that made the checkout, and it refuses to
-      # read a tree it thinks belongs to someone else.  Without this the
-      # build cannot ask for the tag and falls back to v0.0.0.
-      - name: Let git read this checkout
-        run: git config --global --add safe.directory '*'
 
       - name: Build
         run: |
@@ -147,6 +156,14 @@ jobs:
         # them: the default checkout has none.
         with:
           fetch-depth: 0
+
+      # Ask the runner's own git, the one that made this checkout, so that
+      # every platform answers the same.  MSYS2 brings its own git, which
+      # reads the checkout differently and calls every file modified, and
+      # the Windows build then named itself -dirty when nothing had changed.
+      - name: What to call this build
+        shell: bash
+        run: echo "TWSEARCH_VERSION=$(git describe --tags --dirty --always)" >> "$GITHUB_ENV"
       - name: Install MinGW
         run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix
       - name: Build
