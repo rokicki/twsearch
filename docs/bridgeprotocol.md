@@ -164,8 +164,14 @@ is then as local as the solver:
   page and the searches it asks for share an origin, so nothing is
   cross-origin at all;
 - the reader opens a copy of the page from their own filesystem, which sends
-  `Origin: null`; a solver that means to support this has to allow that
-  origin.
+  `Origin: null`.
+
+`Origin: null` is not a safe thing to allow, and twsearch does not: a page in
+a sandboxed iframe sends it too, and any site on the web can put one of those
+on any page it serves, so a solver that trusts `null` can be driven by all of
+them.  `twsearch --serve --allow-origin null` takes that on deliberately, for
+someone running a page from their own disk who knows what it costs.  The
+first shape above wants none of this and is the one to reach for.
 
 Either way, a page kept on a web site remains the way to try a solver in a
 browser, with the searching done there.

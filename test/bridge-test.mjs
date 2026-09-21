@@ -119,6 +119,15 @@ check(canceled.events.at(-1)?.type === "done", "and the solve then ends");
 const after = await solve({ id: "f", tws, args: ["-v2", "--checkbeforesolve", "-M", "64"], scramble });
 check(after.events.at(-1)?.type === "done", "still works after a cancel");
 
+// A page in a sandboxed iframe calls itself "null", and any site can put one
+// on any page, so "null" must not be a way in.
+const fromnull = await fetch(`${base}/v1/solve`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json", Origin: "null" },
+  body: JSON.stringify({ id: "z", tws, args: [], scramble }),
+});
+check(fromnull.status === 403, "a page calling itself null is refused", `status ${fromnull.status}`);
+
 // --echo: a transcript of what crossed the bridge, on standard output.  The
 // solver's output appears as the page saw it, and the puzzle and scramble
 // blocks appear as they are, so they can be lifted out and run again.  Its

@@ -713,14 +713,13 @@ static bool originallowed(const string &origin) {
   if (origin.empty())
     return true; // not a browser
   /*
-   *   A page opened from a file says "null", having no site of its own, and
-   *   that is how someone runs a downloaded copy of a page like Gyrelab.
-   *   Browsers keep a page on the open web from reaching this machine at all
-   *   (Chrome refuses it outright, whatever we answer), so what says "null"
-   *   here is a file on this machine.
+   *   "null" is not trusted here, though a page opened from a file sends it.
+   *   So does a page in a sandboxed iframe, which any site on the web can
+   *   put on any page it likes: trusting "null" hands every one of them a
+   *   solver on this machine to drive.  --allow-origin null says to take
+   *   that on anyway, for someone running a downloaded page who knows what
+   *   it costs; the page twsearch serves itself needs none of it.
    */
-  if (origin == "null")
-    return true;
   for (const auto &allowed : alloworigins)
     if (origin == allowed)
       return true;
@@ -1026,6 +1025,10 @@ int runserver(const char *self) {
           "; something is already using it (another twsearch --serve?).  "
           "Stop that one, or give this one a --port of its own.");
   }
+  for (const auto &allowed : alloworigins)
+    if (allowed == "null")
+      warn("--allow-origin null lets any site reach this server, through a "
+           "sandboxed iframe, for as long as it runs");
   cout << "twsearch serving http://127.0.0.1:" << serveport << "/ from "
        << selfpath << endl
        << flush;
@@ -1097,7 +1100,10 @@ static struct alloworigincmd : cmd {
   alloworigincmd()
       : cmd("--allow-origin",
             "url  Let a page from this site use --serve.  Pages from this\n"
-            "machine are always allowed; give this once per other site.") {}
+            "machine are always allowed; give this once per other site.\n"
+            "The name null means a page opened from a file, which a page in\n"
+            "a sandboxed iframe on any site also calls itself: allowing it\n"
+            "lets any site on the web reach this server.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
