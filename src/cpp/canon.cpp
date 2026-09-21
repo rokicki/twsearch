@@ -171,7 +171,7 @@ int recurcanonstates2(const puzdef &pd, int togo, ull moveset, int sp) {
     if (ccseen.find(ccenc) == ccseen.end()) {
       ccseen.insert(ccenc);
       if (sp > ccount) {
-        ull hibit = (1LL << (ccount * movebits));
+        ull hibit = (1ULL << (ccount * movebits));
         moveset = hibit | (moveset & (hibit - 1));
       }
       if (statemap.find(moveset) == statemap.end()) {
@@ -241,6 +241,22 @@ void makecanonstates2(puzdef &pd) {
   if (ccnbase > 63)
     error("! too many base moves for canonicalization calculation");
   movebits = ceillog2(ccnbase);
+  if (movebits < 1)
+    movebits = 1; // a puzzle with a single move class still needs a place
+  /*
+   *   A state here is one move class per movebits bits with a bit above
+   *   them all, in a single 64-bit word, so a state of ccount moves needs
+   *   ccount * movebits + 1 bits and the depth a puzzle can take depends on
+   *   how many move classes it has.  The search goes one move further than
+   *   that before folding the oldest move out again, and that one is safe
+   *   at any width: a left shift drops the high bits, which are the ones
+   *   the fold below throws away in any case.
+   */
+  int maxcanon = 63 / movebits;
+  if (ccount > maxcanon)
+    error("! --newcanon depth is too deep for this puzzle; the most it can "
+          "take here is " +
+          to_string(maxcanon));
   pd.ncs = ccnbase;
   ccenc = vector<loosetype>(looseiper);
   posns.clear();
