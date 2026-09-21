@@ -161,6 +161,19 @@ from clock skew, which count as recent.
 The sweep is one pass over a directory holding tens of files, so it can run
 on every invocation.
 
+## Writing a file two programs might share
+
+Two twsearch processes can hold the same cache file at once, and today one
+writes it in place while the other reads it.  That is how the Windows build
+came to read a half written table, which it then half read into itself: the
+fix for the reading side is in, but the writing side still wants a write to
+a temporary name followed by a rename, so a reader sees either the old file
+or the new one and never the middle of one.
+
+A related gap: a read that fails inside the block reading threads still
+calls error() and ends the program, where the rest of the read paths now
+give up on the file and build the table instead.
+
 ## Not part of this
 
 **Per puzzle names.**  Naming a cache file for the puzzle it belongs to,

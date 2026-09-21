@@ -629,8 +629,13 @@ int prunetable::readpt(const puzdef &pd) {
     r.read((char *)(mem + i), BLOCKSIZE * sizeof(ull));
 #endif
   int tv = r.get();
-  if (tv != SIGNATURE)
-    error("! I/O error reading final signature");
+  if (tv != SIGNATURE) {
+    // A file that ends early or ends wrong; build the table instead of
+    // giving up on the search.  The caller starts this table over.
+    warn("I/O error reading final signature");
+    r.close();
+    return 0;
+  }
   r.close();
   if (quiet == 0)
     cout << "read in " << duration() << endl << flush;

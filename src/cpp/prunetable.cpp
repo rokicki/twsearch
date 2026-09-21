@@ -149,6 +149,44 @@ ull fillworker::filltable(const puzdef &pd, prunetable &pt, int togo, int sp,
  *   We do this with a right shift, then a multiply, then another
  *   right shift, always staying 2^64 bytes.
  */
+/*
+ *   What a table holds before anything has been read into it: the hash
+ *   parameters that follow from its size, and counters at zero.  readpt
+ *   reads a file straight into these fields, so this is also how a failed
+ *   read is undone.
+ */
+void prunetable::freshtable() {
+  shift2 = 2;
+  while ((size & (1LL << shift2)) == 0)
+    shift2++;
+  memmul = size >> shift2;
+  shift1 = 0;
+  while (memmul >> shift1)
+    shift1++;
+  ull hi = memmul * (0xffffffffffffffffULL >> shift1);
+  shift2 = 0;
+  while ((hi >> shift2) > size)
+    shift2++;
+  shardshift = 0;
+  while ((size >> shardshift) > MEMSHARDS)
+    shardshift++;
+  totsize = pdp->totsize;
+  totpop = 0;
+  ptotpop = 0;
+  popped = 0;
+  baseval = 0;
+  hibase = 0;
+  wval = 0;
+  lookupcnt = 0;
+  fillcnt = 0;
+  justread = 0;
+  for (int i = 0; i < 7; i++) {
+    if (dtabs[i])
+      free(dtabs[i]);
+    dtabs[i] = 0;
+  }
+}
+
 prunetable::prunetable(const puzdef &pd, ull maxmem) {
   pdp = &pd;
   totsize = pd.totsize;
@@ -167,27 +205,10 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   }
   // now calculate the shifts.
   size = 4 * bytesize;
-  shift2 = 2;
-  while ((size & (1LL << shift2)) == 0)
-    shift2++;
-  memmul = size >> shift2;
-  shift1 = 0;
-  while (memmul >> shift1)
-    shift1++;
-  ull hi = memmul * (0xffffffffffffffffULL >> shift1);
-  shift2 = 0;
-  while ((hi >> shift2) > size)
-    shift2++;
-  shardshift = 0;
-  while ((size >> shardshift) > MEMSHARDS)
-    shardshift++;
+  freshtable();
   if (quiet == 0)
     cout << "For memsize " << maxmem << " sh1 " << shift1 << " mul " << memmul
          << " sh2 " << shift2 << " shardshift " << shardshift << endl;
-  totpop = 0;
-  ptotpop = 0;
-  baseval = 0;
-  wval = 0;
   cout << "Trying to allocate "
        << (CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) << endl;
   amem = mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1);
@@ -196,12 +217,13 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   // hack memalign
   while (((ull)mem) & (CACHELINESIZE - 1))
     mem++;
-  lookupcnt = 0;
-  fillcnt = 0;
-  justread = 0;
-  for (int i = 0; i < 7; i++)
-    dtabs[i] = 0;
   if (!readpt(pd)) {
+    // A read that gave up part way through has left the file's numbers in
+    // this table and the file's bytes in memory.  Filling a table on top of
+    // either gives answers that are wrong, not just slow, so start over
+    // from nothing.
+    freshtable();
+    memset(mem, 0, (bytesize >> 3) * sizeof(ull));
     if (quiet == 0)
       cout << "Initializing memory in " << duration() << endl << flush;
     baseval = 1;

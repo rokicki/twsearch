@@ -112,6 +112,15 @@ test-cpp-samples: $(TWSEARCH)
 	cat samples/main/3x3x3.tws > build/test/embedded.tws
 	printf '\nScrambleAlg alg\nR U R2 F2 D\nEnd\n' >> build/test/embedded.tws
 	$(TWSEARCH) -M 1024 --nowrite --checkbeforesolve build/test/embedded.tws | grep -q "^Found 1 solution"
+	@ # A pruning table file that stops part way through has to be ignored.
+	@ # Half reading one leaves the file's numbers in the table, and a search
+	@ # on top of those answers with a solution that is not the shortest.
+	@rm -rf build/test/cache
+	@mkdir -p build/test/cache
+	printf "ScrambleAlg alg\nR U R' F2\nEnd\n" > build/test/easy.scr
+	$(TWSEARCH) -M 64 --cachedir build/test/cache --startprunedepth 7 --writeprunetables always samples/main/3x3x3.tws build/test/easy.scr | grep -q "^ F2 R U' R'$$"
+	for f in build/test/cache/*.dat; do head -c 200 $$f > $$f.part && mv $$f.part $$f; done
+	$(TWSEARCH) -M 64 --cachedir build/test/cache --writeprunetables never samples/main/3x3x3.tws build/test/easy.scr | grep -q "^ F2 R U' R'$$"
 	@echo "samples ok"
 
 .PHONY: cpp-clean

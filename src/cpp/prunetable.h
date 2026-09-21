@@ -150,6 +150,7 @@ struct prunetable {
   void readblock(ull *mem, ull explongcnt, istream *f);
   void writept(const puzdef &pd);
   int readpt(const puzdef &pd);
+  void freshtable();
   const puzdef *pdp;
   ull size, popped, totpop, ptotpop;
   ull shift1, shift2, memmul;
