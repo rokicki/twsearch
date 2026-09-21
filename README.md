@@ -139,6 +139,12 @@ Options:
 
 `--distinguishall`  Override distinguishable pieces (use the superpuzzle).
 
+`--echo`  Write the puzzle, the scrambles, and the solver's output to standard
+   output as they cross the bridge, so a search can be read or kept.  See
+   `--serve`.  The puzzle and scramble blocks are written as they arrived, so
+   they can be lifted out as a `.tws` file and run again; the transcript as a
+   whole is not one.
+
 `-F`  When running God's number searches, force the use of arrays and
    sorting rather than canonical sequences or bit arrays.
 
@@ -176,11 +182,15 @@ Options:
 
 `--nocorners`  Omit any puzzle sets with recognizable corner names.
 
+`--nodeduplicatesolve`  Don't deduplicate the search tree on solves.
+
 `--noearlysolutions`  Emit any solutions whose prefix is also a solution.
 
 `--noedges`  Omit any puzzle sets with recognizable edge names.
 
 `--noorientation`  Ignore orientations for all sets.
+
+`--nosymmetry`  Disable all symmetry reductions.
 
 `--nowrite`  Do not write pruning tables.
 
@@ -189,6 +199,14 @@ Options:
 
 `--omit` *setname*  Omit the following set name from the puzzle.  You can provide
    as many separate omit options, each with a separate set name, as you want.
+
+`--omitoris` *setname*  Omit the orientations for the following set name from
+   the puzzle, solving its permutation only.  You can provide as many separate
+   omitoris options, each with a separate set name, as you want.
+
+`--omitperms` *setname*  Omit the permutations for the following set name from
+   the puzzle, solving its orientations only.  You can provide as many separate
+   omitperms options, each with a separate set name, as you want.
 
 `--ordertree`  Print shortest sequences of a particular order of the superpuzzle.
 
@@ -243,6 +261,9 @@ Options:
 
 `--shortenseqs`  Read a set of move sequences on standard input and attempt
    to shorten each by optimally solving increasingly longer subsequences.
+
+`--showconjugacy`  Read a set of move sequences on standard input and show the
+   conjugacy class of each.
 
 `--showmoves`  Read a set of move sequences on standard input and show the
    equivalent move definition on standard output.

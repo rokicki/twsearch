@@ -453,7 +453,7 @@ static struct omitpermsopt : specialopt {
             "--omitperms",
             "setname  Omit the permutations for the following set name from "
             "the puzzle.\nYou can provide as many separate omitperms options, "
-            " each with a separate\nset name, as you want.") {}
+            "each with a separate\nset name, as you want.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;
@@ -466,9 +466,9 @@ static struct omitorisopt : specialopt {
   omitorisopt()
       : specialopt(
             "--omitoris",
-            "setname  Omit the permutations for the following set name from "
+            "setname  Omit the orientations for the following set name from "
             "the puzzle.\nYou can provide as many separate omitoris options, "
-            " each with a separate\nset name, as you want.") {}
+            "each with a separate\nset name, as you want.") {}
   virtual void parse_args(int *argc, const char ***argv) {
     (*argc)--;
     (*argv)++;

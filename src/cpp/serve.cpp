@@ -1098,8 +1098,9 @@ static struct echocmd : cmd {
   echocmd()
       : cmd("--echo",
             "Write the puzzle, the scrambles, and the solver's output to\n"
-            "standard output as they cross the bridge.  A session with one\n"
-            "puzzle in it is a .tws file that runs the same searches again.") {}
+            "standard output as they cross the bridge, so a search can be\n"
+            "read or kept.  The puzzle and scramble blocks can be lifted\n"
+            "out as a .tws file and run again.") {}
   virtual void parse_args(int *, const char ***) { echosearches = 1; }
   virtual void docommand(puzdef &) { error("! bad docommand"); }
   virtual int ismaincmd() { return 0; }
