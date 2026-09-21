@@ -61,5 +61,14 @@ extern int quiet;
 // slash; if it is from user-provided input, this added if needed.
 extern const char *user_option_cache_dir;
 const char *prune_table_dir(bool create_dirs);
+/*
+ *   A path to print.  Unchanged for someone running this themselves.  Under
+ *   a bridge, the home directory becomes ~: a cache file lives under it and
+ *   its name is usually the name of the person running this, and that would
+ *   reach a page, and anyone they send a search or a transcript to.
+ */
+string shortpath(const string &path);
+/* The same, for a caller that knows its output travels. */
+string abbreviatehome(const string &path);
 #define UTIL_H
 #endif

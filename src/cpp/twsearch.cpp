@@ -572,8 +572,10 @@ int main(int argc, const char **argv) {
     cout << "# This is twsearch "
          << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl;
     cout << "#";
+    // shortpath: under a bridge this line goes to a page, and the arguments
+    // hold the path this program was run from and the file it was given.
     for (int i = 0; i < orig_argc; i++)
-      cout << " " << orig_argv[i];
+      cout << " " << shortpath(orig_argv[i]);
     cout << endl << flush;
   }
 

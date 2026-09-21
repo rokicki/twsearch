@@ -198,8 +198,12 @@ class TwsearchProcess {
     );
     const twsFile = join(workdir, `${name}.tws`);
     writeFileSync(twsFile, tws);
+    // Naming ourselves says two things to the child: stop when this
+    // process is gone, and keep the reader's home directory out of what it
+    // prints, since that goes to a page.  twsearch --serve does the same.
     this.child = spawn(opts.twsearch, [...args, twsFile, "-"], {
       stdio: ["pipe", "pipe", "pipe"],
+      env: { ...process.env, TWSEARCH_SERVER_PID: String(process.pid) },
     });
     this.child.stdin.on("error", () => {});
     chunks(
@@ -372,7 +376,6 @@ const server = createServer((req, res) => {
       JSON.stringify({
         bridge: "twsearch-bridge",
         protocol: 1,
-        twsearch: opts.twsearch,
         threads: cpus().length,
         maxMem: opts.maxMem,
       }),

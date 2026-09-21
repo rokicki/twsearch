@@ -7,6 +7,8 @@
 #include "vendor/picojson/picojson.h"
 // clang-format on
 #include <chrono>
+#define STR2(x) #x
+#define STRINGIZE(x) STR2(x)
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
@@ -580,7 +582,7 @@ static shared_ptr<childrun> startchild(const string &key, const string &tws,
   if (echosearches) {
     string cmd = "twsearch";
     for (const auto &a : childargs)
-      cmd += " " + a;
+      cmd += " " + abbreviatehome(a); // this line is going somewhere
     echocomment("");
     echocomment(cmd);
     echotext(tws.size() && tws.back() == '\n' ? tws : tws + "\n");
@@ -916,7 +918,9 @@ int runserver(const char *self) {
         picojson::object o;
         o["bridge"] = picojson::value("twsearch-bridge");
         o["protocol"] = picojson::value((double)1);
-        o["twsearch"] = picojson::value(selfpath);
+        // Which twsearch, but not where it lives: the path names the
+        // reader's home directory, and nothing needs it.
+        o["version"] = picojson::value(string(STRINGIZE(TWSEARCH_VERSION)));
         o["threads"] = picojson::value((double)numthreads);
         o["maxMem"] = picojson::value((double)(maxmem / 1048576));
         res.set_content(picojson::value(o).serialize(), "application/json");
@@ -1030,8 +1034,20 @@ int runserver(const char *self) {
       warn("--allow-origin null lets any site reach this server, through a "
            "sandboxed iframe, for as long as it runs");
   cout << "twsearch serving http://127.0.0.1:" << serveport << "/ from "
-       << selfpath << endl
-       << flush;
+       << (echosearches ? abbreviatehome(selfpath) : selfpath) << endl;
+  /*
+   *   Where the searches leave their pruning tables.  A search says so
+   *   itself as it writes or reads one, but with the reader's home
+   *   directory left out (that output goes to a page), so say it in full
+   *   here, where only the person who started this is reading.  Unless
+   *   this stream is the transcript, which travels the same way.
+   */
+  {
+    string cachedir = prune_table_dir(false);
+    cout << "pruning tables in "
+         << (echosearches ? abbreviatehome(cachedir) : cachedir) << endl;
+  }
+  cout << flush;
   bool ok = server.listen_after_bind();
   filesystem::remove_all(workdir);
   if (!ok)

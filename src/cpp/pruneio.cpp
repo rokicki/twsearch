@@ -414,7 +414,7 @@ void prunetable::writept(const puzdef &pd) {
 #endif
   string filename = makefilename(pd, true /* create_dirs */);
   if (quiet == 0)
-    cout << "Writing " << filename << " " << flush;
+    cout << "Writing " << shortpath(filename) << " " << flush;
   ofstream w;
   // do stuff
   w.open(filename, ios::out | ios::trunc);
@@ -464,7 +464,7 @@ int prunetable::readpt(const puzdef &pd) {
   if (r.fail())
     return 0;
   if (quiet == 0)
-    cout << "Reading " << filename << " " << flush;
+    cout << "Reading " << shortpath(filename) << " " << flush;
   if (r.get() != SIGNATURE) {
     warn("! first byte not signature");
     return 0;

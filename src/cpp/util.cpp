@@ -112,6 +112,37 @@ static const char *defaultdir = "~/Library/Caches/";
 static const char *defaultdir = "~/.cache/";
 #endif
 #endif
+string abbreviatehome(const string &path) {
+#ifdef _WIN32
+  // USERPROFILE first: a shell here may set HOME to a home of its own
+  // making (MSYS2 does), which no Windows path starts with.
+  const char *home = getenv("USERPROFILE");
+  if (home == 0 || *home == 0)
+    home = getenv("HOME");
+#else
+  const char *home = getenv("HOME");
+#endif
+  if (home == 0 || *home == 0)
+    return path;
+  size_t n = strlen(home);
+  while (n > 1 && (home[n - 1] == '/' || home[n - 1] == '\\'))
+    n--;
+  if (path.size() > n && path.compare(0, n, home, n) == 0 &&
+      (path[n] == '/' || path[n] == '\\'))
+    return "~" + path.substr(n);
+  return path;
+}
+
+string shortpath(const string &path) {
+  // Someone reading this at a terminal wants the path they could type; it
+  // is their own machine and their own name in it.  A bridge driving this
+  // is a different matter: what it reads goes to a page, and into whatever
+  // transcript of a search they pass on.  The server says which this is by
+  // naming itself in the environment (see serve.cpp).
+  static const bool driven = getenv("TWSEARCH_SERVER_PID") != 0;
+  return driven ? abbreviatehome(path) : path;
+}
+
 const char *prune_table_dir(bool createdirs) {
   // do this work only once, but retry if createdirs is 1 and we haven't
   // tried it with createdirs before.  This means when writing a pruning

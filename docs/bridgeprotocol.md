@@ -29,13 +29,18 @@ existing page means a new number.
 
 ```json
 {"bridge": "twsearch-bridge", "protocol": 1,
- "twsearch": "/usr/local/bin/twsearch", "threads": 16, "maxMem": 8192}
+ "version": "v0.1.5", "threads": 16, "maxMem": 8192}
 ```
 
 A page calls this to find out whether a solver is there at all, so it must be
-cheap and must not start anything.  `twsearch` is for the reader's benefit,
-saying which program is doing the work.  `threads` and `maxMem` (megabytes)
-describe what it is willing to use.
+cheap and must not start anything.  Only `bridge` has to be there, and it is
+the whole of the answer a page needs: the rest is for a reader wondering what
+is doing the work.  `threads` and `maxMem` (megabytes) say what it is willing
+to use; `version` is optional.
+
+Say nothing here that names the person running it.  An answer used to carry
+the solver's path, which on most machines holds their account name, and a
+page that reaches this at all can read it.
 
 ### `POST /v1/solve`
 
