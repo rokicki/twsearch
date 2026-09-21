@@ -120,8 +120,11 @@ jobs:
       - name: Searches with known answers
         run: make test-cpp-samples
 
+      # node is the runner's, not something MSYS2 has, so ask for it the way
+      # the bridge test below does rather than through make.
       - name: A damaged pruning table file is refused
-        run: make test-prune
+        shell: pwsh
+        run: node test/prune-test.mjs build/bin/twsearch.exe
 
       # Run it from cmd rather than the MSYS shell: nothing of MSYS is on the
       # path there, so this fails if the binary wants a DLL from it.
