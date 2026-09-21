@@ -215,7 +215,15 @@ static ull getull_swap_unaligned(unsigned char *p) {
 static void setull_unaligned(unsigned char *p, ull v) {
   memcpy(p, &v, sizeof(v));
 }
-void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
+/*
+ *   The block holds bytecnt bytes and the buffer eight more, so that the
+ *   eight-byte reads below can start at any byte of it.  Nothing about the
+ *   file says the two agree: a block can name the full output length and
+ *   carry almost no input, and then this walks off the end of the buffer
+ *   looking for bits to decode.  So both walks are held to their tables:
+ *   the input to what was read, and the code widths to what there is.
+ */
+void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
   int havebits = 0;
   ull accum = 0;
   ull bitptr = 0;
@@ -226,6 +234,8 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
     int k = 0;
     while (1) {
       if (havebits < bitsneeded) {
+        if ((bitptr >> 3) >= (ull)bytecnt)
+          error("! bad block in pruning table; it ends too soon");
         accum = getull_swap_unaligned(block + (bitptr >> 3)) &
                 ((0xffffffffffffffffULL) >> (bitptr & 7));
         havebits = 64 - (bitptr & 7);
@@ -252,6 +262,8 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int) {
       if (bitsneeded > 56)
         bitsneeded = 56;
       k++;
+      if (k >= (int)(sizeof(dtabs) / sizeof(dtabs[0])) || dtabs[k] == 0)
+        error("! bad block in pruning table; no code of this width");
     }
   }
 }
@@ -493,17 +505,36 @@ int prunetable::readpt(const puzdef &pd) {
     r.close();
     return 0;
   }
-  r.read((char *)&shift1, sizeof(shift1));
-  r.read((char *)&shift2, sizeof(shift2));
-  r.read((char *)&memmul, sizeof(memmul));
+  /*
+   *   Some of what the file says next is how to read memory: totsize is how
+   *   many bytes of a position to hash, and the shifts and the multiplier
+   *   are how an index into the table is made.  None of it is the file's to
+   *   say.  Every one of them follows from the size, which is checked
+   *   above, so this table has already worked them out; they are read into
+   *   somewhere harmless and the file is turned away if it disagrees.  A
+   *   file that does disagree is damaged or was not written for this table,
+   *   and either way the search must not take its word for where memory is.
+   */
+  ull fshift1 = 0, fshift2 = 0, fmemmul = 0;
+  int ftotsize = 0;
+  r.read((char *)&fshift1, sizeof(fshift1));
+  r.read((char *)&fshift2, sizeof(fshift2));
+  r.read((char *)&fmemmul, sizeof(fmemmul));
   r.read((char *)&popped, sizeof(popped));
   r.read((char *)&totpop, sizeof(totpop));
   r.read((char *)&ptotpop, sizeof(ptotpop));
   r.read((char *)&fillcnt, sizeof(fillcnt));
-  r.read((char *)&totsize, sizeof(totsize));
+  r.read((char *)&ftotsize, sizeof(ftotsize));
   r.read((char *)&baseval, sizeof(baseval));
   r.read((char *)&hibase, sizeof(hibase));
   r.read((char *)&wval, sizeof(wval));
+  if (r.fail() || fshift1 != shift1 || fshift2 != shift2 || fmemmul != memmul ||
+      ftotsize != totsize || baseval < 0 || baseval > 100 || hibase < 0 ||
+      hibase > 100 || wval < 0 || wval > 100) {
+    warn("Pruning table file does not describe this table; recreating it");
+    r.close();
+    return 0;
+  }
 #ifdef USECOMPRESSION
   r.read((char *)codewidths, sizeof(codewidths[0]) * 272);
   if (r.fail()) {

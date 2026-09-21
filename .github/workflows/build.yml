@@ -62,6 +62,9 @@ jobs:
       - name: Searches with known answers
         run: make test-cpp-samples
 
+      - name: A damaged pruning table file is refused
+        run: make test-prune
+
       - name: Serving, as a page uses it
         run: make test-serve
 
@@ -116,6 +119,9 @@ jobs:
 
       - name: Searches with known answers
         run: make test-cpp-samples
+
+      - name: A damaged pruning table file is refused
+        run: make test-prune
 
       # Run it from cmd rather than the MSYS shell: nothing of MSYS is on the
       # path there, so this fails if the binary wants a DLL from it.

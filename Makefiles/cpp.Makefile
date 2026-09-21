@@ -105,6 +105,13 @@ format-cpp:
 test-serve: $(TWSEARCH)
 	node test/bridge-test.mjs $(TWSEARCH)
 
+.PHONY: test-prune
+# A damaged pruning table file must be refused, not believed: it says how
+# many bytes of a position to hash and how long each block is, and a search
+# that takes that on trust reads memory it does not own.
+test-prune: $(TWSEARCH)
+	node test/prune-test.mjs $(TWSEARCH)
+
 .PHONY: test-cpp-samples
 # A few searches with known answers, to show a build of twsearch works.
 test-cpp-samples: $(TWSEARCH)
