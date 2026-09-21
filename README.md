@@ -106,6 +106,13 @@ Options:
 
 `--alloptimal`  Find all optimal solutions.
 
+`--allow-origin` *url*  Let a page served from this site use `--serve`.  Pages
+   served from this machine, and pages opened from a file, are always allowed;
+   give this once per other site.
+
+`--app` *url*  Where `--serve` fetches the page it answers with; the default is
+   `https://cube20.org/gyrelab/`.
+
 `-C`  Show canonical sequence counts.  The option can be followed
    immediately by a number of levels (e.g., -C20).
 
@@ -163,6 +170,8 @@ Options:
 
 `--newcanon` *num*  Use search-based canonical sequences to the given depth.
 
+`--no-app`  Have `--serve` answer searches only, and no page.
+
 `--nocenters`  Omit any puzzle sets with recognizable center names.
 
 `--nocorners`  Omit any puzzle sets with recognizable corner names.
@@ -186,6 +195,8 @@ Options:
 `--orientationgroup` *num*  Treat adjacent piece groups of this size as
    orientations.
 
+`--port` *num*  The port `--serve` listens on; the default is 2023.
+
 `-q`  Use only minimal (quarter) turns.
 
 `--quiet`  Eliminate extraneous output.
@@ -197,17 +208,6 @@ Options:
 
 `--randomstart`  Randomize move order when solving.
 
-`--allow-origin` *url*  Let a page served from this site use `--serve`.  Pages
-   served from this machine, and pages opened from a file, are always allowed;
-   give this once per other site.
-
-`--app` *url*  Where `--serve` fetches the page it answers with; the default is
-   `https://cube20.org/gyrelab/`.
-
-`--no-app`  Have `--serve` answer searches only, and no page.
-
-`--port` *num*  The port `--serve` listens on; the default is 2023.
-
 `-S`  Test solves by doing increasingly long random sequences.
    An integer argument can be provided appended to the S (as in -S5) to
    indicate the number of random moves to apply at each step.
@@ -215,6 +215,12 @@ Options:
 `-s`  Read a set of move sequences on standard input and perform an
    optimal solve on each.  If the option is given as -si, only look for
    improvements in total solution length.
+
+`--schreiersims`  Run the Schreier-Sims algorithm to calculate the state
+   space size of the puzzle.
+
+`--scramblealg` *moveseq*  Give a scramble as a sequence of moves on the
+   command line.
 
 `--serve`  Serve searches over HTTP to a web page on this machine, so that a
    page such as the Twizzle Explorer can use this twsearch instead of a
@@ -234,12 +240,6 @@ Options:
    require of anything reaching a program on the reader's own machine.
    `src/js/twsearch-bridge.mjs` does the same thing under node.  The protocol
    is documented in `docs/bridgeprotocol.md`.
-
-`--schreiersims`  Run the Schreier-Sims algorithm to calculate the state
-   space size of the puzzle.
-
-`--scramblealg` *moveseq*  Give a scramble as a sequence of moves on the
-   command line.
 
 `--shortenseqs`  Read a set of move sequences on standard input and attempt
    to shorten each by optimally solving increasingly longer subsequences.
