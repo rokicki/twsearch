@@ -1,31 +1,28 @@
 #include "generatingset.h"
 #include "cmds.h"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
-bool generatingset::resolve(const setval p_) {
+#include <set>
+#include <sstream>
+#include <string>
+bool generatingset::resolve(const setval p_, int nlev) {
   stacksetval p(pd), t(pd);
   pd.assignpos(p, p_);
-  for (int i = (int)pd.setdefs.size() - 1; i >= 0; i--) {
-    if (!included[i])
-      continue;
-    const setdef &sd = pd.setdefs[i];
+  for (int L = 0; L < nlev; L++) {
+    const setdef &sd = pd.setdefs[levels[L].first];
     int n = sd.size;
-    int s = 0;
-    for (int j = 0; j < n; j++)
-      s += p.dat[sd.off + j];
-    if (s * 2 != n * (n - 1))
-      error("! identical pieces during generating set resolve?");
-    int off = (sd.off >> 1);
-    for (int j = n - 1; j >= 0; j--) {
-      if (p.dat[sd.off + j] != j || p.dat[sd.off + n + j] != 0) {
-        int v = sd.omod * p.dat[sd.off + j] + p.dat[sd.off + n + j];
-        if (!sgs[off + j][v].dat)
-          return 0;
-        pd.mul(sgsi[off + j][v], p, t);
-        swap(p.dat, t.dat);
-        if (p.dat[sd.off + j] != j || p.dat[sd.off + n + j] != 0)
-          error("! misresolve");
-      }
+    int j = levels[L].second;
+    if (p.dat[sd.off + j] != j || p.dat[sd.off + n + j] != 0) {
+      int v = sd.omod * p.dat[sd.off + j] + p.dat[sd.off + n + j];
+      int k = (sd.off >> 1) + j;
+      if (!sgs[k][v].dat)
+        return 0;
+      pd.mul(sgsi[k][v], p, t);
+      work += pd.totsize;
+      swap(p.dat, t.dat);
+      if (p.dat[sd.off + j] != j || p.dat[sd.off + n + j] != 0)
+        error("! misresolve");
     }
   }
   return 1;
@@ -68,22 +65,26 @@ bool generatingset::solvable(const setval p) {
     }
   pd.inv(sol, solinv);
   pd.mul(solinv, pos, premul);
-  return resolve(premul);
+  return resolve(premul, nincluded);
 }
-void generatingset::knutha(int k1, int k2, const setval &p) {
-  int k = k2 + (pd.setdefs[k1].off >> 1);
+void generatingset::knutha(int L, const setval &p) {
+  int k = slot(L);
   tk[k].push_back(allocsetval(pd, p));
   stacksetval p2(pd);
   for (int i = 0; i < (int)sgs[k].size(); i++)
-    if (sgs[k][i].dat) {
+    if (sgs[k][i].dat && !overbudget()) {
       pd.mul(p, sgs[k][i], p2);
-      knuthb(k1, k2, p2);
+      knuthb(L, p2);
     }
 }
-void generatingset::knuthb(int k1, int k2, const setval &p) {
-  const setdef &sd = pd.setdefs[k1];
-  int k = k2 + (sd.off >> 1);
+void generatingset::knuthb(int L, const setval &p) {
+  if (overbudget())
+    return;
+  work += pd.totsize;
+  const setdef &sd = pd.setdefs[levels[L].first];
+  int k = slot(L);
   int n = sd.size;
+  int k2 = levels[L].second;
   int j = p.dat[sd.off + k2] * sd.omod + p.dat[sd.off + n + k2];
   stacksetval p2(pd);
   if (!sgs[k][j].dat) {
@@ -92,7 +93,7 @@ void generatingset::knuthb(int k1, int k2, const setval &p) {
     pd.inv(sgs[k][j], sgsi[k][j]);
     for (int i = 0; i < (int)tk[k].size(); i++) {
       pd.mul(tk[k][i], p, p2);
-      knuthb(k1, k2, p2);
+      knuthb(L, p2);
     }
     return;
   }
@@ -100,18 +101,10 @@ void generatingset::knuthb(int k1, int k2, const setval &p) {
   if (p2.dat[sd.off + k2] != k2 || p2.dat[sd.off + n + k2] != 0) {
     error("! misresolve in knuthb");
   }
-  if (!resolve(p2)) {
-    if (k2 > 0)
-      k2--;
-    else {
-      do
-        k1--;
-      while (k1 >= 0 && !included[k1]);
-      if (k1 < 0)
-        error("! fell off end in knuthb");
-      k2 = pd.setdefs[k1].size - 1;
-    }
-    knutha(k1, k2, p2);
+  if (!resolve(p2, levels.size())) {
+    if (L + 1 >= (int)levels.size())
+      error("! fell off end in knuthb");
+    knutha(L + 1, p2);
   }
 }
 static int findroot(vector<int> &parent, int x) {
@@ -164,52 +157,109 @@ void generatingset::initbasiccheck(int i) {
   }
 }
 generatingset::generatingset(const puzdef &pd_)
-    : pd(pd_), e(pd.id), lastincluded(-1) {
+    : pd(pd_), e(pd.id), nincluded(0) {
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     const setdef &sd = pd.setdefs[i];
     included.push_back(eligible(sd));
-    if (included[i])
-      lastincluded = i;
-    else
-      warn("Generating set ignores set ",
+    if (!included[i])
+      warn("Generating set cannot fully check set ",
            sd.name +
                (sd.uniq ? " (orientation wildcards)" : " (identical pieces)") +
                "; checking only piece counts and orientation sums");
     initbasiccheck(i);
-    // excluded sets keep their (empty) slots so offsets stay the same
-    int sz = included[i] ? sd.size * sd.omod : 0;
+  }
+  // Every set goes in the chain if we can afford it, since the moves act
+  // on all of them as permutations even when the pieces are identical.
+  // The included sets are stabilized first, so the remaining levels are a
+  // chain for the subgroup that leaves the included sets solved.
+  for (int pass = 1; pass >= 0; pass--) {
+    for (int i = (int)pd.setdefs.size() - 1; i >= 0; i--)
+      if (included[i] == pass)
+        for (int j = pd.setdefs[i].size - 1; j >= 0; j--)
+          levels.push_back({i, j});
+    if (pass)
+      nincluded = levels.size();
+  }
+  fullchain = build();
+  if (!fullchain) {
+    levels.resize(nincluded);
+    build();
+  }
+}
+/*
+ *   Build the chain on the current levels.  Gives up if that costs more
+ *   than our budget, which only happens with excluded sets in the chain.
+ */
+bool generatingset::build() {
+  sgs.clear();
+  sgsi.clear();
+  tk.clear();
+  for (auto &sd : pd.setdefs)
     for (int j = 0; j < sd.size; j++) {
-      sgs.push_back(vector<allocsetval>(sz));
-      sgsi.push_back(vector<allocsetval>(sz));
+      sgs.push_back(vector<allocsetval>(sd.size * sd.omod));
+      sgsi.push_back(vector<allocsetval>(sd.size * sd.omod));
       tk.push_back(vector<allocsetval>(0));
-      if (!included[i])
-        continue;
-      int at = sgs.size() - 1;
-      sgs[at][j * sd.omod] = e;
-      sgsi[at][j * sd.omod] = e;
+      sgs.back()[j * sd.omod] = e;
+      sgsi.back()[j * sd.omod] = e;
     }
-  }
-  if (lastincluded < 0)
-    return;
-  int oldprec = cout.precision();
-  cout.precision(20);
+  if (levels.empty())
+    return 1;
+  work = 0;
+  ostringstream msgs;
+  msgs.precision(20);
   for (int i = 0; i < (int)pd.moves.size(); i++) {
-    if (resolve(pd.moves[i].pos))
+    if (resolve(pd.moves[i].pos, levels.size()))
       continue;
-    knutha(lastincluded, pd.setdefs[lastincluded].size - 1, pd.moves[i].pos);
-    long double totsize = 1;
-    for (int j = 0; j < (int)sgs.size(); j++) {
-      int cnt = 0;
-      for (int k = 0; k < (int)sgs[j].size(); k++)
-        if (sgs[j][k].dat)
-          cnt++;
-      if (cnt)
-        totsize *= cnt;
-    }
-    cout << "Adding move " << pd.moves[i].name << " extends size to " << totsize
-         << endl;
+    knutha(0, pd.moves[i].pos);
+    if (overbudget())
+      return 0;
+    msgs << "Adding move " << pd.moves[i].name << " extends size to "
+         << levelsize(0, levels.size()) << endl;
   }
-  cout.precision(oldprec);
+  cout << msgs.str();
+  return 1;
+}
+long double generatingset::levelsize(int from, int to, long double *lg) const {
+  long double r = 1;
+  if (lg)
+    *lg = 0;
+  // in set order, the reverse of the base
+  for (int L = to - 1; L >= from; L--) {
+    const auto &v = sgs[slot(L)];
+    int cnt = 0;
+    for (int k = 0; k < (int)v.size(); k++)
+      if (v[k].dat)
+        cnt++;
+    r *= cnt;
+    if (lg)
+      *lg += log2l(cnt);
+  }
+  return r;
+}
+/*
+ *   Count the distinct values the excluded sets take over the subgroup
+ *   that leaves the included sets solved, by walking every element of
+ *   that subgroup.  Each state of the puzzle is then a group element on
+ *   the included sets times one of these.
+ */
+void generatingset::walkkernel(int L, const setval &p,
+                               set<string> &seen) const {
+  if (L == (int)levels.size()) {
+    string key;
+    for (int i = 0; i < (int)pd.setdefs.size(); i++)
+      if (!included[i]) {
+        const setdef &sd = pd.setdefs[i];
+        key.append((const char *)p.dat + sd.off, 2 * sd.size);
+      }
+    seen.insert(key);
+    return;
+  }
+  stacksetval p2(pd);
+  for (const auto &u : sgs[slot(L)])
+    if (u.dat) {
+      pd.mul(p, u, p2);
+      walkkernel(L + 1, p2, seen);
+    }
 }
 /*
  *   Print the size of the group on the included sets, and an estimate for
@@ -230,30 +280,47 @@ void generatingset::showsizes() const {
   int oldprec = cout.precision();
   cout.precision(20);
   long double total = 1, totallg = 0;
-  if (lastincluded >= 0) {
-    long double gsize = 1, lg = 0;
+  if (nincluded > 0) {
+    long double lg;
+    long double gsize = levelsize(0, nincluded, &lg);
     string names;
-    for (int i = 0; i < (int)pd.setdefs.size(); i++) {
-      if (!included[i])
-        continue;
-      const setdef &sd = pd.setdefs[i];
-      names += " " + sd.name;
-      for (int j = 0; j < sd.size; j++) {
-        const auto &v = sgs[(sd.off >> 1) + j];
-        int cnt = 0;
-        for (int k = 0; k < (int)v.size(); k++)
-          if (v[k].dat)
-            cnt++;
-        gsize *= cnt;
-        lg += log2l(cnt);
-      }
-    }
+    for (int i = 0; i < (int)pd.setdefs.size(); i++)
+      if (included[i])
+        names += " " + pd.setdefs[i].name;
     cout << "Group size for" << names << " is ";
     showsize(gsize, lg);
     cout << endl;
     total *= gsize;
     totallg += lg;
   }
+  if (find(included.begin(), included.end(), 0) == included.end()) {
+    cout << "State size is ";
+    showsize(total, totallg);
+    cout << endl;
+    cout.precision(oldprec);
+    return;
+  }
+  string names;
+  for (int i = 0; i < (int)pd.setdefs.size(); i++)
+    if (!included[i])
+      names += " " + pd.setdefs[i].name;
+  long double klg = 0;
+  long double ksize = levelsize(nincluded, levels.size(), &klg);
+  if (fullchain && ksize <= KERNELWALKLIMIT) {
+    set<string> seen;
+    walkkernel(nincluded, pd.solved, seen);
+    cout << "Count for" << names << " with the rest solved is " << seen.size()
+         << endl;
+    total *= seen.size();
+    totallg += log2l(seen.size());
+    cout << "State size is ";
+    showsize(total, totallg);
+    cout << endl;
+    cout.precision(oldprec);
+    return;
+  }
+  long double estlg = 0;
+  long double esttotal = total, esttotallg = totallg;
   for (int i = 0; i < (int)pd.setdefs.size(); i++) {
     if (included[i])
       continue;
@@ -296,9 +363,20 @@ void generatingset::showsizes() const {
            << " has an orbit of distinct pieces; permutation parity is not "
               "accounted for"
            << endl;
-    total *= ssize;
-    totallg += lg;
+    estlg += lg;
+    esttotal *= ssize;
+    esttotallg += lg;
   }
+  // the excluded sets can take no more values than the subgroup has elements
+  if (fullchain && klg < estlg) {
+    cout << "Count for" << names << " with the rest solved is at most ";
+    showsize(ksize, klg);
+    cout << ", the size of the subgroup that leaves the rest solved" << endl;
+    esttotal = total * ksize;
+    esttotallg = totallg + klg;
+  }
+  total = esttotal;
+  totallg = esttotallg;
   cout << "State size is ";
   showsize(total, totallg);
   cout << endl;
@@ -309,8 +387,10 @@ static struct schreiersimscmd : cmd {
       : cmd("--schreiersims",
             "Run the Schreier-Sims algorithm to calculate the state\n"
             "space size of the puzzle.  Sets with identical pieces or\n"
-            "orientation wildcards are instead estimated, assuming any\n"
-            "arrangement of pieces within each orbit of locations.") {}
+            "orientation wildcards are counted exactly when the moves\n"
+            "that leave the other sets solved form a small enough group;\n"
+            "otherwise they are estimated, assuming any arrangement of\n"
+            "pieces within each orbit of locations.") {}
   virtual void parse_args(int *, const char ***) {}
   virtual void docommand(puzdef &pd) { (new generatingset(pd))->showsizes(); }
 } registerme;
