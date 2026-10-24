@@ -180,6 +180,11 @@ void calcrotations(puzdef &pd) {
  */
 int slowmodm2(const puzdef &pd, const setval p1, setval p2) {
   int cnt = 1;
+  // no rotations (or symmetry disabled) means the rotgroup may be empty.
+  if (pd.rotgroup.size() <= 1) {
+    pd.assignpos(p2, p1);
+    return cnt;
+  }
   // if we relabel the first setdef, we can't use the magic speedup code.
   if (pd.setdefs[0].relabel) {
     pd.rotconjugate(pd.rotinvmap[0], p1, pd.rotgroup[0].pos, p2);
