@@ -81,6 +81,9 @@ struct decompinfo {
   unsigned int d;
   uchar bitwidth, bytewidth;
 };
+// shared-memory tables (--shmhold, --shmattach, --shmremove); not on Windows
+extern const char *shmholdname, *shmattachname, *shmremovename;
+void shmremove(const char *name);
 struct prunetable {
   prunetable() {
     amem = 0;
@@ -128,7 +131,9 @@ struct prunetable {
   }
   void addlookups(ull lookups) { lookupcnt += lookups; }
   ~prunetable() {
-    if (amem) {
+    if (shmbase) {
+      shmrelease();
+    } else if (amem) {
       free(amem);
       amem = 0;
       mem = 0;
@@ -151,6 +156,10 @@ struct prunetable {
   void writept(const puzdef &pd);
   int readpt(const puzdef &pd);
   void freshtable();
+  void shmcreate(ull bytesize);
+  void shmpublish(const puzdef &pd);
+  void shmattach(const puzdef &pd);
+  void shmrelease();
   const puzdef *pdp;
   ull size, popped, totpop, ptotpop;
   ull shift1, shift2, memmul;
@@ -165,6 +174,11 @@ struct prunetable {
   ull codevals[544];
   decompinfo *dtabs[7];
   char justread;
+  // a table in shared memory: --shmhold builds or reads it in place and holds
+  // it; --shmattach maps it read-only (no fill, extension or write)
+  char shmreadonly = 0;
+  void *shmbase = 0;
+  size_t shmbytes = 0;
   vector<ull> workchunks;
   vector<workerparam> workerparams;
   int workat;

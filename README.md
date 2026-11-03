@@ -295,6 +295,19 @@ Options:
    `src/js/twsearch-bridge.mjs` does the same thing under node.  The protocol
    is documented in `docs/bridgeprotocol.md`.
 
+`--shmattach` *name*  Use the pruning table held in POSIX shared memory /*name*
+   (by another twsearch running with `--shmhold`), read-only: it is never
+   filled, extended or written.  Many processes can share one large table this
+   way.  Not on Windows.
+
+`--shmhold` *name*  Build or read the pruning table in POSIX shared memory
+   /*name* (which must not exist yet), print a ready line, and hold the table
+   until interrupted (SIGINT, SIGTERM or SIGHUP), which removes it.  Not on
+   Windows.
+
+`--shmremove` *name*  Remove the shared memory object /*name* (for example after
+   the holder was killed with SIGKILL) and exit.
+
 `--shortenseqs`  Read a set of move sequences on standard input and attempt
    to shorten each by optimally solving increasingly longer subsequences.
 

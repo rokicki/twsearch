@@ -328,7 +328,7 @@ void *cntthreadworker(void *o) {
 }
 void prunetable::writept(const puzdef &pd) {
   // only write the table if at least 1 in 700 elements has a value
-  if (writeprunetables == 0 || justread ||
+  if (shmreadonly || writeprunetables == 0 || justread ||
       (writeprunetables != 2 && fillcnt < size / 700))
     return;
   ll longcnt = (size + 31) >> 5;

@@ -3,6 +3,14 @@
 #include "cmds.h"
 #include <iostream>
 #include <set>
+#ifndef _WIN32
+#include <csignal>
+#include <cstring>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
 fillworker fillworkers[MAXTHREADS];
 string inputbasename;
 int writeprunetables = 1; // default is auto
@@ -215,14 +223,23 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
   if (quiet == 0)
     cout << "For memsize " << maxmem << " sh1 " << shift1 << " mul " << memmul
          << " sh2 " << shift2 << " shardshift " << shardshift << endl;
-  cout << "Trying to allocate "
-       << (CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) << endl;
-  amem = mem = (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1);
-  if (mem == 0)
-    error("! could not allocate main memory buffer");
-  // hack memalign
-  while (((ull)mem) & (CACHELINESIZE - 1))
-    mem++;
+  if (shmattachname) {
+    shmattach(pd);
+    return;
+  }
+  if (shmholdname) {
+    shmcreate(bytesize);
+  } else {
+    cout << "Trying to allocate "
+         << (CACHELINESIZE + (bytesize >> 3) * sizeof(ull)) << endl;
+    amem = mem =
+        (ull *)calloc(CACHELINESIZE + (bytesize >> 3) * sizeof(ull), 1);
+    if (mem == 0)
+      error("! could not allocate main memory buffer");
+    // hack memalign
+    while (((ull)mem) & (CACHELINESIZE - 1))
+      mem++;
+  }
   if (!readpt(pd)) {
     // A read that gave up part way through has left the file's numbers in
     // this table and the file's bytes in memory.  Filling a table on top of
@@ -243,6 +260,8 @@ prunetable::prunetable(const puzdef &pd, ull maxmem) {
       checkextend(pd, 1);
     }
   }
+  if (shmholdname)
+    shmpublish(pd);
 }
 void prunetable::filltable(const puzdef &pd, int d) {
   popped = 0;
@@ -277,6 +296,8 @@ void prunetable::filltable(const puzdef &pd, int d) {
   justread = 0;
 }
 void prunetable::checkextend(const puzdef &pd, int ignorelookup) {
+  if (shmreadonly)
+    return;
   double prediction = 0;
   if (ptotpop != 0)
     prediction = totpop * (double)totpop / ptotpop;
@@ -339,3 +360,162 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
       filename.push_back('a' + (v - 10));
   }
 }
+
+/*
+ *   Shared-memory tables.  --shmhold NAME: this process creates the POSIX
+ *   shared memory object /NAME (it must not exist), builds or reads the table
+ *   in it (a 16 KB header page, then the table), writes the header with the
+ *   magic last, prints a "ready" line and holds the object until SIGINT,
+ *   SIGTERM or SIGHUP, which remove it.  --shmattach NAME maps it read-only
+ *   and takes every field a lookup needs from the header; such a table is
+ *   never filled, extended or written.  --shmremove NAME removes a leftover
+ *   object (after a SIGKILL).
+ */
+const char *shmholdname, *shmattachname, *shmremovename;
+#ifndef _WIN32
+static const ull SHMMAGIC = 0x7477736d74616231ULL; // "twsmtab1"
+static const size_t SHMHEADER = 16384;
+struct shmheader {
+  ull magic, bytesize, size, shift1, shift2, memmul, fillcnt, totpop, ptotpop,
+      popped, checksum, optionssum;
+  int totsize, shardshift, baseval, hibase, wval, wbval;
+};
+static char shmownedname[256];
+static void shmteardown(int) {
+  if (shmownedname[0])
+    shm_unlink(shmownedname);
+  const char msg[] = "Shared memory table removed\n";
+  ssize_t r = write(1, msg, sizeof(msg) - 1);
+  (void)r;
+  _exit(0);
+}
+static string shmname(const char *n) {
+  string s = n;
+  if (s.size() == 0 || s[0] != '/')
+    s = "/" + s;
+  return s;
+}
+void shmremove(const char *name) {
+  string n = shmname(name);
+  if (shm_unlink(n.c_str()) != 0)
+    error("! could not remove shared memory ", n.c_str());
+  cout << "Removed shared memory " << n << endl;
+}
+void prunetable::shmcreate(ull bytesize) {
+  string n = shmname(shmholdname);
+  int fd = shm_open(n.c_str(), O_RDWR | O_CREAT | O_EXCL, 0600);
+  if (fd < 0)
+    error("! could not create shared memory ", n.c_str());
+  shmbytes = SHMHEADER + (bytesize >> 3) * sizeof(ull);
+  if (ftruncate(fd, shmbytes) != 0) {
+    close(fd);
+    shm_unlink(n.c_str());
+    error("! could not size shared memory ", n.c_str());
+  }
+  shmbase = mmap(0, shmbytes, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+  close(fd);
+  if (shmbase == MAP_FAILED) {
+    shmbase = 0;
+    shm_unlink(n.c_str());
+    error("! could not map shared memory ", n.c_str());
+  }
+  strncpy(shmownedname, n.c_str(), sizeof(shmownedname) - 1);
+  signal(SIGINT, shmteardown);
+  signal(SIGTERM, shmteardown);
+  signal(SIGHUP, shmteardown);
+  cout << "Created shared memory " << n << " of " << shmbytes
+       << " bytes (held by this process; Control-C removes it)" << endl;
+  amem = mem = (ull *)((char *)shmbase + SHMHEADER);
+}
+void prunetable::shmpublish(const puzdef &pd) {
+  shmheader *hd = (shmheader *)shmbase;
+  hd->bytesize = shmbytes - SHMHEADER;
+  hd->size = size;
+  hd->shift1 = shift1;
+  hd->shift2 = shift2;
+  hd->memmul = memmul;
+  hd->fillcnt = fillcnt;
+  hd->totpop = totpop;
+  hd->ptotpop = ptotpop;
+  hd->popped = popped;
+  hd->checksum = pd.checksum;
+  hd->optionssum = pd.optionssum;
+  hd->totsize = totsize;
+  hd->shardshift = shardshift;
+  hd->baseval = baseval;
+  hd->hibase = hibase;
+  hd->wval = wval;
+  hd->wbval = wbval;
+  __sync_synchronize();
+  hd->magic = SHMMAGIC;
+  cout << "Shared memory table " << shmname(shmholdname) << " ready (baseval "
+       << baseval << "); holding it until Control-C" << endl;
+  while (1)
+    pause();
+}
+void prunetable::shmattach(const puzdef &pd) {
+  string n = shmname(shmattachname);
+  int fd = shm_open(n.c_str(), O_RDONLY, 0);
+  if (fd < 0)
+    error("! could not open shared memory ", n.c_str());
+  struct stat sb;
+  if (fstat(fd, &sb) != 0 || (size_t)sb.st_size < SHMHEADER) {
+    close(fd);
+    error("! shared memory too small ", n.c_str());
+  }
+  shmbytes = sb.st_size;
+  shmbase = mmap(0, shmbytes, PROT_READ, MAP_SHARED, fd, 0);
+  close(fd);
+  if (shmbase == MAP_FAILED) {
+    shmbase = 0;
+    error("! could not map shared memory ", n.c_str());
+  }
+  const shmheader *hd = (const shmheader *)shmbase;
+  if (hd->magic != SHMMAGIC)
+    error("! shared memory table not ready: ", n.c_str());
+  if (hd->checksum != pd.checksum || hd->optionssum != pd.optionssum ||
+      hd->totsize != pd.totsize)
+    error("! shared memory table is for another puzzle or options: ",
+          n.c_str());
+  if (SHMHEADER + hd->bytesize != shmbytes)
+    error("! shared memory size mismatch ", n.c_str());
+  size = hd->size;
+  shift1 = hd->shift1;
+  shift2 = hd->shift2;
+  memmul = hd->memmul;
+  fillcnt = hd->fillcnt;
+  totpop = hd->totpop;
+  ptotpop = hd->ptotpop;
+  popped = hd->popped;
+  totsize = hd->totsize;
+  shardshift = hd->shardshift;
+  baseval = hd->baseval;
+  hibase = hd->hibase;
+  wval = hd->wval;
+  wbval = hd->wbval;
+  lookupcnt = 0;
+  justread = 1;
+  shmreadonly = 1;
+  amem = mem = (ull *)((char *)shmbase + SHMHEADER);
+  cout << "Attached shared memory table " << n << " (" << shmbytes
+       << " bytes, baseval " << baseval << ", read-only)" << endl;
+}
+void prunetable::shmrelease() {
+  if (shmbase)
+    munmap(shmbase, shmbytes);
+  shmbase = 0;
+  amem = mem = 0;
+}
+#else
+void shmremove(const char *) {
+  error("! shared memory tables are not supported on Windows");
+}
+void prunetable::shmcreate(ull) {
+  error("! shared memory tables are not supported on Windows");
+}
+void prunetable::shmpublish(const puzdef &) {}
+void prunetable::shmattach(const puzdef &) {
+  error("! shared memory tables are not supported on Windows");
+}
+void prunetable::shmrelease() {}
+#endif

@@ -102,6 +102,15 @@ static stringopt stringopts[] = {
     {"--cachedir",
      "dirname  Use the specified directory to cache pruning tables.",
      &user_option_cache_dir},
+    {"--shmhold",
+     "name  Build or read the pruning table in POSIX shared memory /name,\n"
+     "   print a ready line, and hold it until interrupted (which removes it).",
+     &shmholdname},
+    {"--shmattach",
+     "name  Use the pruning table held in shared memory /name, read-only.",
+     &shmattachname},
+    {"--shmremove", "name  Remove the shared memory object /name and exit.",
+     &shmremovename},
 };
 static boolopt boolopts[] = {
     {"--nodeduplicatesolve", "Don't deduplicate search tree on solves.",
@@ -568,6 +577,10 @@ int main(int argc, const char **argv) {
   int orig_argc = argc;
   const char **orig_argv = argv;
   processargs(argc, argv, 1);
+  if (shmremovename) {
+    shmremove(shmremovename);
+    return 0;
+  }
   if (quiet == 0) {
     cout << "# This is twsearch "
          << STRINGIZE(TWSEARCH_VERSION) << " (C) 2022 Tomas Rokicki." << endl;
