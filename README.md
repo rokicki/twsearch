@@ -298,12 +298,12 @@ Options:
 `--shmattach` *name*  Use the pruning table held in POSIX shared memory /*name*
    (by another twsearch running with `--shmhold`), read-only: it is never
    filled, extended or written.  Many processes can share one large table this
-   way.  Not on Windows.
+   way.  Not on Windows or in WebAssembly.
 
 `--shmhold` *name*  Build or read the pruning table in POSIX shared memory
    /*name* (which must not exist yet), print a ready line, and hold the table
    until interrupted (SIGINT, SIGTERM or SIGHUP), which removes it.  Not on
-   Windows.
+   Windows or in WebAssembly.
 
 `--shmremove` *name*  Remove the shared memory object /*name* (for example after
    the holder was killed with SIGKILL) and exit.

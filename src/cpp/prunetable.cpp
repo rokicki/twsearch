@@ -3,7 +3,7 @@
 #include "cmds.h"
 #include <iostream>
 #include <set>
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(WASM)
 #include <csignal>
 #include <cstring>
 #include <fcntl.h>
@@ -372,7 +372,7 @@ void prunetable::addsumdat(const puzdef &pd, string &filename) const {
  *   object (after a SIGKILL).
  */
 const char *shmholdname, *shmattachname, *shmremovename;
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(WASM)
 static const ull SHMMAGIC = 0x7477736d74616231ULL; // "twsmtab1"
 static const size_t SHMHEADER = 16384;
 struct shmheader {
@@ -507,15 +507,13 @@ void prunetable::shmrelease() {
   amem = mem = 0;
 }
 #else
-void shmremove(const char *) {
-  error("! shared memory tables are not supported on Windows");
+static void shmunsupported() {
+  error("! shared memory tables are not supported on Windows or in "
+        "WebAssembly");
 }
-void prunetable::shmcreate(ull) {
-  error("! shared memory tables are not supported on Windows");
-}
+void shmremove(const char *) { shmunsupported(); }
+void prunetable::shmcreate(ull) { shmunsupported(); }
 void prunetable::shmpublish(const puzdef &) {}
-void prunetable::shmattach(const puzdef &) {
-  error("! shared memory tables are not supported on Windows");
-}
+void prunetable::shmattach(const puzdef &) { shmunsupported(); }
 void prunetable::shmrelease() {}
 #endif
