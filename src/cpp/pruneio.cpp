@@ -250,7 +250,10 @@ void prunetable::unpackblock(ull *mem, ull longcnt, uchar *block, int bytecnt) {
           memb += dc->bytewidth;
         } else {
           auto t = dc->d;
-          for (int ii = 0; ii < dc->bytewidth; ii++) {
+          // A multi-byte entry can decode past the end of the block (from the
+          // bits after its last code); write only the bytes that remain, or
+          // the extra bytes land on the next block, unpacked in parallel.
+          for (int ii = 0; ii < dc->bytewidth && ii < i; ii++) {
             *memb++ = t;
             t >>= 8;
           }
