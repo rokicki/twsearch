@@ -112,15 +112,17 @@ vector<allocsetval> parsemovelist_generously(const puzdef &pd,
     movelist.push_back(findmove_generously(pd, move));
   return movelist;
 }
-void parsedomovelist_generously(const puzdef &pd, const string &scr, setval p,
-                                bool allowrotations) {
+int parsedomovelist_generously(const puzdef &pd, const string &scr, setval p,
+                               bool allowrotations) {
   string move;
   stacksetval p2(pd);
+  int moves = 0;
   for (auto c : scr) {
     if (c <= ' ' || c == ',') {
       if (move.size()) {
         finddomove_generously(pd, move, p, p2, allowrotations);
         pd.assignpos(p2, p);
+        moves += !isrotation(move);
         move.clear();
       }
     } else
@@ -129,7 +131,9 @@ void parsedomovelist_generously(const puzdef &pd, const string &scr, setval p,
   if (move.size()) {
     finddomove_generously(pd, move, p, p2, allowrotations);
     pd.assignpos(p2, p);
+    moves += !isrotation(move);
   }
+  return moves;
 }
 /*
  *   A rotation is always a grip (uppercase) followed only by 'p'.  There

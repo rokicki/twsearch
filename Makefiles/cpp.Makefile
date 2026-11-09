@@ -132,6 +132,8 @@ test-cpp-samples: $(TWSEARCH)
 	$(TWSEARCH) -M 64 --cachedir build/test/cache --startprunedepth 7 --writeprunetables always samples/main/3x3x3.tws build/test/easy.scr | grep -q "^ F2 R U' R'$$"
 	for f in build/test/cache/*.dat; do head -c 200 $$f > $$f.part && mv $$f.part $$f; done
 	$(TWSEARCH) -M 64 --cachedir build/test/cache --writeprunetables never samples/main/3x3x3.tws build/test/easy.scr | grep -q "^ F2 R U' R'$$"
+	@ # -si looks only for solutions shorter than each input line.
+	printf "U U\n" | $(TWSEARCH) -M 64 --nowrite -si samples/main/3x3x3.tws | grep -q "^ U2$$"
 	@ # Fill work is split into chunks deduplicated up to rotation; on a puzzle with
 	@ # rotations every state must still be reached (no chunk may cut off part of
 	@ # another's subtree).  This count is the same for any number of threads.

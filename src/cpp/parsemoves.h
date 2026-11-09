@@ -23,8 +23,9 @@ vector<int> parsemovelist(const puzdef &pd, const string &scr);
 vector<int> parsemoveorrotationlist(const puzdef &pd, const string &scr);
 vector<allocsetval> parsemovelist_generously(const puzdef &pd,
                                              const string &scr);
-void parsedomovelist_generously(const puzdef &pd, const string &scr, setval p,
-                                bool allowrotations = true);
+// Returns the number of moves (rotations not counted).
+int parsedomovelist_generously(const puzdef &pd, const string &scr, setval p,
+                               bool allowrotations = true);
 int isrotation(const string &s);
 int domove_or_rotation_q(const puzdef &pd, setval &sv, setval &tmp,
                          const string &s);

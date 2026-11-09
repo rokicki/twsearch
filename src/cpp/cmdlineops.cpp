@@ -417,7 +417,9 @@ void processlines(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
-    parsedomovelist_generously(pd, s, p1, allowrotations);
+    // -si looks only for solutions shorter than the input line
+    globalinputmovecount =
+        parsedomovelist_generously(pd, s, p1, allowrotations);
     f(pd, p1, s.c_str());
   }
 }
@@ -427,7 +429,8 @@ void processlines2(const puzdef &pd,
   stacksetval p1(pd);
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.id);
-    parsedomovelist_generously(pd, s, p1);
+    // -si looks only for solutions shorter than the input line
+    globalinputmovecount = parsedomovelist_generously(pd, s, p1);
     f(pd, p1, s.c_str());
   }
 }
@@ -462,7 +465,8 @@ void processlines5(const puzdef &pd,
   while (getline(cin, s)) {
     pd.assignpos(p1, pd.solved);
     // only used for -p2, which solves the positions
-    parsedomovelist_generously(pd, s, p1, false);
+    // -si looks only for solutions shorter than the input line
+    globalinputmovecount = parsedomovelist_generously(pd, s, p1, false);
     f(pd, p1, s.c_str());
   }
 }
