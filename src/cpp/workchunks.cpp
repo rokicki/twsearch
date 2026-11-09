@@ -34,7 +34,12 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
         for (int i = 0; i < (int)workchunks.size(); i++) {
           ull pmv = workchunks[i];
           int st = workstates[i];
-          ull mask = canonmask[st];
+          // Fill chunks are deduplicated by position up to rotation, but the
+          // canonical move order is not rotation-equivariant: a chunk's
+          // canonical state would wrongly restrict the subtrees of the chunks
+          // merged into it.  So fill chunks carry no canonical state (and
+          // fillstart starts their fill from state 0).
+          ull mask = forpruning ? 0 : canonmask[st];
           ull t = pmv;
           pd.assignpos(p1, symmreduce);
           while (t > 1) {
@@ -61,7 +66,7 @@ vector<ull> makeworkchunks(const puzdef &pd, int d, setval symmreduce,
             }
             if (isnew) {
               wc2.push_back(pmv + (nmoves + mv - 1) * mul);
-              ws2.push_back(canonnext[st][pd.moves[mv].cs]);
+              ws2.push_back(forpruning ? 0 : canonnext[st][pd.moves[mv].cs]);
               if (nodeduplicatesolve || forpruning) {
                 if (seensize < (int)seen.size()) {
                   pd.assignpos(seen[seensize], p3);

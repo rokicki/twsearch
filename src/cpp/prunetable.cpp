@@ -61,6 +61,9 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
   int nmoves = pd.moves.size();
   int sp = 0;
   int st = 0;
+  // With rotations, fill chunks are deduplicated up to rotation and carry no
+  // canonical state (see makeworkchunks): their fill starts from state 0.
+  int canonprefix = pd.rotgroup.size() <= 1;
   int togo = d;
   while (initmoves > 1) {
     int mv = initmoves % nmoves;
@@ -68,7 +71,8 @@ ull fillworker::fillstart(const puzdef &pd, prunetable &pt, int w) {
     if (!pd.legalstate(posns[sp + 1]) ||
         pd.comparepos(posns[sp], posns[sp + 1]) == 0)
       return 0;
-    st = canonnext[st][pd.moves[mv].cs];
+    if (canonprefix)
+      st = canonnext[st][pd.moves[mv].cs];
     sp++;
     togo--;
     initmoves /= nmoves;
